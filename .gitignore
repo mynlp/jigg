@@ -1,0 +1,6 @@
+*~
+*.o
+*.pyc
+*.class
+build/
+target/

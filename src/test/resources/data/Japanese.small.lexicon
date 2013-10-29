@@ -1,0 +1,4 @@
+@UNK@/フィラー/_ S1／S1 NP[nc,adv]1／NP[nc,adv]1 NP[nc,nm]1／NP[nc,nm]1
+@UNK@/副詞-一般/_ S1／S1 NP[nc,nm]1／NP[nc,nm]1 S[nm,stem] NP[nc,adv]1／NP[nc,adv]1
+@UNK@/副詞-助詞類接続/_ S1／S1 NP[nc,nm]1／NP[nc,nm]1 S[nm,stem]
+あふれる/動詞-自立/基本形 S[nm,stem]＼NP[ga,nm,ga]-base_verb_rule S[nm,stem]＼NP[ga,nm,ga]-adnominal_verb_rule
