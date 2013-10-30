@@ -1,6 +1,6 @@
 package enju.ccg.parser
 
-import enju.ccg.lexicon.{PoS, Word, Category}
+import enju.ccg.lexicon.{PoS, Word, Category, TrainSentence}
 import Direction._
 
 /**

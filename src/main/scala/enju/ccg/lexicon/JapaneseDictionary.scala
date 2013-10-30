@@ -3,15 +3,13 @@ import scala.collection.mutable.HashMap
 import scala.io.Source
 
 trait JapanesePoSDictionary {
-  type P = JapanesePoS
-
   private val conjugationManager = new NumberedManager[Conjugation] {
     def createInstance(newId:Int, str:String) = Conjugation(newId, str)
   }
   private val fineTagManager = new NumberedManager[FineTag] {
     def createInstance(newId:Int, str:String) = FineTag(newId, str)
   }
-  protected val posManager = new NumberedManager[JapanesePoS] {
+  protected val posManager = new NumberedManager[PoS] {
     def createInstance(newId:Int, str:String) = str.split('/') match { 
       case a if a.size == 2 => (a(0), a(1)) match {
         case (hierarStr, conjStr) => {

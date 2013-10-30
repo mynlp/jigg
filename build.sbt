@@ -18,7 +18,7 @@ crossPaths := false
 
 javacOptions ++= Seq("-Xlint:all")
 
-scalacOptions += "-deprecation"
+scalacOptions ++= Seq("-deprecation", "-feature")
 
 libraryDependencies += "com.novocode" % "junit-interface" % "0.10-M4" % "test->default"
 

@@ -20,6 +20,10 @@ public class Example<L> {
   public void setFeature(List<Integer> f) {
     feature = Util.toArray(f);
   }
+
+  public void setFeatureQuick(int[] feature) {
+    this.feature = feature;
+  }
   
   public int[] getFeature() {
     return feature;

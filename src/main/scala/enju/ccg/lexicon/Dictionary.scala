@@ -10,22 +10,21 @@ package enju.ccg.lexicon
  */
 @SerialVersionUID(1L)
 abstract class Dictionary(private val categoryDictionary:CategoryDictionary) extends Serializable {
-  type P <: PoS
   @transient private val categoryParser = new CategoryParser
   private val categoryManager = new CategoryManager
-  protected def posManager:NumberedManager[P]
+  protected def posManager:NumberedManager[PoS]
   protected val wordManager:NumberedManager[Word] = new NumberedManager[Word] {
     def createInstance(newId:Int, wordStr:String) = SimpleWord(newId, wordStr)
   }
 
-  def getPoS(str:String):P = posManager.getOrCreate(str)
-  def getPoS(id:Int):P = posManager(id)
+  def getPoS(str:String):PoS = posManager.getOrCreate(str)
+  def getPoS(id:Int):PoS = posManager(id)
   def getWord(str:String):Word = wordManager.getOrCreate(str)
   def getWord(id:Int):Word = wordManager(id)
   def getCategory(str:String):Category = categoryManager.assignID(categoryParser.parse(str)) // WARNING: computationaly heavy
   def getCategory(id:Int):Category = categoryManager(id)
 
-  def getCategoryCandidates(word:Word, pos:P):Array[Category] =
+  def getCategoryCandidates(word:Word, pos:PoS):Array[Category] =
     categoryDictionary.getCandidates(word, pos)
   
   def giveIdToWords(type2id:String => Int) = wordManager.transformValues({ word => word.assignClass(type2id(word.v)) })

@@ -1,11 +1,11 @@
 package enju.ccg.parser
 
-import enju.ccg.lexicon.{PoS, Word, Category}
+import enju.ccg.lexicon.{PoS, Word, Category, TaggedSentence, TrainSentence, TestSentence}
 import scala.collection.mutable.ArrayBuffer
 
-import enju.ccg.tagger.Feature
+import enju.ccg.ml.FeatureBase
 trait Features
-class NonLabeledFeatures extends ArrayBuffer[Feature] with Features
+class NonLabeledFeatures extends ArrayBuffer[FeatureBase] with Features
 class LabeledFeatures(baseFeatures:NonLabeledFeatures, action:Action) extends ArrayBuffer[Int] with Features {
   baseFeatures.foreach { f => this += 0 }
 }

@@ -1,5 +1,4 @@
-package enju.ccg.parser
-import enju.ccg.lexicon.{PoS, Word, Category}
+package enju.ccg.lexicon
 
 trait hasSize {
   def size:Int
@@ -30,9 +29,11 @@ class TaggedSentence(
   override val wordSeq:Seq[Word],
   override val posSeq:Seq[PoS]) extends Sentence(wordSeq) with PoSSeq {
   require (wordSeq.size == posSeq.size)
+
   def this(s:Sentence, posSeq:Seq[PoS]) = this(s.wordSeq, posSeq)
-  
   override def size = wordSeq.size
+  def assignCandidates(candSeq:Seq[Seq[Category]]):CandAssignedSentence =
+    new TestSentence(wordSeq, posSeq, candSeq)
 }
 
 class GoldSuperTaggedSentence(
@@ -43,6 +44,8 @@ class GoldSuperTaggedSentence(
 
   def this(s:TaggedSentence, catSeq:Seq[Category]) = this(s.wordSeq, s.posSeq, catSeq)
   override def size = wordSeq.size
+  override def assignCandidates(candSeq:Seq[Seq[Category]]):CandAssignedSentence =
+    new TrainSentence(wordSeq, posSeq, catSeq, candSeq)
 }
 
 trait CandAssignedSentence extends TaggedSentence with CategoryCandSeq

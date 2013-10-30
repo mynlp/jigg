@@ -30,4 +30,3 @@ public class Perceptron<L> extends AbstractClassifier<L> {
     }
   }
 }
-
