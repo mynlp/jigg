@@ -1,9 +1,15 @@
 package enju.ccg.tagger
 
-import enju.ccg.lexicon.{PoS, Word, Category, TaggedSentence}
-import Template.Template
+import enju.ccg.lexicon.{PoS, Word, TaggedSentence}
 
 import scala.collection.mutable.ArrayBuffer
+
+object Template extends Enumeration {
+  type Template = Value
+  val w, wPrev1, wPrev2, wNext1, wNext2, wPrev2_wPrev1, wPrev1_w, w_wNext1, wNext1_wNext2, p, pPrev1, pPrev2, pNext1, pNext2, pPrev2_pPrev1, pPrev1_p, p_pNext1, pNext1_pNext2, pPrev2_pPrev1_p, pPrev1_p_pNext1, p_pNext1_pNext2 = Value
+}
+
+import Template.Template
 
 trait Context {
   def sentence:TaggedSentence
