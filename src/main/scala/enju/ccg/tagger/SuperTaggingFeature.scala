@@ -1,4 +1,5 @@
 package enju.ccg.tagger
+
 import enju.ccg.ml.{Feature, LabeledFeature}
 import enju.ccg.lexicon.{Dictionary, JapaneseDictionary}
 
