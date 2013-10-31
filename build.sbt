@@ -8,13 +8,13 @@ name := "shift-reduce-enju"
 
 version := "0.0.1"
 
-// autoScalaLibrary := false
-
 fork in run := true
 
 // parallelExecution in Test := false
 
 crossPaths := false
+
+mainClass in assembly := Some("enju.ccg.Driver")
 
 javacOptions ++= Seq("-Xlint:all")
 
@@ -26,7 +26,7 @@ libraryDependencies += "com.googlecode.json-simple" % "json-simple" % "1.1"
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "1.9.2" % "test"
 
-libraryDependencies ++= Seq( 
+libraryDependencies ++= Seq(
     "junit" % "junit" % "4.10",
     "com.novocode" % "junit-interface" % "0.10-M1" % "test"
     )
