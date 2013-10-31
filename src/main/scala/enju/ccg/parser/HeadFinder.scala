@@ -1,6 +1,6 @@
 package enju.ccg.parser
 import enju.ccg.lexicon.{PoS, JapanesePoS}
-import Direction._
+import enju.ccg.lexicon.Direction._
 
 trait HeadFinder {
   def get(left:PoS, right:PoS):Direction

@@ -1,7 +1,7 @@
 package enju.ccg.parser
 
-import enju.ccg.lexicon.{PoS, Word, Category, TrainSentence}
-import Direction._
+import enju.ccg.lexicon.{PoS, Word, Category, TrainSentence, Derivation, BinaryChildren, UnaryChild}
+import enju.ccg.lexicon.Direction._
 
 /**
  * Define the oracle for transition-based systems.

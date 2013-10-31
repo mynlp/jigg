@@ -1,7 +1,6 @@
-package enju.ccg.parser
+package enju.ccg.lexicon
 
 import scala.collection.mutable.ListMap
-import enju.ccg.lexicon.Category
 
 case class Point(x:Int, y:Int, category:Category)
 

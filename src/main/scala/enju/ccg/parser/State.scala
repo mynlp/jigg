@@ -1,8 +1,9 @@
 package enju.ccg.parser
 
-import scala.collection.mutable.Stack
 import enju.ccg.lexicon.Category
-import Direction._
+import enju.ccg.lexicon.Direction._
+
+import scala.collection.mutable.Stack
 
 // the representation of a category with additional inofmration necessary for parsing process
 case class WrappedCategory(category:Category,
