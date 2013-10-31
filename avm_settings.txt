@@ -1,0 +1,3 @@
+inflection	attr base cont hyp imp beg stem ta te pre r neg s
+mod	adv adn nm
+case	ga o ni to nc
