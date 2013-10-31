@@ -3,8 +3,7 @@ import org.scalatest.FunSuite
 import org.scalatest.matchers.ShouldMatchers
 
 class CategoryManagerTest extends FunSuite with ShouldMatchers {
-  val featuresPath = getClass.getClassLoader.getResource("data/features.txt").getPath
-  AVM.readK2V(featuresPath)
+  AVMInitializer.init
 
   val parser = new CategoryParser
 

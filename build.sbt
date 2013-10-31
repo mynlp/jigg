@@ -12,7 +12,7 @@ version := "0.0.1"
 
 fork in run := true
 
-parallelExecution in Test := false
+// parallelExecution in Test := false
 
 crossPaths := false
 
@@ -26,7 +26,7 @@ libraryDependencies += "com.googlecode.json-simple" % "json-simple" % "1.1"
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "1.9.2" % "test"
 
-// libraryDependencies ++= Seq( 
-//     "junit" % "junit" % "4.10",
-//     "com.novocode" % "junit-interface" % "0.10-M1" % "test"
-//     )
+libraryDependencies ++= Seq( 
+    "junit" % "junit" % "4.10",
+    "com.novocode" % "junit-interface" % "0.10-M1" % "test"
+    )

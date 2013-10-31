@@ -4,8 +4,7 @@ import org.scalatest.matchers.ShouldMatchers
 import scala.collection.mutable.HashSet
 
 class AVMTest extends FunSuite with ShouldMatchers {
-  val featuresPath = getClass.getClassLoader.getResource("data/features.txt").getPath
-  AVM.readK2V(featuresPath)
+  AVMInitializer.init
 
   // the test below is no longer satisfiable
   // test("features are correctly read, resulting in sorted v2k values in insert order") {

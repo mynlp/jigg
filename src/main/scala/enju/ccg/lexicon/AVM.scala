@@ -1,4 +1,5 @@
 package enju.ccg.lexicon
+
 import scala.collection.immutable.ListMap
 //import scala.collection.mutable.LinkedHashMap
 import scala.collection.mutable.HashMap
