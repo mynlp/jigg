@@ -36,7 +36,7 @@ class MaxentMultiTagger(indexer: Indexer[LF],
   }
 
   def getTrainingInstance(sentence:TaggedSentence, i:Int, goldLabel:Int):Option[TrainingInstance] = {
-    val candidateLabels = dict.getCategoryCandidates(sentence.word(i), sentence.pos(i)) map { _.id }
+    val candidateLabels = dict.getCategoryCandidates(sentence.base(i), sentence.pos(i)) map { _.id }
     if (candidateLabels.isEmpty) None
     val unlabeled = extractors.extractUnlabeledFeatures(sentence, i)
     Some(unlabeledToTrainingInstance(unlabeled, candidateLabels, goldLabel))
