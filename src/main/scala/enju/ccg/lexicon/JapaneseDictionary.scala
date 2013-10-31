@@ -10,21 +10,22 @@ trait JapanesePoSDictionary {
     def createInstance(newId:Int, str:String) = FineTag(newId, str)
   }
   protected val posManager = new NumberedManager[PoS] {
-    def createInstance(newId:Int, str:String) = str.split('/') match { 
-      case a if a.size == 2 => (a(0), a(1)) match {
-        case (hierarStr, conjStr) => {
-          val splitIdxs = hierarStr.zipWithIndex.withFilter { 
-            case (c, i) => c == '-' }.map { case (c, i) => i }.toArray
-          val fineTags = new Array[FineTag](splitIdxs.size + 1)
-          0 until splitIdxs.size foreach {
-            i => fineTags(i) = getFineTag(hierarStr.substring(0, splitIdxs(i))) 
-          }
-          fineTags(fineTags.size - 1) = getFineTag(hierarStr)
-          val conj = getConjugation(conjStr)
-          JapanesePoS(newId, str, conj, fineTags)
+    def createInstance(newId:Int, str:String) = {
+      def getHierarPoS(hierarStr:String): Array[FineTag] = {
+        val splitIdxs = hierarStr.zipWithIndex.withFilter { 
+          case (c, i) => c == '-' }.map { case (c, i) => i }.toArray
+        val fineTags = new Array[FineTag](splitIdxs.size + 1)
+        0 until splitIdxs.size foreach {
+          i => fineTags(i) = getFineTag(hierarStr.substring(0, splitIdxs(i))) 
         }
+        fineTags(fineTags.size - 1) = getFineTag(hierarStr)
+        fineTags
       }
-      case _ => throw new RuntimeException("invalid Japanese PoS sequence: " + str)
+      def create(conjStr:String, hierarStr:String) = JapanesePoS(newId, str, getConjugation(conjStr), getHierarPoS(hierarStr))
+      str.split('/') match {
+        case a if a.size == 2 => create(a(1), a(0))
+        case _ => create("", str) // we accept this case by reason of BOS PoS case; throw new RuntimeException("invalid Japanese PoS sequence: " + str)
+      }
     }
   }
   def getConjugation(str:String):Conjugation = conjugationManager.getOrCreate(str)
