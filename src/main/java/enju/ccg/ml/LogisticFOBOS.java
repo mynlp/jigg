@@ -13,7 +13,7 @@ public abstract class LogisticFOBOS<L> extends LogisticSGD<L> {
   }
 
   @Override
-  public void reguralize(List<Example<L>> examples) {
+  public void reguralize(Example<L>[] examples) {
     for (Example<L> e : examples) {
       for (int f : e.getFeature()) {
         double w = weight.get(f);

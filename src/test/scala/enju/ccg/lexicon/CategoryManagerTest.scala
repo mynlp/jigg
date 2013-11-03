@@ -5,13 +5,11 @@ import org.scalatest.matchers.ShouldMatchers
 class CategoryManagerTest extends FunSuite with ShouldMatchers {
   AVMInitializer.init
 
-  val parser = new CategoryParser
-
   test("the same child node should be assiged the same id") {
     val manager = new CategoryManager
-    manager.assignID(parser.parse("NP")) // dummy category (to start the test with id > 0)
+    manager.assignID(CategoryParser.parse("NP")) // dummy category (to start the test with id > 0)
 
-    val cat = parser.parse("NP[o,nm]／NP[o,nm]")
+    val cat = CategoryParser.parse("NP[o,nm]／NP[o,nm]")
     manager.assignID(cat) match {
       case ComplexCategory(id, left, right, _) => {
         left.id should equal (1)

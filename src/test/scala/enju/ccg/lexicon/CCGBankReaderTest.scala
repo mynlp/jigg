@@ -12,7 +12,7 @@ class CCGBankReaderTest extends FunSuite with ShouldMatchers {
   
   test("read sentence test") {
     val reader = new CCGBankReader(dict)
-    val sentence = reader.readSentence(line)
+    val sentence = reader.readSentence(line, true)
     sentence.word(0) should equal (dict.getWord("村山"))
     sentence.pos(0) should equal (dict.getPoS("名詞-固有名詞-人名-姓/_"))
     sentence.cat(0) should equal (dict.getCategory("NP[nc,nm]1／NP[nc,nm]1"))

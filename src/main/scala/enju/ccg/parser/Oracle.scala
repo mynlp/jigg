@@ -43,7 +43,7 @@ class StaticArcStandardOracle(val sentence:TrainSentence, val gold:Derivation, v
       case Some(action) => action
       case None => unaryAction match {
         case Some(action) => action
-        case None if state.j < sentence.size => Shift(sentence.cat(state.j))
+        case None if state.j < sentence.size => Shift(sentence.cat(state.j).get)
         case _ => throw new RuntimeException("ERROR: could not find any gold actions")
       }
     }

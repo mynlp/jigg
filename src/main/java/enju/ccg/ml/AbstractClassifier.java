@@ -16,7 +16,7 @@ public abstract class AbstractClassifier<L> {
   /**
    * @return argmax label and that score
    */
-  public Pair<L, Double> predict(List<Example<L>> examples) {
+  public Pair<L, Double> predict(Example<L>[] examples) {
     double max = -Double.POSITIVE_INFINITY;
     L argMax = null;
     for (Example<L> e : examples) {
@@ -37,5 +37,5 @@ public abstract class AbstractClassifier<L> {
     return score;
   }
 
-  public abstract void update(List<Example<L>> examples, L gold);
+  public abstract void update(Example<L>[] examples, L gold);
 }

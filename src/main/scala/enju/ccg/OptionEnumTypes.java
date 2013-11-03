@@ -9,5 +9,5 @@ public class OptionEnumTypes {
   
   public enum StepSizeFunction { stepSize1, stepSize2, stepSize3 };
   
-  public enum CategoryLookUpMethod { surfaceOnly, surfaceAndPoS, surfaceAndSecondFineTag }
+  public enum CategoryLookUpMethod { surfaceOnly, surfaceAndPoS, surfaceAndSecondFineTag, surfaceAndSecondWithConj };
 }

@@ -1,0 +1,8 @@
+@UNK@/動詞-非自立/仮定形 S[nm,hyp]＼S[nm,cont]sem
+@UNK@/動詞-非自立/体言接続特殊 S[nm,attr]＼S[nm,neg]sem
+@UNK@/動詞-非自立/体言接続特殊２ S[adn,attr]
+@UNK@/動詞-非自立/基本形 S[nm,base]＼S[nm,cont]sem S[adn,base]＼S[nm,cont]sem S[nm,base] S[nm,base]＼NP[ga,nm,ga] NP[nc,nm]1／NP[nc,nm]1
+@UNK@/動詞-非自立/未然ウ接続 S[nm,neg]＼S[nm,cont]sem
+@UNK@/動詞-非自立/未然形 S[nm,neg]＼S[nm,cont]sem S[nm,neg] S[nm,neg]＼S[nm,r]sem
+@UNK@/動詞-非自立/連用タ接続 S[nm,cont]＼S[nm,cont]sem S[nm,cont]
+@UNK@/動詞-非自立/連用形 S[nm,cont]＼S[nm,cont]sem S[adv,cont]＼S[nm,cont]sem S[nm,cont] S[adn,cont] S[adn,cont]＼S[nm,cont]sem S[nm,cont]＼NP[ga,nm,ga]

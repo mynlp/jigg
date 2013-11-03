@@ -52,3 +52,10 @@ class WordSecondFineTag2CategoryDictionary extends CategoryDictionary {
   override def key(word:Word, pos:PoS) = (word.id, pos.second.id)
   override def unkKey(pos:PoS) = pos.second.id
 }
+
+class WordSecondWithConj2CategoryDictionary extends CategoryDictionary {
+  override type Key = (Int, Int)
+  override type UnkKey = Int
+  override def key(word:Word, pos:PoS) = (word.id, pos.secondWithConj.id)
+  override def unkKey(pos:PoS) = pos.secondWithConj.id
+}

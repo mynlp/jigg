@@ -8,26 +8,42 @@ package enju.ccg.lexicon
  * 
  * @param catDictionary abstract away the way to look up the dictionary from word/pos to category candidates
  */
-@SerialVersionUID(1L)
-abstract class Dictionary(private val categoryDictionary:CategoryDictionary) extends Serializable {
-  @transient private val categoryParser = new CategoryParser
-  private val categoryManager = new CategoryManager
-  protected def posManager:NumberedManager[PoS]
-  protected val wordManager:NumberedManager[Word] = new NumberedManager[Word] {
-    def createInstance(newId:Int, wordStr:String) = SimpleWord(newId, wordStr)
-  }
 
-  def getPoS(str:String):PoS = posManager.getOrCreate(str)
+trait WordManager extends StringBaseNumberedManager[Word] with UnkObjectReturner[Word] {
+  override val unknown = getOrCreate("UNK_TYPE")
+  override type GetType = Word
+}
+trait PoSManager extends StringBaseNumberedManager[PoS] with UnkObjectReturner[PoS] {
+  override val unknown = getOrCreate("UNK_POS")
+  override type GetType = PoS
+}
+
+@SerialVersionUID(1L)
+abstract class Dictionary(private val categoryDictionary:CategoryDictionary,
+                          protected val wordManager:WordManager = // you can override when you want to add information to each word type
+  new WordManager {
+    override def createWithId(original:Word) = SimpleWord(newId, original.v)
+    override def createCanonicalInstance(str:String) = SimpleWord(0, str)
+  }) extends Serializable {
+  private val categoryManager = new CategoryManager
+  protected def posManager: PoSManager
+
+  def getPoSOrCreate(str:String): PoS = posManager.getOrCreate(str)
+  def getPoS(str:String): PoS = posManager.get(str)
   def getPoS(id:Int):PoS = posManager(id)
-  def getWord(str:String):Word = wordManager.getOrCreate(str)
-  def getWord(id:Int):Word = wordManager(id)
-  def getCategory(str:String):Category = categoryManager.assignID(categoryParser.parse(str)) // WARNING: computationaly heavy
-  def getCategory(id:Int):Category = categoryManager(id)
+
+  def getWordOrCreate(str: String): Word = wordManager.getOrCreate(str)
+  def getWord(str:String): Word = wordManager.get(str)
+  def getWord(id:Int): Word = wordManager(id)
+
+  def getCategoryOrCreate(str:String): Category = categoryManager.getOrCreate(str)
+  def getCategory(str:String): Option[Category] = categoryManager.get(str)
+  def getCategory(id:Int): Category = categoryManager(id)
 
   def getCategoryCandidates(word:Word, pos:PoS):Array[Category] =
     categoryDictionary.getCandidates(word, pos)
   
-  def giveIdToWords(type2id:String => Int) = wordManager.transformValues({ word => word.assignClass(type2id(word.v)) })
+  // def giveIdToWords(type2id:String => Int) = wordManager.transformValues({ word => word.assignClass(type2id(word.v)) })
 }
 
 object DictionaryTest {

@@ -7,7 +7,7 @@ trait Feature extends FeatureBase {
   type LabelType 
   type DictionaryType
   def assignLabel(label:LabelType): LabeledFeature[LabelType]
-  def concat(items:Any*): String = items.mkString("###")
+  def concat(items:Any*): String = items.mkString("_###_")
 }
 
 trait LabeledFeature[L] extends FeatureBase {

@@ -23,7 +23,7 @@ class L1CumulativeSGD<L> extends LogisticSGD<L> {
   }
 
   @Override
-  public void reguralize(List<Example<L>> examples) {
+  public void reguralize(Example<L>[] examples) {
     double eta = (C / N) * getStepSize();
     u += eta;
     for (Example<L> e : examples) {

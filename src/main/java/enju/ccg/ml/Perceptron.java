@@ -9,14 +9,14 @@ public class Perceptron<L> extends AbstractClassifier<L> {
     super(weight);
   }
   
-  public void update(List<Example<L>> examples, L gold) {
+  public void update(Example<L>[] examples, L gold) {
     L pred = predict(examples).getP1();
     if (pred != gold) {
       updateBody(examples, pred, gold);
     }
   }
 
-  public void updateBody(List<Example<L>> examples, L pred, L gold) {
+  public void updateBody(Example<L>[] examples, L pred, L gold) {
     for (Example<L> e : examples) {
       if (e.getLabel().equals(pred)) {
         for (int f : e.getFeature()) {

@@ -18,7 +18,7 @@ mainClass in assembly := Some("enju.ccg.Driver")
 
 javacOptions ++= Seq("-Xlint:all")
 
-scalacOptions ++= Seq("-deprecation", "-feature")
+resolvers += Resolver.sonatypeRepo("snapshots")
 
 libraryDependencies += "com.novocode" % "junit-interface" % "0.10-M4" % "test->default"
 

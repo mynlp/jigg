@@ -25,17 +25,17 @@ object InputOptions extends Options {
   @Option(gloss = "Path to test CCGBank for evlauation") var testPath = ""
   @Option(gloss = "Test instances, -1 for all") var testSize = -1
 
-  @Option(gloss = "Path to Japanese AVM settings (required when training Tagger)") var avmPath = ""
+  @Option(gloss = "Path to Japanese AVM settings (required when training Tagger)") var avmPath = "avm_settings.txt"
   @Option(gloss = "Path to Japanese category expantion definitions (required when training Tagger)") var templatePath = ""
   @Option(gloss = "Path to lexicon (word/pos -> category mappings)") var lexiconPath = ""
 
-  @Option(gloss = "Path to trained model") var modelPath = ""
+  @Option(gloss = "Path to trained model") var loadModelPath = ""
 }
 
 object OutputOptions extends Options {
-  @Option(gloss = "Path to output of trained model after training") var trainedModelPath = ""
-  @Option(gloss = "Path to write trained tagger model in a readable form") var taggerFeaturePath = ""
-  @Option(gloss = "Path to write trained parser model in a readable form") var parserFeaturePath = ""
+  @Option(gloss = "Path to output of trained model after training") var saveModelPath = ""
+  @Option(gloss = "Path to write trained tagger model in a readable form") var taggerFeaturePath = "features.tagger.txt"
+  @Option(gloss = "Path to write trained parser model in a readable form") var parserFeaturePath = "features.parser.txt"
 }
 
 object TrainingOptions extends Options {
@@ -45,7 +45,7 @@ object TrainingOptions extends Options {
   
   // todo: this can be more simple as in the interface of vowpal wabbit
   @Option(gloss="Step size function of SGD") var stepSizeFunc:StepSizeFunction = StepSizeFunction.stepSize3
-  @Option(gloss="Parameter a of step size function") var stepSizeA = 0.3
+  @Option(gloss="Parameter a of step size function") var stepSizeA = 0.2
   @Option(gloss="Parameter b of step size function") var stepSizeB = 5.0
 }
 
@@ -55,6 +55,7 @@ object DictionaryOptions extends Options {
 }
 
 object TaggerOptions extends Options {
+  @Option(gloss="Beta for decising the threshold of k-best at prediction") var beta:Double = 0.001
   
 }
 

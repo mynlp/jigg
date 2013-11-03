@@ -10,8 +10,8 @@ trait HeadFinder {
 object EnglishHeadFinder extends HeadFinder { def get(left:PoS, right:PoS) = Right }
 
 object JapaneseHeadFinder extends HeadFinder {
-  def get(left:PoS, right:PoS) = (left, right) match {
-    case (JapanesePoS(_,vL,conjL,hierarL), JapanesePoS(_,vR,conjR,hierarR)) => Right
-    case _ => throw new RuntimeException("JapaneseHeadFinder should be used with JapanesePoS")
-  }
+  def get(left:PoS, right:PoS) = Right // (left, right) match {
+  //   case (JapanesePoS(_,vL,conjL,hierarL), JapanesePoS(_,vR,conjR,hierarR)) => Right
+  //   case _ => throw new RuntimeException("JapaneseHeadFinder should be used with JapanesePoS")
+  // }
 }

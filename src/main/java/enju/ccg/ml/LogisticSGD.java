@@ -66,25 +66,25 @@ public class LogisticSGD<L> extends AbstractClassifier<L> {
     return stepSize.get(k);
   }
   
-  public double[] calcLabelProbs(List<Example<L>> examples) {
-    double[] dist = new double[examples.size()];
-    for (int l = 0; l < examples.size(); ++l) {
-      dist[l] = Math.exp(calcScore(examples.get(l).getFeature()));
+  public double[] calcLabelProbs(Example<L>[] examples) {
+    double[] dist = new double[examples.length];
+    for (int l = 0; l < examples.length; ++l) {
+      dist[l] = Math.exp(calcScore(examples[l].getFeature()));
       if (dist[l] < 1e-10) dist[l] = 1e-10;
     }
     Util.normalize(dist);
     return dist;
   }
 
-  public void update(List<Example<L>> examples, L gold) {
+  public void update(Example<L>[] examples, L gold) {
     k++;    
     updateBody(examples, gold);
     reguralize(examples);
   }
-  public void updateBody(List<Example<L>> examples, L gold) {
+  public void updateBody(Example<L>[] examples, L gold) {
     double[] dist = calcLabelProbs(examples);
-    for (int l = 0; l < examples.size(); ++l) {
-      Example<L> e = examples.get(l);
+    for (int l = 0; l < examples.length; ++l) {
+      Example<L> e = examples[l];
       double d = calcDerivative(e.getLabel(), gold, dist[l]);
       for (int f : e.getFeature()) {
         weight.add(f, getStepSize() * d);
@@ -92,7 +92,7 @@ public class LogisticSGD<L> extends AbstractClassifier<L> {
     }
   }
   // do nothing; please override
-  public void reguralize(List<Example<L>> examples) {}
+  public void reguralize(Example<L>[] examples) {}
 
   public double calcDerivative(L predict, L gold, double p) {
     return predict.equals(gold) ? (1 - p) : -p;
