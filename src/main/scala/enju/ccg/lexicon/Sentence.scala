@@ -28,30 +28,50 @@ class Sentence(override val wordSeq:Seq[Word]) extends WordSeq {
   override def size = wordSeq.size
 }
 
-class TaggedSentence(
+trait TaggedSentence extends Sentence with BaseFormSeq with PoSSeq {
+  type AssignedSentence
+  def assignCands(candSeq:Seq[Seq[Category]]): AssignedSentence
+}
+
+class PoSTaggedSentence(
   override val wordSeq:Seq[Word],
   override val baseSeq:Seq[Word],
-  override val posSeq:Seq[PoS]) extends Sentence(wordSeq) with BaseFormSeq with PoSSeq {
+  override val posSeq:Seq[PoS]) extends Sentence(wordSeq) with TaggedSentence {
   require (wordSeq.size == posSeq.size)
 
   def this(s:Sentence, baseSeq:Seq[Word], posSeq:Seq[PoS]) = this(s.wordSeq, baseSeq, posSeq)
   override def size = wordSeq.size
 
-  type AssignedSentence = TestSentence
+  override type AssignedSentence = TestSentence
+  def assignCands(candSeq:Seq[Seq[Category]]): AssignedSentence = new TestSentence(this, candSeq)
 }
 
 class GoldSuperTaggedSentence(
   override val wordSeq:Seq[Word],
   override val baseSeq:Seq[Word],
   override val posSeq:Seq[PoS],
-  override val catSeq:Seq[Option[Category]]) extends TaggedSentence(wordSeq, baseSeq, posSeq) with GoldTagSeq {
+  override val catSeq:Seq[Option[Category]]) extends Sentence(wordSeq) with TaggedSentence with GoldTagSeq {
   require (wordSeq.size == posSeq.size && posSeq.size == catSeq.size)
 
   def this(s:TaggedSentence, catSeq:Seq[Option[Category]]) = this(s.wordSeq, s.baseSeq, s.posSeq, catSeq)
   override def size = wordSeq.size
+
+  override type AssignedSentence = TrainSentence
+  def assignCands(candSeq:Seq[Seq[Category]]): AssignedSentence = new TrainSentence(this, candSeq)
 }
 
 trait CandAssignedSentence extends TaggedSentence with CategoryCandSeq
+
+case class TestSentence(
+  override val wordSeq:Seq[Word],
+  override val baseSeq:Seq[Word],
+  override val posSeq:Seq[PoS],
+  override val candSeq:Seq[Seq[Category]]) extends PoSTaggedSentence(wordSeq, baseSeq, posSeq) with CandAssignedSentence {
+  require (wordSeq.size == posSeq.size && posSeq.size == candSeq.size)
+  
+  def this(s:PoSTaggedSentence, candSeq:Seq[Seq[Category]]) = this(s.wordSeq, s.baseSeq, s.posSeq, candSeq)
+  override def size = wordSeq.size
+}
 
 case class TrainSentence(
   override val wordSeq:Seq[Word],
@@ -71,13 +91,3 @@ case class TrainSentence(
   }
 }
 
-case class TestSentence(
-  override val wordSeq:Seq[Word],
-  override val baseSeq:Seq[Word],
-  override val posSeq:Seq[PoS],
-  override val candSeq:Seq[Seq[Category]]) extends TaggedSentence(wordSeq, baseSeq, posSeq) with CandAssignedSentence {
-  require (wordSeq.size == posSeq.size && posSeq.size == candSeq.size)
-  
-  def this(s:TaggedSentence, candSeq:Seq[Seq[Category]]) = this(s.wordSeq, s.baseSeq, s.posSeq, candSeq)
-  override def size = wordSeq.size
-}
