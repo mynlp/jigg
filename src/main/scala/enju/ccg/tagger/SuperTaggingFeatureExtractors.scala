@@ -70,23 +70,39 @@ class BigramPoSExtractor(val windowSize:Int) extends FeatureExtractor {
 }
 
 // user can define his own extractor extends FeatureExtractor
-
 class FeatureExtractors(val methods:Seq[FeatureExtractor], val bos:Word, val bosPoS:PoS) {
   var featureSize = 0
 
-  case class ContextWithBOS(override val sentence:TaggedSentence, override val i:Int) extends Context {
-    def word(bias:Int) = (i + bias) match {
+  class ContextWithBOS(override val sentence:TaggedSentence, override val i:Int) extends Context {
+    override def word(bias:Int) = (i + bias) match {
       case p => if (p < 0 || p >= sentence.size) bos.id else sentence.word(p).id }
-    def pos(bias:Int) = (i + bias) match {
+    override def pos(bias:Int) = (i + bias) match {
       case p => if (p < 0 || p >= sentence.size) bosPoS.id else sentence.pos(p).id }
   }
+  
+  // please override this in subclass if you want to use differenct context object
+  def context(sentence:TaggedSentence, i:Int):Context = new ContextWithBOS(sentence, i)
+
   def extractUnlabeledFeatures(sentence:TaggedSentence, i:Int):Seq[UF] = {
     val features = new ArrayBuffer[UF](featureSize)
     features += BiasFeature(Template.bias)
 
-    val context = ContextWithBOS(sentence, i)
-    methods.foreach { _.addFeatures(context, features) }
+    val ctx = context(sentence, i)
+    methods.foreach { _.addFeatures(ctx, features) }
     featureSize = features.size
     features
   }
 }
+
+class FeatureExtractorsWithCustomPoSLevel(methods:Seq[FeatureExtractor], bos:Word, bosPoS:PoS, val pos2id:(PoS=>Int)) extends FeatureExtractors(methods, bos, bosPoS) {
+  
+  class ContextWithCustomPoSLevel(override val sentence:TaggedSentence, override val i:Int) extends ContextWithBOS(sentence, i) {
+    override def pos(bias:Int) = (i + bias) match {
+      case p => if (p < 0 || p >= sentence.size) bosPoS.id else pos2id(sentence.pos(p)) }
+  }
+  override def context(sentence:TaggedSentence, i:Int):Context = new ContextWithCustomPoSLevel(sentence, i)
+}
+
+class FeatureExtractorsWithSecondLevelPoS(
+  methods:Seq[FeatureExtractor], bos:Word, bosPoS:PoS, 
+  override val pos2id:(PoS=>Int) = { pos => pos.second.id }) extends FeatureExtractorsWithCustomPoSLevel(methods, bos, bosPoS, pos2id)
