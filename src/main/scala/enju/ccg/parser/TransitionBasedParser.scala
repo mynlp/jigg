@@ -4,13 +4,14 @@ import enju.ccg.lexicon.{PoS, Word, Category, CandAssignedSentence}
 import scala.collection.mutable.ArrayBuffer
 
 // these are return types of the parser
-case class WrappedAction(v:Action, isGold:Boolean, partialFeatures:Seq[Int])
+case class WrappedAction(v:Action, isGold:Boolean, partialFeatures:Array[Int] = Array.empty[Int])
 case class StatePath(state:State, actionPath:List[WrappedAction], score:Double = 0) {
   // remove feature information (which might be heavy for later process, e.g., error analysis)
   def toLight:StatePath = {
-    val lighterActionPath = actionPath.map { case WrappedAction(v, isGold, _) => WrappedAction(v, isGold, Nil) }
+    val lighterActionPath = actionPath.map { case WrappedAction(v, isGold, _) => WrappedAction(v, isGold) }
     StatePath(state, lighterActionPath, score)
   }
+  def fullFeatures:Array[Int] = actionPath.flatMap { _.partialFeatures }.toArray
 }
 
 trait TransitionBasedParser {

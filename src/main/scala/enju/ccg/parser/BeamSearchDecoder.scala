@@ -1,30 +1,23 @@
 package enju.ccg.parser
 
 import enju.ccg.lexicon.{PoS, Word, Category, TaggedSentence, TrainSentence, TestSentence, Derivation}
-import enju.ccg.ml.FeatureBase
+import enju.ccg.ml.{FeatureBase, Perceptron}
 
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.{ArrayBuffer, HashMap}
 
-trait Features
-class NonLabeledFeatures extends ArrayBuffer[FeatureBase] with Features
-class LabeledFeatures(baseFeatures:NonLabeledFeatures, action:Action) extends ArrayBuffer[Int] with Features {
-  baseFeatures.foreach { f => this += 0 }
+class FeatureIndexer extends HashMap[LF, Int] {
+  def getIndex(key:LF) = getOrElse(key, size)
 }
 
-class FeatureExtractor {
-  def get(state:State, sentence:TaggedSentence):NonLabeledFeatures =
-    new NonLabeledFeatures
-}
-class Classifier {
-  def score(features:Seq[Int]):Double = 0
-}
-
-class BeamSearchDecoder(val extractor:FeatureExtractor,
-                        val classifier:Classifier,
+class BeamSearchDecoder(val indexer:FeatureIndexer,
+                        val extractors:FeatureExtractors,
+                        val classifier:Perceptron[ActionLabel],
                         val oracleGen:OracleGenerator,
                         override val rule:Rule,
-                        val beamSize:Int) extends TransitionBasedParser {
+                        val beamSize:Int,
+                        val initialState:State) extends TransitionBasedParser {
   
+
   case class Candidate(path:StatePath, wrappedAction:WrappedAction, score:Double)
 
   case class Beam(kbest:List[StatePath]) {
@@ -32,7 +25,7 @@ class BeamSearchDecoder(val extractor:FeatureExtractor,
 
     def reset(candidates:List[Candidate]) = resetQuick(candidates.sortWith(_.score > _.score))
     def resetQuick(sortedCandidates:List[Candidate]) = {
-      val newKBest = sortedCandidates.sortWith(_.score > _.score).take(beamSize).map {
+      val newKBest = sortedCandidates.take(beamSize).map {
         case Candidate(path, wrappedAction, score) => {
           val newState = path.state.proceed(wrappedAction.v, wrappedAction.isGold)
           StatePath(newState, wrappedAction :: path.actionPath, score)
@@ -43,34 +36,47 @@ class BeamSearchDecoder(val extractor:FeatureExtractor,
     def existsGold = kbest.exists(_.state.isGold)
 
     def collectCandidatesTrain(sentence:TrainSentence, oracle:Oracle) = kbest.flatMap { path => {
+      // currently (in deterministic-oracle), oracle actions are only defined to the gold state
       val goldActions:Seq[Action] = if (path.state.isGold) oracle.goldActions(path.state) else Nil
       // partial features (without label)
-      val featuresWithoutLabel = extractor.get(path.state, sentence)
+      val unlabeledFeatures = extractors.extractUnlabeledFeatures(sentence, path.state)
 
       possibleActions(path.state, sentence).map { action => {
         val isGold = goldActions.contains(action) // support non-deterministic oracle; currently, goldActions only contain one element so this operation is simple equality check
-        val feature = new LabeledFeatures(featuresWithoutLabel, action)
-        val sumScore = path.score + classifier.score(feature)
-        Candidate(path, WrappedAction(action, isGold, feature), sumScore)
+        val featureIdxs = unlabeledFeatures.map { _.assignLabel(action.toLabel) }.map { indexer.getIndex(_) }.toArray
+        val sumScore = path.score + classifier.calcScore(featureIdxs)
+        Candidate(path, WrappedAction(action, isGold, featureIdxs), sumScore)
       }}
     }}
     def collectCandidatesTest(sentence:TestSentence) = kbest.flatMap { path => {
-      val featuresWithoutLabel = extractor.get(path.state, sentence)
+      val unlabeledFeatures = extractors.extractUnlabeledFeatures(sentence, path.state)
       possibleActions(path.state, sentence).map { action => {
-        val feature = new LabeledFeatures(featuresWithoutLabel, action)
-        val sumScore = path.score + classifier.score(feature)
-        Candidate(path, WrappedAction(action, false, Nil), sumScore) // do not preserve (partial) features at test time
+        val featureIdxs = unlabeledFeatures.map { _.assignLabel(action.toLabel) }.map { indexer.getOrElse(_, -1) }.toArray
+        val sumScore = path.score + classifier.calcScore(featureIdxs)
+        Candidate(path, WrappedAction(action, false), sumScore) // do not preserve (partial) features at test time
       }}
     }}
   }
   object Beam {
-    def init(initState:State):Beam = new Beam(StatePath(initState, Nil) :: Nil)
+    def init(initState:State): Beam = new Beam(StatePath(initState, Nil) :: Nil)
   }
-  case class TrainingInstance(winPath:Option[StatePath], goldPath:Option[StatePath])
-  
-  def getTrainingInstance(sentence:TrainSentence,
-                          gold:Derivation,
-                          initialState:State): TrainingInstance = {
+  case class TrainingInstance(predictedPath:Option[StatePath], goldPath:Option[StatePath])
+
+  def trainSentences(sentences: Array[TrainSentence], golds:Array[Derivation], numIters:Int):Unit = {
+    (0 until numIters).foreach { i => {
+      sentences.zip(golds).zipWithIndex.foreach {
+        case ((sentence, derivation), numProcessed) => trainSentence(sentence, derivation)
+      }
+    }}
+  }
+  def trainSentence(sentence: TrainSentence, gold:Derivation): Unit = trainInstance(getTrainingInstance(sentence, gold))
+
+  def trainInstance(instance:TrainingInstance): Unit = instance match {
+    case TrainingInstance(Some(pred), Some(gold)) => classifier.update(pred.fullFeatures, gold.fullFeatures)
+    case _ => sys.error("")
+  }
+  // TODO: add test in sample sentence
+  def getTrainingInstance(sentence:TrainSentence, gold:Derivation): TrainingInstance = {
     var beam = Beam.init(initialState)
     val oracle = oracleGen.gen(sentence, gold, rule)
     var outputPath:Option[StatePath] = None
@@ -79,10 +85,10 @@ class BeamSearchDecoder(val extractor:FeatureExtractor,
 
     while (!beam.isEmpty) {
       val candidates:List[Candidate] = beam.collectCandidatesTrain(sentence, oracle)
-      val (finished, unfinished) = candidates.partition { cand => cand match {
+      val (finished, unfinished) = candidates.partition {
         case Candidate(_, WrappedAction(Finish(), _, _), _) => true
         case _ => false
-      }}
+      }
       finished.sortWith(_.score > _.score) match {
         case top :: _ => {
           if (top.score > currentOutputScore) outputPath = Some(top.path)
@@ -104,7 +110,7 @@ class BeamSearchDecoder(val extractor:FeatureExtractor,
         if (goldPath == None) {
           println("BeamSearchDecoder.scala: cannot find gold tree; this may or may not be correct.")
         }
-        TrainingInstance(outputPath, goldPath)
+        return TrainingInstance(outputPath, goldPath)
       }
     }
     TrainingInstance(outputPath, goldPath)

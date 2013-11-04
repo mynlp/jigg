@@ -9,7 +9,9 @@ import scala.collection.mutable.Stack
 case class WrappedCategory(category:Category,
                            head:Int, // where the lexical head come from?
                            headDir:Direction,
-                           begin:Int, end:Int)
+                           begin:Int, end:Int) {
+  def cat = category.id
+}
 
 sealed trait State {
   // the terminology is borrowed from the original paper of Zhang and Clark (2011)
