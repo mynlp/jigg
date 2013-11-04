@@ -8,14 +8,15 @@ public class Perceptron<L> extends AbstractClassifier<L> {
   public Perceptron(WeightVector weight) {
     super(weight);
   }
-  
+
+  // multiclass classification
   public void update(Example<L>[] examples, L gold) {
     L pred = predict(examples).getP1();
     if (pred != gold) {
       updateBody(examples, pred, gold);
     }
   }
-
+  // multiclass classification
   public void updateBody(Example<L>[] examples, L pred, L gold) {
     for (Example<L> e : examples) {
       if (e.getLabel().equals(pred)) {
@@ -27,6 +28,15 @@ public class Perceptron<L> extends AbstractClassifier<L> {
           weight.add(f, 1);
         }
       }
+    }
+  }
+  // structured perceptron
+  public void update(int[] predFeatures, int[] goldFeatures) {
+    for (int f : predFeatures) {
+      weight.add(f, -1);
+    }
+    for (int f : goldFeatures) {
+      weight.add(f, 1);
     }
   }
 }
