@@ -6,7 +6,7 @@ object Driver {
   def addQuiet(args:Array[String]) = args ++ Array("-startMainTrack", "false")
   def main(args:Array[String]) = {
     val runner = new Runner
-    Execution.run(addQuiet(args), runner, "driver", DriverOptions, "input", InputOptions, "output", OutputOptions, "train", TrainingOptions, "dict", DictionaryOptions)
+    Execution.run(addQuiet(args), runner, "driver", DriverOptions, "input", InputOptions, "output", OutputOptions, "train", TrainingOptions, "dict", DictionaryOptions, "tagger", TaggerOptions)
   }
 }
 
@@ -30,7 +30,6 @@ class Runner extends Runnable {
       case ActionType.evaluate => problem.evaluate
       case ActionType.predict => problem.predict
     }
-    if (OutputOptions.saveModelPath != "")
-      problem.save
+    if (OutputOptions.saveModelPath != "") problem.save
   }
 }
