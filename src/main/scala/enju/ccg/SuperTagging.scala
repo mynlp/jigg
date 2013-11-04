@@ -1,14 +1,18 @@
 package enju.ccg
 
 import lexicon._
-import tagger._
+import tagger.{SuperTaggingFeature, FeatureWithoutDictionary, FeatureOnDictionary}
+import tagger.{FeatureExtractors, UnigramWordExtractor, UnigramPoSExtractor, BigramPoSExtractor}
+import tagger.{FeatureIndexer, MaxentMultiTagger}
+
+import scala.collection.mutable.ArraySeq
 
 trait SuperTagging extends Problem {
   type DictionaryType <: Dictionary
 
   var dict:DictionaryType
-  var indexer: FeatureIndexer = _ // feature -> int
-  var weights: ml.WeightVector = _                 // featureId -> weight; these 3 variables are serialized/deserialized
+  var indexer: FeatureIndexer = _  // feature -> int
+  var weights: ml.WeightVector = _ // featureId -> weight; these 3 variables are serialized/deserialized
 
   def featureExtractors = { // you can change features by modifying this function
     val extractionMethods = Array(new UnigramWordExtractor(5), // unigram feature of window size 5
@@ -35,6 +39,8 @@ trait SuperTagging extends Problem {
     tagger.trainWithCache(trainSentences, TrainingOptions.numIters)
   }
   override def predict = {
+    loadModel
+
     
   }
   override def evaluate = {
@@ -44,12 +50,13 @@ trait SuperTagging extends Problem {
     val evalSentences:Array[GoldSuperTaggedSentence] = readSentencesFromCCGBank(developPath, false)
     val numInstances = evalSentences.foldLeft(0) { _ + _.size }
     println("done; # evaluating sentences: " + evalSentences.size)
-    
+
+    val before = System.currentTimeMillis    
     val classifier = new ml.LogisticSGD[Int](0, weights, stepsize(0))
+    // TODO: serialize featureExtractors setting at training
     val tagger = new MaxentMultiTagger(indexer, featureExtractors, classifier, dict)
-    
-    val before = System.currentTimeMillis
-    val assignedSentences:Array[TrainSentence] = evalSentences.map { s => new TrainSentence(s, tagger.candSeq(s, TaggerOptions.beta)) }
+
+    val assignedSentences = superTagToSentences(evalSentences).toArray // evalSentences.map { s => new TrainSentence(s, tagger.candSeq(s, TaggerOptions.beta)) }
     
     val parsingTime = System.currentTimeMillis - before
     val sentencePerSec = (evalSentences.size.toDouble / (parsingTime / 1000)).formatted("%.1f")
@@ -57,6 +64,18 @@ trait SuperTagging extends Problem {
 
     println("parsing time: " + parsingTime + "ms; " + sentencePerSec + "s/sec; " + wordPerSec + "w/sec")
     evaluateTokenSentenceAccuracy(assignedSentences)
+  }
+
+  def superTagToSentences[S<:TaggedSentence](sentences:Array[S]):ArraySeq[S#AssignedSentence] = {
+    val classifier = new ml.LogisticSGD[Int](0, weights, stepsize(0))
+    // TODO: serialize featureExtractors setting at training
+    val tagger = new MaxentMultiTagger(indexer, featureExtractors, classifier, dict)
+    
+    val before = System.currentTimeMillis
+    val assignedSentences = sentences.map { s =>
+      s.assignCands(tagger.candSeq(s, TaggerOptions.beta))
+    }
+    assignedSentences
   }
   def evaluateTokenSentenceAccuracy(sentences:Array[TrainSentence]) = {
     val (numCorrect, numComplete) = sentences.foldLeft(0, 0) {
