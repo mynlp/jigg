@@ -44,6 +44,8 @@ case class StackedNode(item:WrappedCategory,
   def isUnary = left != None && right == None
 }
 
+object InitialFullState extends FullState(Array.empty[StackedNode], 0)
+
 case class FullState(private val stack:Array[StackedNode],
                      override val j:Int,
                      override val isGold:Boolean = false) extends State {

@@ -65,7 +65,6 @@ trait SuperTagging extends Problem {
     println("parsing time: " + parsingTime + "ms; " + sentencePerSec + "s/sec; " + wordPerSec + "w/sec")
     evaluateTokenSentenceAccuracy(assignedSentences)
   }
-
   def superTagToSentences[S<:TaggedSentence](sentences:Array[S]):ArraySeq[S#AssignedSentence] = {
     val classifier = new ml.LogisticSGD[Int](0, weights, stepsize(0))
     // TODO: serialize featureExtractors setting at training
@@ -141,19 +140,15 @@ trait SuperTagging extends Problem {
   }
   protected def initializeDictionary: Unit
 
-  protected def pathWithBankDirPathAsDefault(fullPath: String, nameInBankDir: String) = 
-  (InputOptions.bankDirPath, fullPath) match {
-    case (dir, "") if dir != "" => dir + "/" + nameInBankDir
-    case (_, path) => path
-  }
-  protected def trainPath = pathWithBankDirPathAsDefault(InputOptions.trainPath, "train.ccgbank")
-  protected def developPath = pathWithBankDirPathAsDefault(InputOptions.testPath, "develop.ccgbank")
-
+  // TODO: separate dictionary part into another class
   protected def readSentencesFromCCGBank(path:String, train:Boolean): Array[GoldSuperTaggedSentence] = {
     val reader = new CCGBankReader(dict)
     reader.readSentences(path, InputOptions.trainSize, train)
   }
-  
+  def readCCGBank(path:String, train:Boolean): (Array[GoldSuperTaggedSentence],Array[Derivation]) = {
+    val reader = new CCGBankReader(dict)
+    reader.readSentenceAndDerivations(path, InputOptions.trainSize, train)
+  }
 }
 
 class JapaneseSuperTagging extends SuperTagging {

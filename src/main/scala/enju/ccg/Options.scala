@@ -55,8 +55,11 @@ object DictionaryOptions extends Options {
 }
 
 object TaggerOptions extends Options {
-  @Option(gloss="Beta for decising the threshold of k-best at prediction") var beta:Double = 0.001
-  
+  @Option(gloss="Beta for decising the threshold of k-best at prediction") var beta:Double = 0.001  
+}
+
+object ParserOptions extends Options {
+  @Option(gloss="Beam width") var beam:Int = 8
 }
 
 // object OP extends Options

@@ -13,7 +13,10 @@ class CCGBankReader(dict:Dictionary) {
   // }
   // def getTree(line:String):
 
-  def readSentenceAndDerivations(path:String, n:Int):Array[(GoldSuperTaggedSentence, Derivation)] = takeLines(path, n).map { readSentenceAndDerivation(_) }.toArray
+  def readSentenceAndDerivations(path:String, n:Int, train:Boolean):(Array[GoldSuperTaggedSentence], Array[Derivation]) = {
+    val (a,b) = takeLines(path, n).map { readSentenceAndDerivation(_, train) }.toSeq.unzip
+    (a.toArray, b.toArray)
+  }
 
   def readSentencesTrain(path:String, n:Int) = readSentences(path, n, true)
   def readSentencesTest(path:String, n:Int) = readSentences(path, n, false)
@@ -24,7 +27,7 @@ class CCGBankReader(dict:Dictionary) {
     case lines => lines.take(n)
   }
   
-  def readSentenceAndDerivation(line:String):(GoldSuperTaggedSentence, Derivation) = {
+  def readSentenceAndDerivation(line:String, train:Boolean):(GoldSuperTaggedSentence, Derivation) = {
     throw new UnsupportedOperationException
   }
   def readSentence(line:String, train:Boolean):GoldSuperTaggedSentence = {
