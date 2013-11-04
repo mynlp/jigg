@@ -77,42 +77,77 @@ class BeamSearchDecoder(val indexer:FeatureIndexer,
   }
   // TODO: add test in sample sentence
   def getTrainingInstance(sentence:TrainSentence, gold:Derivation): TrainingInstance = {
-    var beam = Beam.init(initialState)
     val oracle = oracleGen.gen(sentence, gold, rule)
-    var outputPath:Option[StatePath] = None
-    var goldPath:Option[StatePath] = None
-    def currentOutputScore = outputPath map { _.score } getOrElse(0.0)
 
-    while (!beam.isEmpty) {
-      val candidates:List[Candidate] = beam.collectCandidatesTrain(sentence, oracle)
-      val (finished, unfinished) = candidates.partition {
-        case Candidate(_, WrappedAction(Finish(), _, _), _) => true
-        case _ => false
-      }
-      finished.sortWith(_.score > _.score) match {
-        case top :: _ => {
-          if (top.score > currentOutputScore) outputPath = Some(top.path)
+    def findOutputAndGold(oldBeam: Beam,
+                          currentOutputPath:Option[StatePath],
+                          currentGoldPath:Option[StatePath]): TrainingInstance = {
+      def pathScore(p:Option[StatePath]) = p map { _.score } getOrElse(0.0)
+      if (oldBeam.isEmpty) TrainingInstance(currentOutputPath, currentGoldPath) else {
+        val candidates:List[Candidate] = oldBeam.collectCandidatesTrain(sentence, oracle)
+        val (finished, unfinished) = candidates.partition {
+          case Candidate(_, WrappedAction(Finish(), _, _), _) => true
+          case _ => false
         }
-        case Nil => // can be safely ignored
-      }
-      goldPath = finished.find(_.wrappedAction.isGold) map { _.path } // the most high scored path is regarded as gold (NOTE: current oracle find only one gold; so this process is redundant)
+        val updatedOutputPath:Option[StatePath] = finished.sortWith(_.score > _.score) match {
+          case top :: _ if (top.score > pathScore(currentOutputPath)) => Some(top.path)
+          case Nil => currentOutputPath
+        }
+        val updatedGoldPath:Option[StatePath] = finished.find(_.wrappedAction.isGold) map { _.path } // the most high scored path is regarded as gold (NOTE: current oracle find only one gold; so this process is redundant)
 
-      val sortedUnfinished = unfinished.sortWith(_.score > _.score)
-      beam = beam.resetQuick(sortedUnfinished)
-
-      if (!beam.existsGold && goldPath == None) { // early-update check; when goldPath has value, we wait for exhausting the beam
-        if (outputPath == None || (outputPath != None && beam.kbest(0).score > currentOutputScore)) {
-          outputPath = Some(beam.kbest(0))
-        }
-        if (goldPath == None) {
-          goldPath = unfinished.find(_.wrappedAction.isGold) map { _.path }
-        }
-        if (goldPath == None) {
-          println("BeamSearchDecoder.scala: cannot find gold tree; this may or may not be correct.")
-        }
-        return TrainingInstance(outputPath, goldPath)
+        val sortedUnfinished = unfinished.sortWith(_.score > _.score)
+        val newBeam = oldBeam.resetQuick(sortedUnfinished)
+        
+        // early-update check; when goldPath has value, we wait for exhausting the beam
+        if (!newBeam.existsGold && updatedGoldPath == None) {
+          val returnOutputPath = (updatedOutputPath, newBeam.kbest(0)) match {
+            case (None, best) => Some(best)
+            case (currentOutput, best) if (best.score > pathScore(currentOutput)) => Some(best)
+            case _ => updatedOutputPath
+          }
+          val returnGoldPath = unfinished.find(_.wrappedAction.isGold) map { _.path }
+          if (returnGoldPath == None) {
+            println("BeamSearchDecoder.scala: cannot find gold tree; this may or may not be correct.")
+          }
+          TrainingInstance(returnOutputPath, returnGoldPath)
+        } else findOutputAndGold(newBeam, updatedOutputPath, updatedGoldPath)
       }
     }
-    TrainingInstance(outputPath, goldPath)
+    findOutputAndGold(Beam.init(initialState), None, None)
+
+    // var beam = Beam.init(initialState)
+    // var outputPath:Option[StatePath],
+    // var goldPath:Option[StatePath]
+    // while (!beam.isEmpty) {
+    //   val candidates:List[Candidate] = beam.collectCandidatesTrain(sentence, oracle)
+    //   val (finished, unfinished) = candidates.partition {
+    //     case Candidate(_, WrappedAction(Finish(), _, _), _) => true
+    //     case _ => false
+    //   }
+    //   finished.sortWith(_.score > _.score) match {
+    //     case top :: _ => {
+    //       if (top.score > currentOutputScore) outputPath = Some(top.path)
+    //     }
+    //     case Nil => // can be safely ignored
+    //   }
+    //   goldPath = finished.find(_.wrappedAction.isGold) map { _.path } // the most high scored path is regarded as gold (NOTE: current oracle find only one gold; so this process is redundant)
+
+    //   val sortedUnfinished = unfinished.sortWith(_.score > _.score)
+    //   beam = beam.resetQuick(sortedUnfinished)
+
+    //   if (!beam.existsGold && goldPath == None) { // early-update check; when goldPath has value, we wait for exhausting the beam
+    //     if (outputPath == None || (outputPath != None && beam.kbest(0).score > currentOutputScore)) {
+    //       outputPath = Some(beam.kbest(0))
+    //     }
+    //     if (goldPath == None) {
+    //       goldPath = unfinished.find(_.wrappedAction.isGold) map { _.path }
+    //     }
+    //     if (goldPath == None) {
+    //       println("BeamSearchDecoder.scala: cannot find gold tree; this may or may not be correct.")
+    //     }
+    //     return TrainingInstance(outputPath, goldPath)
+    //   }
+    // }
+    // TrainingInstance(outputPath, goldPath)
   }
 }
