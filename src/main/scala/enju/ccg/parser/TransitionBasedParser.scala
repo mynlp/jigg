@@ -18,7 +18,6 @@ trait TransitionBasedParser {
   def rule:Rule
 
   def possibleActions(state:State, sentence:CandAssignedSentence):List[Action] = {
-    def optActionToList(action:Option[Action]) = action map { _ :: Nil } getOrElse(Nil)
     def possibleCombine:List[Action] = {
       val actions:Option[List[Action]] = for {
         s1 <- state.s1; s0 <- state.s0

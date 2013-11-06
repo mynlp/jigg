@@ -62,7 +62,6 @@ class StaticArcStandardOracleTest extends FunSuite {
     
     var prev:State = InitialFullState
     goldActions.foreach { action =>
-      println(action)
       prev = checkAction(prev, action)
     }
   }
