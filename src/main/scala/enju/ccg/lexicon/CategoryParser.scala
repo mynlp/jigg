@@ -40,7 +40,7 @@ object CategoryParser {
 
       val catTree = parseToCategoryTree(catStr)
       catTree.setSurface
-      catTree.foreachLeaf((tree:CategoryTree) => {tree.surface = simplify(tree.surface)})
+      catTree.foreachLeaf((tree:CategoryTree) => tree.surface = simplify(tree.surface))
       catTree
     }
     def parseToCategoryTree(catStr:String):CategoryTree = {
@@ -108,13 +108,12 @@ object CategoryParser {
       AtomicCategory(0, getBasicTag(catStr), extractAVM(avmStr))
     }
     def getBasicTag(catStr:String) = catStr.indexOf('[') match {
-      case -1 => { // e.g. NP or S1
+      case -1 => // e.g. NP or S1
         var j = catStr.size - 1
         while (catStr(j).isDigit) j -= 1
         catStr.substring(0, j + 1)
-      }
       case begin => catStr.substring(0, begin)
-    }    
+    }
   }
   
   def parse(catStr:String):Category = {

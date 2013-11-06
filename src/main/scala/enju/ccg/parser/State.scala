@@ -1,6 +1,6 @@
 package enju.ccg.parser
 
-import enju.ccg.lexicon.Category
+import enju.ccg.lexicon.{Category, Point}
 import enju.ccg.lexicon.Direction._
 
 import scala.collection.mutable.Stack
@@ -11,6 +11,7 @@ case class WrappedCategory(category:Category,
                            headDir:Direction,
                            begin:Int, end:Int) {
   def cat = category.id
+  def toDerivationPoint = Point(begin, end, category)
 }
 
 sealed trait State {
@@ -44,7 +45,7 @@ case class StackedNode(item:WrappedCategory,
   def isUnary = left != None && right == None
 }
 
-object InitialFullState extends FullState(Array.empty[StackedNode], 0)
+object InitialFullState extends FullState(Array.empty[StackedNode], 0, true)
 
 case class FullState(private val stack:Array[StackedNode],
                      override val j:Int,

@@ -27,10 +27,10 @@ class MaxentMultiTagger(indexer: FeatureIndexer,
 
   def trainWithCache(sentences:Seq[GoldSuperTaggedSentence], numIters:Int) = {
     println("feature extraction start...")
-    val cachedInstances:Seq[Option[Instance]] = sentences.zipWithIndex.flatMap { case (sentence, j) => {
+    val cachedInstances:Seq[Option[Instance]] = sentences.zipWithIndex.flatMap { case (sentence, j) =>
       if (j % 100 == 0) print(j + "\t/" + sentences.size + " done \r")
-      (0 until sentence.size) map { i => getTrainingInstance(sentence, i, sentence.cat(i).get.id) }
-    }}
+      (0 until sentence.size) map { i => getTrainingInstance(sentence, i, sentence.cat(i).id) }
+    }
     println("\ndone.")
     val numEffectiveInstances = cachedInstances.filter(_ != None).size
 
@@ -44,14 +44,14 @@ class MaxentMultiTagger(indexer: FeatureIndexer,
     println(labelNum2Count)
     
     
-    (0 until numIters).foreach { j => {
+    (0 until numIters).foreach { j =>
       val shuffledInstances = Random.shuffle(cachedInstances)
       var correct = 0
       shuffledInstances.foreach {
         _ foreach { e => if (trainInstance(e)) correct += 1 }
       }
       println("accuracy (" + j + "): " + (correct.toDouble / numEffectiveInstances.toDouble))
-    }}
+    }
   }
   def trainInstance(instance:Instance):Boolean = {
     val pred = classifier.predict(instance.items).getP1
@@ -75,16 +75,14 @@ class MaxentMultiTagger(indexer: FeatureIndexer,
   def unlabeledToTestInstance(features:Array[UF], candidateLabels:Array[Int]) =
     TestInstance(getItems(features, candidateLabels, { f => indexer.getOrElse(f, -1) }))
   
-  def getItems(features:Array[UF], candidateLabels:Array[Int], f2index:(LF => Int)): Array[Example[Int]] = candidateLabels map {
-    label => {
-      val indexes = new Array[Int](features.size)
-      for (i <- 0 until indexes.size) indexes(i) = f2index(features(i).assignLabel(label))
-      var e = new Example(label)
-      e.setFeatureQuick(indexes); e
-    }
+  def getItems(features:Array[UF], candidateLabels:Array[Int], f2index:(LF => Int)): Array[Example[Int]] = candidateLabels map { label =>
+    val indexes = new Array[Int](features.size)
+    for (i <- 0 until indexes.size) indexes(i) = f2index(features(i).assignLabel(label))
+    var e = new Example(label)
+    e.setFeatureQuick(indexes); e
   }
   def candSeq(sentence:TaggedSentence, beta:Double): Array[Seq[Category]] =
-  (0 until sentence.size).map { i => {
+  (0 until sentence.size).map { i =>
     val instance = getTestInstance(sentence, i)
     val dist = classifier.calcLabelProbs(instance.items)
     val (max, argmax) = dist.zipWithIndex.foldLeft((0.0, 0)) { case ((max, argmax), (p,i)) => if (p > max) (p, i) else (max, argmax) }
@@ -92,5 +90,5 @@ class MaxentMultiTagger(indexer: FeatureIndexer,
     instance.items.zip(dist).filter { case (e, p) => p >= threshold }.map {
       case (e, _) => dict.getCategory(e.getLabel)
     }.toSeq
-  }}.toArray
+  }.toArray
 }

@@ -1,7 +1,7 @@
 package enju.ccg.parser
 
 import enju.ccg.lexicon.Category
-import enju.ccg.lexicon.Direction._
+import enju.ccg.lexicon.Direction.Direction
 
 /**
  * action and corresponding label; for speed reason, label should not have the actual object such as category, so we convert Action object into corresponding Label object when filling feature templates

@@ -6,11 +6,10 @@ import scala.collection.mutable.ArrayBuffer
 class CategoryManager extends StringBaseNumberedManager[Category] with OptionReturner[Category] {
   override def createWithId(original:Category): Category = original match {
     case AtomicCategory(id, base, avm) => AtomicCategory(newId, base, avm)
-    case ComplexCategory(id, left, right, slash) => {
+    case ComplexCategory(id, left, right, slash) =>
       val leftWithId = assignID(left)
       val rightWithId = assignID(right)
       ComplexCategory(newId, leftWithId, rightWithId, slash)
-    }
   }
   override def getOrNone(str:String): Option[Category] = str2objIndex.get(str) match {
     case Some(i) => Some(objects(i))

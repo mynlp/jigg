@@ -7,12 +7,11 @@ class JapanesePoSManager extends PoSManager {
   override val unknown = getOrCreate("UNK_POS/UNK_CONJUGATION")
 
   override def createWithId(original:PoS): PoS = original match {
-    case JapanesePoS(id, v, conj, hierar, hierarConj) => {
+    case JapanesePoS(id, v, conj, hierar, hierarConj) =>
       val withIdConj = assignID(conj)
       val withIdHierar = hierar.map { assignID(_) }
       val withIdHierarConj = hierarConj.map { assignID(_) }
       JapanesePoS(newId, v, withIdConj, withIdHierar, withIdHierarConj)
-    }
     case Conjugation(id, v) => Conjugation(newId, v)
     case FineTag(id, v) => FineTag(newId, v)
     case FineWithConjugation(id, v) => FineWithConjugation(newId, v)
@@ -87,7 +86,7 @@ class JapaneseDictionary(categoryDictionary:CategoryDictionary = new Word2Catego
     Source.fromFile(lexiconPath).getLines.foreach {
       line => line.trim.split("\\s") match {
         case a if a.size >= 2 => (a(0), a.drop(1)) match {
-          case (wordPos, categories) => {
+          case (wordPos, categories) =>
             val sep = wordPos.indexOf("/")
             val candidates = categories.map { c => getCategoryOrCreate(templateMap(c)) }.toArray
             val wordStr = wordPos.substring(0, sep)
@@ -95,7 +94,6 @@ class JapaneseDictionary(categoryDictionary:CategoryDictionary = new Word2Catego
             val pos = getPoSOrCreate(wordPos.substring(sep+1))
             if (wordStr == unkType) categoryDictionary.registUnkCandiates(pos, candidates)
             else categoryDictionary.registCandidates(word, pos, candidates)
-          }
         }
         case _ => sys.error("fail to parse lexicon file at line : " + line)
       }

@@ -2,6 +2,8 @@ package enju.ccg
 
 import lexicon._
 
+import scala.collection.mutable.HashMap
+
 trait ShiftReduceParsing extends Problem {
   var indexer: parser.FeatureIndexer = _ 
   var weights: ml.WeightVector = _
@@ -18,7 +20,7 @@ trait ShiftReduceParsing extends Problem {
     
     val perceptron = new ml.Perceptron[parser.ActionLabel](weights)
     val oracleGen = parser.StaticOracleGenerator
-    val rule = extractCFGRuleFrom(derivations)
+    val rule = parser.CFGRule.extractRulesFromDerivations(derivations, headFinder)
     val initialState = parser.InitialFullState
     
     val decoder = new parser.BeamSearchDecoder(indexer,
@@ -29,9 +31,6 @@ trait ShiftReduceParsing extends Problem {
                                                ParserOptions.beam,
                                                parser.InitialFullState)
     decoder.trainSentences(trainingSentences, derivations, TrainingOptions.numIters)
-  }
-  def extractCFGRuleFrom(derivations: Array[Derivation]) = {
-    sys.error("TODO: not implemented")
   }
   def getTrainingSentenceAndDerivations:(Array[TrainSentence],Array[Derivation]) = {
     val tagging = superTagging
@@ -47,5 +46,5 @@ trait ShiftReduceParsing extends Problem {
 class JapaneseShiftReduceParsing extends ShiftReduceParsing {
   override def superTagging = new JapaneseSuperTagging
   override def headFinder:parser.HeadFinder = parser.JapaneseHeadFinder
-
+  
 }

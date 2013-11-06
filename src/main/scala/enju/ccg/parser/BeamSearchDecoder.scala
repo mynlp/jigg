@@ -16,7 +16,6 @@ class BeamSearchDecoder(val indexer:FeatureIndexer,
                         override val rule:Rule,
                         val beamSize:Int,
                         val initialState:State) extends TransitionBasedParser {
-  
 
   case class Candidate(path:StatePath, wrappedAction:WrappedAction, score:Double)
 
@@ -26,36 +25,35 @@ class BeamSearchDecoder(val indexer:FeatureIndexer,
     def reset(candidates:List[Candidate]) = resetQuick(candidates.sortWith(_.score > _.score))
     def resetQuick(sortedCandidates:List[Candidate]) = {
       val newKBest = sortedCandidates.take(beamSize).map {
-        case Candidate(path, wrappedAction, score) => {
+        case Candidate(path, wrappedAction, score) =>
           val newState = path.state.proceed(wrappedAction.v, wrappedAction.isGold)
           StatePath(newState, wrappedAction :: path.actionPath, score)
-        }
       }
       Beam(newKBest)
     }
     def existsGold = kbest.exists(_.state.isGold)
 
-    def collectCandidatesTrain(sentence:TrainSentence, oracle:Oracle) = kbest.flatMap { path => {
+    def collectCandidatesTrain(sentence:TrainSentence, oracle:Oracle) = kbest.flatMap { path =>
       // currently (in deterministic-oracle), oracle actions are only defined to the gold state
       val goldActions:Seq[Action] = if (path.state.isGold) oracle.goldActions(path.state) else Nil
       // partial features (without label)
       val unlabeledFeatures = extractors.extractUnlabeledFeatures(sentence, path.state)
 
-      possibleActions(path.state, sentence).map { action => {
+      possibleActions(path.state, sentence).map { action =>
         val isGold = goldActions.contains(action) // support non-deterministic oracle; currently, goldActions only contain one element so this operation is simple equality check
         val featureIdxs = unlabeledFeatures.map { _.assignLabel(action.toLabel) }.map { indexer.getIndex(_) }.toArray
         val sumScore = path.score + classifier.calcScore(featureIdxs)
         Candidate(path, WrappedAction(action, isGold, featureIdxs), sumScore)
-      }}
-    }}
-    def collectCandidatesTest(sentence:TestSentence) = kbest.flatMap { path => {
+      }
+    }
+    def collectCandidatesTest(sentence:TestSentence) = kbest.flatMap { path =>
       val unlabeledFeatures = extractors.extractUnlabeledFeatures(sentence, path.state)
-      possibleActions(path.state, sentence).map { action => {
+      possibleActions(path.state, sentence).map { action =>
         val featureIdxs = unlabeledFeatures.map { _.assignLabel(action.toLabel) }.map { indexer.getOrElse(_, -1) }.toArray
         val sumScore = path.score + classifier.calcScore(featureIdxs)
         Candidate(path, WrappedAction(action, false), sumScore) // do not preserve (partial) features at test time
-      }}
-    }}
+      }
+    }
   }
   object Beam {
     def init(initState:State): Beam = new Beam(StatePath(initState, Nil) :: Nil)
@@ -63,11 +61,11 @@ class BeamSearchDecoder(val indexer:FeatureIndexer,
   case class TrainingInstance(predictedPath:Option[StatePath], goldPath:Option[StatePath])
 
   def trainSentences(sentences: Array[TrainSentence], golds:Array[Derivation], numIters:Int):Unit = {
-    (0 until numIters).foreach { i => {
+    (0 until numIters).foreach { i =>
       sentences.zip(golds).zipWithIndex.foreach {
         case ((sentence, derivation), numProcessed) => trainSentence(sentence, derivation)
       }
-    }}
+    }
   }
   def trainSentence(sentence: TrainSentence, gold:Derivation): Unit = trainInstance(getTrainingInstance(sentence, gold))
 
@@ -107,7 +105,7 @@ class BeamSearchDecoder(val indexer:FeatureIndexer,
           }
           val returnGoldPath = unfinished.find(_.wrappedAction.isGold) map { _.path }
           if (returnGoldPath == None) {
-            println("BeamSearchDecoder.scala: cannot find gold tree; this may or may not be correct.")
+            println("BeamSearchDecoder.scala: cannot find gold tree; this may or may not be correct?")
           }
           TrainingInstance(returnOutputPath, returnGoldPath)
         } else findOutputAndGold(newBeam, updatedOutputPath, updatedGoldPath)
@@ -125,9 +123,8 @@ class BeamSearchDecoder(val indexer:FeatureIndexer,
     //     case _ => false
     //   }
     //   finished.sortWith(_.score > _.score) match {
-    //     case top :: _ => {
+    //     case top :: _ =>
     //       if (top.score > currentOutputScore) outputPath = Some(top.path)
-    //     }
     //     case Nil => // can be safely ignored
     //   }
     //   goldPath = finished.find(_.wrappedAction.isGold) map { _.path } // the most high scored path is regarded as gold (NOTE: current oracle find only one gold; so this process is redundant)

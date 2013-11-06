@@ -78,10 +78,9 @@ trait SuperTagging extends Problem {
   }
   def evaluateTokenSentenceAccuracy(sentences:Array[TrainSentence]) = {
     val (numCorrect, numComplete) = sentences.foldLeft(0, 0) {
-      case ((cor, comp), sent) => {
+      case ((cor, comp), sent) =>
         val numCorrectToken = sent.numCandidatesContainGold
         (cor + numCorrectToken, comp + (if (numCorrectToken == sent.size) 1 else 0))
-      }
     }
     val numInstances = sentences.foldLeft(0) { _ + _.size }
     println("token accuracy: " + numCorrect.toDouble / numInstances.toDouble)
@@ -102,7 +101,7 @@ trait SuperTagging extends Problem {
   def saveFeaturesToText = {
     import java.io.FileWriter
     val fw = new FileWriter(OutputOptions.taggerFeaturePath)
-    indexer.foreach { case (k, v) => {
+    indexer.foreach { case (k, v) =>
       val featureString = k match {
         case SuperTaggingFeature(unlabeled, label) => (unlabeled match {
           case unlabeled: FeatureWithoutDictionary => unlabeled.mkString
@@ -110,7 +109,7 @@ trait SuperTagging extends Problem {
         }) + "_=>_" + dict.getCategory(label)
       }
       fw.write(featureString + " " + weights.get(v) + "\n")
-    }}
+    }
     fw.flush
     fw.close
   }

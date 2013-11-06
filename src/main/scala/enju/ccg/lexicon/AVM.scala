@@ -32,10 +32,9 @@ object AVM {
     Source.fromFile(path).getLines.zipWithIndex.foreach {
       case (line, i) => line.split("\t") match { 
         case a if a.size == 2 => (a(0), a(1)) match {
-          case (k, vs) => {
+          case (k, vs) =>
             keys += k
             vs.trim.split("\\s+").foreach { v2keyIdx += _ -> i }
-          }
         }
         case _ => throw new RuntimeException("fail to parse the AVM setting file at line " + i + ": " + line)
       }

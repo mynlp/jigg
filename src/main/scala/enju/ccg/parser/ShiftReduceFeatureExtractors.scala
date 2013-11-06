@@ -24,23 +24,19 @@ class ZhangExtractor extends FeatureExtractor {
   import FeatureTypes.{ZhangTemplate => TMP}
   def addFeatures(ctx:Context, features:ArrayBuffer[UF]) = {
     def getItemsAt(s:WrappedCategory) = (ctx.word(s.head), ctx.pos(s.head), s.cat)
-    ctx.s0 foreach {
-      s0 => {
-        val (wS0, pS0, cS0) = getItemsAt(s0)
-        features += WP(wS0, pS0, TMP.wS0_pS0)
-        features += C(cS0, TMP.cS0)
-        features += PC(pS0, cS0, TMP.pS0_cS0)
-        features += WC(wS0, cS0, TMP.wS0_cS0)
-      }
+    ctx.s0 foreach { s0 =>
+      val (wS0, pS0, cS0) = getItemsAt(s0)
+      features += WP(wS0, pS0, TMP.wS0_pS0)
+      features += C(cS0, TMP.cS0)
+      features += PC(pS0, cS0, TMP.pS0_cS0)
+      features += WC(wS0, cS0, TMP.wS0_cS0)
     }
-    ctx.s1 foreach {
-      s1 => {
-        val (wS1, pS1, cS1) = getItemsAt(s1)
-        features += WP(wS1, pS1, TMP.wS1_pS1)
-        features += C(cS1, TMP.cS1)
-        features += PC(pS1, cS1, TMP.pS1_cS1)
-        features += WC(wS1, cS1, TMP.wS1_cS1)
-      }
+    ctx.s1 foreach { s1 =>
+      val (wS1, pS1, cS1) = getItemsAt(s1)
+      features += WP(wS1, pS1, TMP.wS1_pS1)
+      features += C(cS1, TMP.cS1)
+      features += PC(pS1, cS1, TMP.pS1_cS1)
+      features += WC(wS1, cS1, TMP.wS1_cS1)
     }
   }
 }

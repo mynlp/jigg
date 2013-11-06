@@ -20,11 +20,10 @@ trait NumberedManager[T<:Numbered[_]] extends Serializable {
     require(original.id == 0, "Object given to assignID " + original + " have already have an id: " + original.id)
     canonicalMap.get(original) match {
       case Some(withId) => withId
-      case None => {
+      case None =>
         val withId = createWithId(original)
         addEntry(original, withId)
         withId
-      }
     }
   }
   protected def createWithId(original:T): T // this is a helper called from assignID; please implement this to receive non registered original object and then return the object with id assigned
@@ -57,11 +56,10 @@ trait StringBaseNumberedManager[T<:Numbered[_]] extends NumberedManager[T] {
   override type Input = String
   override def getOrCreate(str:String): T = str2objIndex.get(str) match {
     case Some(i) => objects(i)
-    case None => {
+    case None =>
       val obj = assignID(createCanonicalInstance(str))
       str2objIndex += str -> obj.id
       obj
-    }
   }
   override def getOrNone(str:String): Option[T] = str2objIndex.get(str) map(objects(_)) // please override this when one want to change the search behavior of objects; see CategoryManager for example.
 
