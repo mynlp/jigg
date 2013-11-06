@@ -1,6 +1,6 @@
 package enju.ccg.parser
 
-import enju.ccg.lexicon.{PoS, Word, Category, TrainSentence, Derivation, BinaryChildren, UnaryChild}
+import enju.ccg.lexicon.{PoS, Word, Category, TrainSentence, Derivation, BinaryChildrenPoints, UnaryChildPoint}
 import enju.ccg.lexicon.Direction._
 
 /**
@@ -20,31 +20,27 @@ class StaticArcStandardOracle(val sentence:TrainSentence, val gold:Derivation, v
   override def goldActions(state:State) = {
     def isFinished = state.j == sentence.size && onlyContainRootNode
     def onlyContainRootNode = (state.s1, state.s0) match {
-      case (None, Some(s0)) => s0.category == gold.root
+      case (None, Some(s0)) => s0.toDerivationPoint == gold.root
       case _ => false
     }
     def combineAction: Option[Action] = for {
       s1 <- state.s1; s0 <- state.s0
-      combinedCategory <- rule.unify(s1.category, s0.category)
-      BinaryChildren(left, right) <- gold.get(s1.begin, s0.end, combinedCategory)
-      if s1.category == left.category && s0.category == right.category
-    } yield { Combine(combinedCategory, directionAfterCombine(s1.head, s0.head)) }
+      goldParent <- gold.parentCategory(BinaryChildrenPoints(s1.toDerivationPoint, s0.toDerivationPoint))
+    } yield { Combine(goldParent, directionAfterCombine(s1.head, s0.head)) }
     
     def directionAfterCombine(l:Int, r:Int) = rule.headFinder.get(sentence.pos(l), sentence.pos(r))
     def unaryAction: Option[Action] = for {
       s0 <- state.s0
-      raisedCategory <- rule.raise(s0.category)
-      UnaryChild(p) <- gold.get(s0.begin, s0.end, raisedCategory)
-      if s0.category == p.category
-    } yield { Unary(raisedCategory) }
+      goldParent <- gold.parentCategory(UnaryChildPoint(s0.toDerivationPoint))
+    } yield { Unary(goldParent) }
     
     require (state.isGold)
     val retAction = if (isFinished) Finish() else combineAction match {
       case Some(action) => action
       case None => unaryAction match {
         case Some(action) => action
-        case None if state.j < sentence.size => Shift(sentence.cat(state.j).get)
-        case _ => throw new RuntimeException("ERROR: could not find any gold actions")
+        case None if state.j < sentence.size => Shift(sentence.cat(state.j))
+        case _ => sys.error("ERROR: could not find any gold actions")
       }
     }
     List(retAction) // only one element is valid

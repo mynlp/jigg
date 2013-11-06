@@ -19,17 +19,27 @@ trait TransitionBasedParser {
 
   def possibleActions(state:State, sentence:CandAssignedSentence):List[Action] = {
     def optActionToList(action:Option[Action]) = action map { _ :: Nil } getOrElse(Nil)
-    def possibleCombine:List[Action] = optActionToList(for {
+    def possibleCombine:List[Action] = {
+      val actions:Option[List[Action]] = for {
         s1 <- state.s1; s0 <- state.s0
-        combinedCategory <- rule.unify(s1.category, s0.category)
-      } yield Combine(combinedCategory, rule.headFinder.get(sentence.pos(s1.head), sentence.pos(s0.head))))
-    def possibleUnary:List[Action] = optActionToList(
-      state.s0 flatMap { s0 => rule.raise(s0.category) } map { Unary(_) })
+        combinedCategories <- rule.unify(s1.category, s0.category)
+      } yield combinedCategories.map {
+        Combine(_, rule.headFinder.get(sentence.pos(s1.head), sentence.pos(s0.head)))
+      }.toList
+      actions getOrElse Nil
+    }
+    def possibleUnary:List[Action] = {
+      val actions:Option[List[Action]] = for {
+        s0 <- state.s0
+        parentCategories <- rule.raise(s0.category)
+      } yield parentCategories.map { Unary(_) }.toList
+      actions getOrElse Nil
+    }
     def possibleShifts:List[Action] = if (state.j < sentence.size) sentence.cand(state.j).map { Shift(_) }.toList else Nil
     def addFinishIfNecessary(actions:List[Action]) = 
       // TODO: this procedure might be unappropriate
       actions match { case Nil => Finish() :: actions; case _ => actions }
-      // this latter adds Finish action regardness of whether there are other other actions
+      // this latter adds Finish action regardness of whether there are other actions
       // if (state.j >= sentence.size) Finish() :: actions else actions
     val actions = possibleCombine ::: possibleUnary ::: possibleShifts
     addFinishIfNecessary(actions)

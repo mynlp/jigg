@@ -16,7 +16,7 @@ trait PoSSeq extends hasSize {
   def pos(i:Int) = posSeq(i)
 }
 trait GoldTagSeq extends hasSize {
-  def catSeq:Seq[Option[Category]]
+  def catSeq:Seq[Category]
   def cat(i:Int) = catSeq(i)
 }
 trait CategoryCandSeq  extends hasSize {
@@ -50,10 +50,10 @@ class GoldSuperTaggedSentence(
   override val wordSeq:Seq[Word],
   override val baseSeq:Seq[Word],
   override val posSeq:Seq[PoS],
-  override val catSeq:Seq[Option[Category]]) extends Sentence(wordSeq) with TaggedSentence with GoldTagSeq {
+  override val catSeq:Seq[Category]) extends Sentence(wordSeq) with TaggedSentence with GoldTagSeq {
   require (wordSeq.size == posSeq.size && posSeq.size == catSeq.size)
 
-  def this(s:TaggedSentence, catSeq:Seq[Option[Category]]) = this(s.wordSeq, s.baseSeq, s.posSeq, catSeq)
+  def this(s:TaggedSentence, catSeq:Seq[Category]) = this(s.wordSeq, s.baseSeq, s.posSeq, catSeq)
   override def size = wordSeq.size
 
   override type AssignedSentence = TrainSentence
@@ -77,7 +77,7 @@ case class TrainSentence(
   override val wordSeq:Seq[Word],
   override val baseSeq:Seq[Word],
   override val posSeq:Seq[PoS],
-  override val catSeq:Seq[Option[Category]],
+  override val catSeq:Seq[Category],
   override val candSeq:Seq[Seq[Category]]) extends GoldSuperTaggedSentence(wordSeq, baseSeq, posSeq, catSeq) with CandAssignedSentence {
   require (wordSeq.size == posSeq.size && posSeq.size == catSeq.size &&  catSeq.size == candSeq.size)
   
@@ -86,7 +86,7 @@ case class TrainSentence(
 
   def containsNoGoldWord = catSeq.contains(None)
   def numCandidatesContainGold = candSeq.zip(catSeq).foldLeft(0) {
-    case (n, (cand, Some(gold))) => n + (if (cand.contains(gold)) 1 else 0)
+    case (n, (cand, gold)) if (cand.contains(gold)) => n + 1
     case (n, _) => n
   }
 }
