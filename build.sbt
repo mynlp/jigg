@@ -18,13 +18,13 @@ mainClass in assembly := Some("enju.ccg.Driver")
 
 javacOptions ++= Seq("-Xlint:all")
 
-resolvers += Resolver.sonatypeRepo("snapshots")
+scalacOptions ++= Seq("-deprecation", "-feature")
 
 libraryDependencies += "com.novocode" % "junit-interface" % "0.10-M4" % "test->default"
 
 libraryDependencies += "com.googlecode.json-simple" % "json-simple" % "1.1"
 
-libraryDependencies += "org.scalatest" %% "scalatest" % "1.9.2" % "test"
+libraryDependencies += "org.scalatest" % "scalatest_2.10" % "2.0" % "test"
 
 libraryDependencies ++= Seq(
     "junit" % "junit" % "4.10",
