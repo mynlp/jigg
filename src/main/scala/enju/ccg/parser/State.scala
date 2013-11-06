@@ -32,6 +32,9 @@ sealed trait State {
   def s0h:Option[WrappedCategory]
   def s1h:Option[WrappedCategory]
 
+  def s0u:Option[WrappedCategory]
+  def s1u:Option[WrappedCategory]
+
   def j:Int // the top position of buffer
   def isGold:Boolean // whether this state potentially leads to the gold tree (only used when training)
   def proceed(action:Action, isGold:Boolean):State
@@ -67,14 +70,23 @@ case class FullState(private val stack:Array[StackedNode],
   override def s0h = if (stack.size > 0) headChild(stack(stack.size - 1)) else None
   override def s1h = if (stack.size > 1) headChild(stack(stack.size - 2)) else None
 
-  private def leftCategoryIfHeadIsLeft(node:StackedNode):Option[WrappedCategory] = node match {
+  override def s0u = if (stack.size > 0) childCategoryOfUnary(stack(stack.size - 1)) else None
+  override def s1u = if (stack.size > 1) childCategoryOfUnary(stack(stack.size - 2)) else None
+
+  private def leftCategoryIfHeadIsLeft(node:StackedNode):Option[WrappedCategory] = if (node.isUnary) None else node match {
     case StackedNode(WrappedCategory(_,_,Left,_,_),Some(left),_) => Some(left.item)
     case _ => None
   }
-  private def rightCategoryIfHeadIsRight(node:StackedNode):Option[WrappedCategory] = node match {
+  private def rightCategoryIfHeadIsRight(node:StackedNode):Option[WrappedCategory] = if (node.isUnary) None else node match {
     case StackedNode(WrappedCategory(_,_,Right,_,_),_,Some(right)) => Some(right.item)
     case _ => None
   }
+  private def childCategoryOfUnary(node:StackedNode):Option[WrappedCategory] = if (node.isUnary) {
+    node match {
+      case StackedNode(WrappedCategory(_,_,Left,_,_),Some(left),_) => Some(left.item)
+      case _ => None
+    }
+  } else None
   private def headChild(node:StackedNode):Option[WrappedCategory] = node match { 
     case StackedNode(WrappedCategory(_,_,dir,_,_),left,right) => if (dir == Left) left match {
       case Some(left) => Some(left.item); case _ => None

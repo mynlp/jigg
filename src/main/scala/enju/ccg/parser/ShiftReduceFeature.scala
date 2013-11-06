@@ -80,15 +80,18 @@ object FeatureTypes {
   
   object ZhangTemplate extends Enumeration {
     type ZhangTemplate = Value
-    val wS0_pS0, cS0, pS0_cS0, wS0_cS0, wS1_pS1, cS1, pS1_cS1, wS1_cS1, pS2_cS2, wS2_cS2, pS3_cS3, wS3_cS3 = Value // 1
+    val wS0_pS0, cS0, pS0_cS0, wS0_cS0 = Value
+    val wS1_pS1, cS1, pS1_cS1, wS1_cS1 = Value
+    val pS2_cS2, wS2_cS2 = Value
+    val pS3_cS3, wS3_cS3 = Value // 1
 
     val wQ0_pQ0, wQ1_pQ1, wQ2_pQ2, wQ3_pQ3 = Value // 2
 
     val pS0L_cS0L, wS0L_cS0L, pS0R_cS0R, wS0R_cS0R, pS0U_cS0U, wS0U_cS0U, pS1L_cS1L, wS1L_cS1L, pS1R_cS1R, wS1R_cS1R, pS1U_cS1U, wS1U_cS1U = Value // 3
 
     val wS0_cS0_wS1_cS1, wS1_cS0, wS0_cS1, cS0_cS1 = Value
-    val wS0_cS0_wQ0_pQ0, wQ0_pQ0_cS0, wS0_cS0_pQ0, pQ0_cS0 = Value
-    val wS1_cS1_wQ0_pQ0, wQ0_pQ0_cS1, wS1_cS1_pQ0, pQ0_cS1 = Value // 4
+    val wS0_cS0_wQ0_pQ0, wQ0_pQ0_cS0, wS0_pQ0_cS0, pQ0_cS0 = Value
+    val wS1_cS1_wQ0_pQ0, wQ0_pQ0_cS1, wS1_pQ0_cS1, pQ0_cS1 = Value // 4
     
     val wS0_pQ0_cS0_cS1, wS1_pQ0_cS0_cS1, wQ0_pQ0_cS0_cS1 = Value
     val pQ0_cS0_cS1, pS0_pS1_pQ0, wS0_pQ0_pQ1_cS0, wQ0_pQ0_pQ1_cS0, wQ1_pQ0_pQ1_cS0 = Value

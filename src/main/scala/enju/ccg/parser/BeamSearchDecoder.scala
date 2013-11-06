@@ -6,7 +6,7 @@ import enju.ccg.ml.{FeatureBase, Perceptron}
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 
 class FeatureIndexer extends HashMap[LF, Int] {
-  def getIndex(key:LF) = getOrElse(key, size)
+  def getIndex(key:LF) = getOrElseUpdate(key, size)
 }
 
 class BeamSearchDecoder(val indexer:FeatureIndexer,
@@ -68,6 +68,7 @@ class BeamSearchDecoder(val indexer:FeatureIndexer,
           if (trainSentence(sentence, derivation)) correct += 1
       }
       println("accuracy (" + i + "): " + correct.toDouble / sentences.size.toDouble + " [" + correct + "]")
+      println("# features: " + indexer.size)
     }
   }
   def trainSentence(sentence: TrainSentence, gold:Derivation): Boolean =
