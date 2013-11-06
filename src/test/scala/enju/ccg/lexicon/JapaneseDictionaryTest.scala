@@ -1,9 +1,9 @@
 package enju.ccg.lexicon
 
 import org.scalatest.FunSuite
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.Matchers._
 
-class JapaneseDictionaryTest extends FunSuite with ShouldMatchers {
+class JapaneseDictionaryTest extends FunSuite {
   AVMInitializer.init
 
   def findPath(localPath:String) = getClass.getClassLoader.getResource(localPath).getPath

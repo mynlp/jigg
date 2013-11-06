@@ -1,8 +1,8 @@
 package enju.ccg.lexicon
 import org.scalatest.FunSuite
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.Matchers._
 
-class CategoryManagerTest extends FunSuite with ShouldMatchers {
+class CategoryManagerTest extends FunSuite {
   AVMInitializer.init
 
   test("the same child node should be assiged the same id") {

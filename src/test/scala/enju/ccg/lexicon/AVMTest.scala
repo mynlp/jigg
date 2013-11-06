@@ -1,9 +1,9 @@
 package enju.ccg.lexicon
 import org.scalatest.FunSuite
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.Matchers._
 import scala.collection.mutable.HashSet
 
-class AVMTest extends FunSuite with ShouldMatchers {
+class AVMTest extends FunSuite {
   AVMInitializer.init
 
   // the test below is no longer satisfiable

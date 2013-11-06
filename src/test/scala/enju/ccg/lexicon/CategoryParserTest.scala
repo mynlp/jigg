@@ -1,8 +1,8 @@
 package enju.ccg.lexicon
 import org.scalatest.FunSuite
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.Matchers._
 
-class CategoryParserTest extends FunSuite with ShouldMatchers {
+class CategoryParserTest extends FunSuite {
   AVMInitializer.init
   
   test("extractAVM") {
