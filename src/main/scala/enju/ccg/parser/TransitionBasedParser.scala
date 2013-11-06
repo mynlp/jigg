@@ -23,7 +23,11 @@ trait TransitionBasedParser {
         s1 <- state.s1; s0 <- state.s0
         combinedCategories <- rule.unify(s1.category, s0.category)
       } yield combinedCategories.map {
-        Combine(_, rule.headFinder.get(sentence.pos(s1.head), sentence.pos(s0.head)))
+        val leftNodeInfo = HeadFinder.NodeInfo(
+          sentence.pos(s1.head), s1.category, s1.headCategory)
+        val rightNodeInfo = HeadFinder.NodeInfo(
+          sentence.pos(s0.head), s0.category, s0.headCategory)
+        Combine(_, rule.headFinder.get(leftNodeInfo, rightNodeInfo))
       }.toList
       actions getOrElse Nil
     }

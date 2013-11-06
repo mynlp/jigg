@@ -6,8 +6,9 @@ import enju.ccg.lexicon.Direction._
 import scala.collection.mutable.Stack
 
 // the representation of a category with additional inofmration necessary for parsing process
-case class WrappedCategory(category:Category,
+case class WrappedCategory(category:Category, // category of the intermediate node
                            head:Int, // where the lexical head come from?
+                           headCategory:Category, // category of the terminal node of head position
                            headDir:Direction,
                            begin:Int, end:Int) {
   def cat = category.id
@@ -74,29 +75,33 @@ case class FullState(private val stack:Array[StackedNode],
   override def s1u = if (stack.size > 1) childCategoryOfUnary(stack(stack.size - 2)) else None
 
   private def leftCategoryIfHeadIsLeft(node:StackedNode):Option[WrappedCategory] = if (node.isUnary) None else node match {
-    case StackedNode(WrappedCategory(_,_,Left,_,_),Some(left),_) => Some(left.item)
+    case StackedNode(WrappedCategory(_,_,_,Left,_,_),Some(left),_) => Some(left.item)
     case _ => None
   }
   private def rightCategoryIfHeadIsRight(node:StackedNode):Option[WrappedCategory] = if (node.isUnary) None else node match {
-    case StackedNode(WrappedCategory(_,_,Right,_,_),_,Some(right)) => Some(right.item)
+    case StackedNode(WrappedCategory(_,_,_,Right,_,_),_,Some(right)) => Some(right.item)
     case _ => None
   }
   private def childCategoryOfUnary(node:StackedNode):Option[WrappedCategory] = if (node.isUnary) {
     node match {
-      case StackedNode(WrappedCategory(_,_,Left,_,_),Some(left),_) => Some(left.item)
-      case _ => None
+      case StackedNode(WrappedCategory(_,_,_,_,_,_),Some(left),_) => Some(left.item)
+      case _ => sys.error("never happen.")
     }
   } else None
-  private def headChild(node:StackedNode):Option[WrappedCategory] = node match { 
-    case StackedNode(WrappedCategory(_,_,dir,_,_),left,right) => if (dir == Left) left match {
-      case Some(left) => Some(left.item); case _ => None
-    } else right match {
-      case Some(right) => Some(right.item); case _ => None
+  private def headChild(node:StackedNode):Option[WrappedCategory] = if (node.isUnary) {
+    childCategoryOfUnary(node) 
+  } else {
+    node match {
+      case StackedNode(WrappedCategory(_,_,_,dir,_,_),left,right) => if (dir == Left) left match {
+        case Some(left) => Some(left.item); case _ => None
+      } else right match {
+        case Some(right) => Some(right.item); case _ => None
+      }
     }
   }
   override def proceed(action:Action, actionIsGold:Boolean):FullState = {
     def doShift(category:Category) = {
-      val wrappedCategory = WrappedCategory(category, j, Right, j, j + 1) // head = Right is meaningless
+      val wrappedCategory = WrappedCategory(category, j, category, Right, j, j + 1) // head = Right is meaningless
       val shiftingNewNode = StackedNode(wrappedCategory, None, None)
       val newStack = stack :+ shiftingNewNode // this data structure needs to copy the state objects here, which I hope have relatively small overhead (because stacked items are not so much)
       FullState(newStack, j + 1, actionIsGold)
@@ -108,6 +113,8 @@ case class FullState(private val stack:Array[StackedNode],
       val wrappedCategory = WrappedCategory(
         category,
         dir match { case Left => leftNode.item.head; case Right => rightNode.item.head },
+        dir match { case Left => leftNode.item.headCategory
+                    case Right => rightNode.item.headCategory },
         dir, leftNode.item.begin, rightNode.item.end)
       val combinedNode = StackedNode(wrappedCategory, Some(leftNode), Some(rightNode))
       val newStack = stack.dropRight(1)
@@ -116,7 +123,7 @@ case class FullState(private val stack:Array[StackedNode],
     }
     def doUnary(category:Category) = {
       val topNode = stack.last
-      val wrappedCategory = topNode.item match { case a => WrappedCategory(category, a.head, a.headDir, a.begin, a.end) }
+      val wrappedCategory = topNode.item match { case a => WrappedCategory(category, a.head, a.headCategory, a.headDir, a.begin, a.end) }
       val raisedNode = StackedNode(wrappedCategory, Some(topNode), None)
       val newStack = stack.clone
       newStack(newStack.size - 1) = raisedNode

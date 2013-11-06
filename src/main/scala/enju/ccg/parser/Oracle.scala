@@ -26,9 +26,13 @@ class StaticArcStandardOracle(val sentence:TrainSentence, val gold:Derivation, v
     def combineAction: Option[Action] = for {
       s1 <- state.s1; s0 <- state.s0
       goldParent <- gold.parentCategory(BinaryChildrenPoints(s1.toDerivationPoint, s0.toDerivationPoint))
-    } yield { Combine(goldParent, directionAfterCombine(s1.head, s0.head)) }
-    
-    def directionAfterCombine(l:Int, r:Int) = rule.headFinder.get(sentence.pos(l), sentence.pos(r))
+    } yield {
+      val leftNodeInfo = HeadFinder.NodeInfo(
+        sentence.pos(s1.head), s1.category, s1.headCategory)
+      val rightNodeInfo = HeadFinder.NodeInfo(
+        sentence.pos(s0.head), s0.category, s0.headCategory)
+      Combine(goldParent, rule.headFinder.get(leftNodeInfo, rightNodeInfo))
+    }
     def unaryAction: Option[Action] = for {
       s0 <- state.s0
       goldParent <- gold.parentCategory(UnaryChildPoint(s0.toDerivationPoint))
