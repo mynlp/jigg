@@ -89,5 +89,12 @@ case class TrainSentence(
     case (n, (cand, gold)) if (cand.contains(gold)) => n + 1
     case (n, _) => n
   }
+
+  def pickUpGoldCategory: TrainSentence = {
+    val newCandSeq = candSeq.zip(catSeq).map { case (cand, gold) =>
+      if (cand.contains(gold)) cand else cand :+ gold
+    }
+    this.copy(candSeq = newCandSeq);
+  }
 }
 

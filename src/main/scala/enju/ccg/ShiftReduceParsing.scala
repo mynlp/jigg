@@ -23,9 +23,14 @@ trait ShiftReduceParsing extends Problem {
     
     val perceptron = new ml.Perceptron[parser.ActionLabel](weights)
     val oracleGen = parser.StaticOracleGenerator
+    
+    println("extracting CFG rules from all derivations ...")
     val rule = parser.CFGRule.extractRulesFromDerivations(derivations, headFinder)
+    println("done.")
+
     val initialState = parser.InitialFullState
     
+    println("training start!")
     val decoder = new parser.BeamSearchDecoder(indexer,
                                                featureExtractors,
                                                perceptron,
@@ -38,8 +43,16 @@ trait ShiftReduceParsing extends Problem {
   def getTrainingSentenceAndDerivations:(Array[TrainSentence],Array[Derivation]) = {
     val tagging = superTagging
     tagging.loadModel
+    println("reading CCGBank sentences ...")
     val (sentences, derivations) = tagging.readCCGBank(trainPath, true)
-    (tagging.superTagToSentences(sentences).toArray, derivations)
+    println("done.")
+    
+    println("super tagging: assign candidate categories to sentences ...")
+    val trainSentences = tagging.superTagToSentences(sentences)
+    println("done.")
+    
+    val containGoldTrainSentence = trainSentences.map { _.pickUpGoldCategory }.toArray
+    (containGoldTrainSentence, derivations)
   }
   override def evaluate = {}
   override def predict = {}
