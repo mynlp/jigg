@@ -5,18 +5,21 @@ import lexicon._
 import scala.collection.mutable.HashMap
 
 trait ShiftReduceParsing extends Problem {
-  var indexer: parser.FeatureIndexer = _ 
+  var indexer: parser.FeatureIndexer = _
   var weights: ml.WeightVector = _
   
   def featureExtractors = {
     val extractionMethods = Array(new parser.ZhangExtractor)
     new parser.FeatureExtractors(extractionMethods)
   }
-  def superTagging:SuperTagging
-  def headFinder:parser.HeadFinder
+  def superTagging: SuperTagging
+  def headFinder: parser.HeadFinder
 
   override def train = { // asuming the model of SuperTagging is saved
     val (trainingSentences, derivations) = getTrainingSentenceAndDerivations
+
+    indexer = new parser.FeatureIndexer
+    weights = new ml.WeightVector
     
     val perceptron = new ml.Perceptron[parser.ActionLabel](weights)
     val oracleGen = parser.StaticOracleGenerator

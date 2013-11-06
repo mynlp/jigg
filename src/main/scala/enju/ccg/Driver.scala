@@ -6,7 +6,13 @@ object Driver {
   def addQuiet(args:Array[String]) = args ++ Array("-startMainTrack", "false")
   def main(args:Array[String]) = {
     val runner = new Runner
-    Execution.run(addQuiet(args), runner, "driver", DriverOptions, "input", InputOptions, "output", OutputOptions, "train", TrainingOptions, "dict", DictionaryOptions, "tagger", TaggerOptions)
+    Execution.run(addQuiet(args), runner, "driver", DriverOptions, 
+                  "input", InputOptions, 
+                  "output", OutputOptions, 
+                  "train", TrainingOptions, 
+                  "dict", DictionaryOptions, 
+                  "tagger", TaggerOptions, 
+                  "parser", ParserOptions)
   }
 }
 
@@ -20,7 +26,7 @@ class Runner extends Runnable {
         case Language.english => throw new UnsupportedOperationException
       }
       case ModelType.parser => DriverOptions.language match {
-        case Language.japanese => throw new UnsupportedOperationException
+        case Language.japanese => new JapaneseShiftReduceParsing
         case Language.english => throw new UnsupportedOperationException
       }
     }

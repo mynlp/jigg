@@ -43,6 +43,8 @@ class StaticArcStandardOracle(val sentence:TrainSentence, val gold:Derivation, v
         case _ => sys.error("ERROR: could not find any gold actions")
       }
     }
+    // println(state.print)
+    // println(retAction)
     List(retAction) // only one element is valid
   }
 }

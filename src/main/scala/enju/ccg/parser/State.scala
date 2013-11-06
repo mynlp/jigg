@@ -12,6 +12,8 @@ case class WrappedCategory(category:Category,
                            begin:Int, end:Int) {
   def cat = category.id
   def toDerivationPoint = Point(begin, end, category)
+  
+  override def toString = category + "(" + begin + ", " + head + ", " + end + ")"
 }
 
 sealed trait State {
@@ -33,7 +35,8 @@ sealed trait State {
   def j:Int // the top position of buffer
   def isGold:Boolean // whether this state potentially leads to the gold tree (only used when training)
   def proceed(action:Action, isGold:Boolean):State
-  
+
+  def print = List(s3,s2,s1,s0).collect{case Some(x)=>x}.mkString(" ") + " | " + "j=" + j
   //var superTagSeq:Array[Option[Category]] // assigned super-tags (this is necessary or not ?)
 }
 
@@ -79,38 +82,40 @@ case class FullState(private val stack:Array[StackedNode],
       case Some(right) => Some(right.item); case _ => None
     }
   }
-  override def proceed(action:Action, isGold:Boolean):FullState = action match {
-    case Shift(category) => doShift(category)
-    case Combine(category, dir) => doCombine(category, dir)
-    case Unary(category) => doUnary(category)
-    case Finish() => this // need to do anything?
-  }
-  def doShift(category:Category) = {
-    val wrappedCategory = WrappedCategory(category, j, Right, j, j + 1) // head = Right is meaningless
-    val shiftingNewNode = StackedNode(wrappedCategory, None, None)
-    val newStack = stack :+ shiftingNewNode // this data structure needs to copy the state objects here, which I hope have relatively small overhead (because stacked items are not so much)
-    FullState(newStack, j + 1, isGold)
-  }
-  def doCombine(category:Category, dir:Direction) = {
-    val leftNode = stack(stack.size - 2)
-    val rightNode = stack(stack.size - 1)
-    
-    val wrappedCategory = WrappedCategory(
-      category,
-      dir match { case Left => leftNode.item.head; case Right => rightNode.item.head },
-      dir, leftNode.item.begin, rightNode.item.end)
-    val combinedNode = StackedNode(wrappedCategory, Some(leftNode), Some(rightNode))
-    val newStack = stack.dropRight(1)
-    newStack(newStack.size - 1) = combinedNode
-    FullState(newStack, j, isGold)
-  }
-  def doUnary(category:Category) = {
-    val topNode = stack.last
-    val wrappedCategory = topNode.item match { case a => WrappedCategory(category, a.head, a.headDir, a.begin, a.end) }
-    val raisedNode = StackedNode(wrappedCategory, Some(topNode), None)
-    val newStack = stack.clone
-    newStack(newStack.size - 1) = raisedNode
-    FullState(newStack, j, isGold)
+  override def proceed(action:Action, actionIsGold:Boolean):FullState = {
+    def doShift(category:Category) = {
+      val wrappedCategory = WrappedCategory(category, j, Right, j, j + 1) // head = Right is meaningless
+      val shiftingNewNode = StackedNode(wrappedCategory, None, None)
+      val newStack = stack :+ shiftingNewNode // this data structure needs to copy the state objects here, which I hope have relatively small overhead (because stacked items are not so much)
+      FullState(newStack, j + 1, actionIsGold)
+    }
+    def doCombine(category:Category, dir:Direction) = {
+      val leftNode = stack(stack.size - 2)
+      val rightNode = stack(stack.size - 1)
+      
+      val wrappedCategory = WrappedCategory(
+        category,
+        dir match { case Left => leftNode.item.head; case Right => rightNode.item.head },
+        dir, leftNode.item.begin, rightNode.item.end)
+      val combinedNode = StackedNode(wrappedCategory, Some(leftNode), Some(rightNode))
+      val newStack = stack.dropRight(1)
+      newStack(newStack.size - 1) = combinedNode
+      FullState(newStack, j, actionIsGold)
+    }
+    def doUnary(category:Category) = {
+      val topNode = stack.last
+      val wrappedCategory = topNode.item match { case a => WrappedCategory(category, a.head, a.headDir, a.begin, a.end) }
+      val raisedNode = StackedNode(wrappedCategory, Some(topNode), None)
+      val newStack = stack.clone
+      newStack(newStack.size - 1) = raisedNode
+      FullState(newStack, j, actionIsGold)
+    }
+    action match {
+      case Shift(category) => doShift(category)
+      case Combine(category, dir) => doCombine(category, dir)
+      case Unary(category) => doUnary(category)
+      case Finish() => this // need to do anything?
+    }
   }
 }
 

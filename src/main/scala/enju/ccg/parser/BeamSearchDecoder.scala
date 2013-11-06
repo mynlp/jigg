@@ -80,16 +80,18 @@ class BeamSearchDecoder(val indexer:FeatureIndexer,
     def findOutputAndGold(oldBeam: Beam,
                           currentOutputPath:Option[StatePath],
                           currentGoldPath:Option[StatePath]): TrainingInstance = {
-      def pathScore(p:Option[StatePath]) = p map { _.score } getOrElse(0.0)
-      if (oldBeam.isEmpty) TrainingInstance(currentOutputPath, currentGoldPath) else {
+      def pathScore(p:Option[StatePath]) = p map { _.score } getOrElse(Double.NegativeInfinity)
+      if (oldBeam.isEmpty) TrainingInstance(currentOutputPath, currentGoldPath) 
+      else {
         val candidates:List[Candidate] = oldBeam.collectCandidatesTrain(sentence, oracle)
+
         val (finished, unfinished) = candidates.partition {
           case Candidate(_, WrappedAction(Finish(), _, _), _) => true
           case _ => false
         }
         val updatedOutputPath:Option[StatePath] = finished.sortWith(_.score > _.score) match {
           case top :: _ if (top.score > pathScore(currentOutputPath)) => Some(top.path)
-          case Nil => currentOutputPath
+          case _ => currentOutputPath
         }
         val updatedGoldPath:Option[StatePath] = finished.find(_.wrappedAction.isGold) map { _.path } // the most high scored path is regarded as gold (NOTE: current oracle find only one gold; so this process is redundant)
 

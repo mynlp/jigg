@@ -25,7 +25,7 @@ class CCGBankReader(dict:Dictionary) {
   def readSentencesTest(path:String, n:Int) = readSentences(path, n, false)
   def readSentences(path:String, n:Int, train:Boolean):Array[GoldSuperTaggedSentence] = takeLines(path, n).map { readSentence(_, train) }.toArray
   
-  def takeLines(path:String, n:Int) = Source.fromFile(path).getLines match {
+  def takeLines(path:String, n:Int) = Source.fromFile(path).getLines.filter(_!="") match {
     case lines if (n == -1) => lines
     case lines => lines.take(n)
   }
@@ -35,7 +35,7 @@ class CCGBankReader(dict:Dictionary) {
     
     val treeParser = japaneseTreeParser(train)
     val parseTrees:Array[ParseTree[Item]] = treeParser.parse(line)
-    assert(parseTrees.size == 1, "Something wrong: readSentenceAndDerivation should not read more than one sentence.")
+    assert(parseTrees.size == 1, "Something wrong: readSentenceAndDerivation should not read more than one sentence. input: " + line)
     val leafNodes: Seq[LeafNode[Item]] = parseTrees(0).getSequence
 
     val goldSentence = new GoldSuperTaggedSentence(leafNodes.map(_.info.word),
