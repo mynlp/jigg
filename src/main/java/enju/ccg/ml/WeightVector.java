@@ -22,6 +22,9 @@ public class WeightVector implements Serializable {
     //W = new ArrayList<Double>(initSize);
     W = new TDoubleArrayList(initSize);
   }
+  public int size() {
+    return W.size();
+  }
   public double get(int featureIdx) {
     if (featureIdx < 0) return 0; // assuming this is unknown feature at test time
     if (W.size() <= featureIdx) return 0;
