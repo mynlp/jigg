@@ -49,14 +49,6 @@ public class Util {
     return sb.toString();
   }
 
-  @SuppressWarnings("unchecked")
-  public static List appendList(List list1, List list2) {
-    List list = new ArrayList();
-    list.addAll(list1);
-    list.addAll(list2);
-    return list;
-  }
-
   public static int[] toArray(List<Integer> list) {
     int[] array = new int[list.size()];
     for (int i = 0; i < array.length; ++i) {
@@ -81,7 +73,7 @@ public class Util {
     return array;
   }
 
-  public static ArrayList<Integer> toList(int[] array) {
+  public static ArrayList<Integer> toListInt(int[] array) {
     ArrayList<Integer> list = new ArrayList<Integer>(array.length);
     for (int i = 0; i < array.length; ++i) {
       list.add(array[i]);
@@ -89,7 +81,7 @@ public class Util {
     return list;
   }
   
-  public static ArrayList<Double> toList(double[] array) {
+  public static ArrayList<Double> toListDouble(double[] array) {
     ArrayList<Double> list = new ArrayList<Double>(array.length);
     for (int i = 0; i < array.length; ++i) {
       list.add(array[i]);
