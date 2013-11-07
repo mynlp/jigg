@@ -18,7 +18,7 @@ public class Example<L> {
   }
 
   public void setFeature(List<Integer> f) {
-    feature = Util.toArray(f);
+    feature = Util.toArrayInt(f);
   }
 
   public void setFeatureQuick(int[] feature) {

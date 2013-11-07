@@ -49,7 +49,7 @@ public class Util {
     return sb.toString();
   }
 
-  public static int[] toArray(List<Integer> list) {
+  public static int[] toArrayInt(List<Integer> list) {
     int[] array = new int[list.size()];
     for (int i = 0; i < array.length; ++i) {
       array[i] = list.get(i);
@@ -57,7 +57,7 @@ public class Util {
     return array;
   }
 
-  public static double[] toArray(List<Double> list) {
+  public static double[] toArrayDouble(List<Double> list) {
     double[] array = new double[list.size()];
     for (int i = 0; i < array.length; ++i) {
       array[i] = list.get(i);
@@ -65,7 +65,7 @@ public class Util {
     return array;
   }
   
-  public static String[] toArray(List<String> list) {
+  public static String[] toArrayString(List<String> list) {
     String[] array = new String[list.size()];
     for (int i = 0; i < array.length; ++i) {
       array[i] = list.get(i);
