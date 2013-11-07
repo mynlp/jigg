@@ -16,11 +16,11 @@ Scalaのバージョンは2.10.2が必要です。以下の方法で付属のsbt
 
 Tagger, Parserなど全て、Driverと呼ばれるクラスを通して実行されます。このクラスのメイン関数は、assemblyで作られたjarファイルでデフォルトで呼ばれるので、今のコマンドで、全ての操作ができます。
 
-    > java -Xmx8g -jar target/shift-reduce-enju-assembly-0.0.1.jar
+    > java -Xmx8g -jar target/enju-ccg-assembly-0.1.jar
 
 現在コマンドラインの解析に、fig (https://github.com/percyliang/fig) を使用しています。有効なオプションは、`-help`をつけて
 
-    > java -Xmx8g -jar target/shift-reduce-enju-assembly-0.0.1.jar -help
+    > java -Xmx8g -jar target/enju-ccg-assembly-0.1.jar -help
 
 で一覧を見ることができます。
 
@@ -31,7 +31,7 @@ Tagger, Parserなど全て、Driverと呼ばれるクラスを通して実行さ
 
 まずレポジトリのCCGBankを解凍してください。その上で、以下のコマンドで、CCGBankの訓練データからSuper-taggerを訓練します。
 
-    > java -Xmx8g -jar target/shift-reduce-enju-assembly-0.1.jar -modelType tagger -actionType train -bankDirPath ccgbank-20130828 -saveModelPath tagger.out -numIters 10 -lookupMethod surfaceAndSecondWithConj
+    > java -Xmx8g -jar target/enju-ccg-assembly-0.1.jar -modelType tagger -actionType train -bankDirPath ccgbank-20130828 -saveModelPath tagger.out -numIters 10 -lookupMethod surfaceAndSecondWithConj
 
 引数は以下のようになります。
 
