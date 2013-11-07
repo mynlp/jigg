@@ -12,6 +12,6 @@ trait Problem {
     case (_, path) => path
   }
   protected def trainPath = pathWithBankDirPathAsDefault(InputOptions.trainPath, "train.ccgbank")
-  protected def developPath = pathWithBankDirPathAsDefault(InputOptions.testPath, "develop.ccgbank")
+  protected def developPath = pathWithBankDirPathAsDefault(InputOptions.testPath, "devel.ccgbank")
   
 }
