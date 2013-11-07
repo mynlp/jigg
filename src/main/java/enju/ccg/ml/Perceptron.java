@@ -47,6 +47,7 @@ public class Perceptron<L> extends AbstractClassifier<L> {
       weight.add(f, 1);
       averageWeight.add(f, C);
     }
+    C++;
   }
   public void finalize() {
     for (int i = 0; i < weight.size(); ++i) {
