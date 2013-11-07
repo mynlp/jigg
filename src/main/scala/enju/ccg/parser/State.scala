@@ -1,12 +1,13 @@
 package enju.ccg.parser
 
-import enju.ccg.lexicon.{Category, Point}
+import enju.ccg.lexicon.{Category, Point, Derivation}
 import enju.ccg.lexicon.Direction._
 
-import scala.collection.mutable.Stack
+import scala.collection.mutable.{Stack, ListMap}
 
 // the representation of a category with additional inofmration necessary for parsing process
 case class WrappedCategory(category:Category, // category of the intermediate node
+                           ruleType:String,
                            head:Int, // where the lexical head come from?
                            headCategory:Category, // category of the terminal node of head position
                            headDir:Direction,
@@ -41,7 +42,7 @@ sealed trait State {
   def proceed(action:Action, isGold:Boolean):State
 
   def print = List(s3,s2,s1,s0).collect{case Some(x)=>x}.mkString(" ") + " | " + "j=" + j
-  //var superTagSeq:Array[Option[Category]] // assigned super-tags (this is necessary or not ?)
+  def toDerivation: Derivation
 }
 
 // represents a partial derivation tree preserved in a stack during decoding (assumed to not be handled in external resources)
@@ -50,6 +51,21 @@ case class StackedNode(item:WrappedCategory,
                        right:Option[StackedNode]) {
   def isTerminal = left == None && right == None
   def isUnary = left != None && right == None
+
+  def foreachNode(f: StackedNode => Unit): Unit = {
+    f(this)
+    left.foreach { _.foreachNode(f) }
+    right.foreach { _.foreachNode(f) }
+  }
+
+  // def toParseFragment: ParseTree = {
+  //   if (isTerminal) {
+  //     LeafNode(
+  //   } else if (isUnary) {
+      
+  //   }
+  //   left.toParseFragment
+  // }
 }
 
 object InitialFullState extends FullState(Array.empty[StackedNode], 0, true)
@@ -75,16 +91,16 @@ case class FullState(private val stack:Array[StackedNode],
   override def s1u = if (stack.size > 1) childCategoryOfUnary(stack(stack.size - 2)) else None
 
   private def leftCategoryIfHeadIsLeft(node:StackedNode):Option[WrappedCategory] = if (node.isUnary) None else node match {
-    case StackedNode(WrappedCategory(_,_,_,Left,_,_),Some(left),_) => Some(left.item)
+    case StackedNode(WrappedCategory(_,_,_,_,Left,_,_),Some(left),_) => Some(left.item)
     case _ => None
   }
   private def rightCategoryIfHeadIsRight(node:StackedNode):Option[WrappedCategory] = if (node.isUnary) None else node match {
-    case StackedNode(WrappedCategory(_,_,_,Right,_,_),_,Some(right)) => Some(right.item)
+    case StackedNode(WrappedCategory(_,_,_,_,Right,_,_),_,Some(right)) => Some(right.item)
     case _ => None
   }
   private def childCategoryOfUnary(node:StackedNode):Option[WrappedCategory] = if (node.isUnary) {
     node match {
-      case StackedNode(WrappedCategory(_,_,_,_,_,_),Some(left),_) => Some(left.item)
+      case StackedNode(WrappedCategory(_,_,_,_,_,_,_),Some(left),_) => Some(left.item)
       case _ => sys.error("never happen.")
     }
   } else None
@@ -92,7 +108,7 @@ case class FullState(private val stack:Array[StackedNode],
     childCategoryOfUnary(node) 
   } else {
     node match {
-      case StackedNode(WrappedCategory(_,_,_,dir,_,_),left,right) => if (dir == Left) left match {
+      case StackedNode(WrappedCategory(_,_,_,_,dir,_,_),left,right) => if (dir == Left) left match {
         case Some(left) => Some(left.item); case _ => None
       } else right match {
         case Some(right) => Some(right.item); case _ => None
@@ -101,17 +117,18 @@ case class FullState(private val stack:Array[StackedNode],
   }
   override def proceed(action:Action, actionIsGold:Boolean):FullState = {
     def doShift(category:Category) = {
-      val wrappedCategory = WrappedCategory(category, j, category, Right, j, j + 1) // head = Right is meaningless
+      val wrappedCategory = WrappedCategory(category, "", j, category, Right, j, j + 1) // head = Right is meaningless
       val shiftingNewNode = StackedNode(wrappedCategory, None, None)
       val newStack = stack :+ shiftingNewNode // this data structure needs to copy the state objects here, which I hope have relatively small overhead (because stacked items are not so much)
       FullState(newStack, j + 1, actionIsGold)
     }
-    def doCombine(category:Category, dir:Direction) = {
+    def doCombine(category:Category, dir:Direction, ruleType:String) = {
       val leftNode = stack(stack.size - 2)
       val rightNode = stack(stack.size - 1)
       
       val wrappedCategory = WrappedCategory(
         category,
+        ruleType,
         dir match { case Left => leftNode.item.head; case Right => rightNode.item.head },
         dir match { case Left => leftNode.item.headCategory
                     case Right => rightNode.item.headCategory },
@@ -121,9 +138,9 @@ case class FullState(private val stack:Array[StackedNode],
       newStack(newStack.size - 1) = combinedNode
       FullState(newStack, j, actionIsGold)
     }
-    def doUnary(category:Category) = {
+    def doUnary(category:Category, ruleType:String) = {
       val topNode = stack.last
-      val wrappedCategory = topNode.item match { case a => WrappedCategory(category, a.head, a.headCategory, a.headDir, a.begin, a.end) }
+      val wrappedCategory = topNode.item match { case a => WrappedCategory(category, ruleType, a.head, a.headCategory, a.headDir, a.begin, a.end) }
       val raisedNode = StackedNode(wrappedCategory, Some(topNode), None)
       val newStack = stack.clone
       newStack(newStack.size - 1) = raisedNode
@@ -131,10 +148,37 @@ case class FullState(private val stack:Array[StackedNode],
     }
     action match {
       case Shift(category) => doShift(category)
-      case Combine(category, dir) => doCombine(category, dir)
-      case Unary(category) => doUnary(category)
+      case Combine(category, dir, ruleType) => doCombine(category, dir, ruleType)
+      case Unary(category, ruleType) => doUnary(category, ruleType)
       case Finish() => this // need to do anything?
     }
+  }
+
+  override def toDerivation: Derivation = {
+    import enju.ccg.lexicon.{NoneChildPoint, UnaryChildPoint, BinaryChildrenPoints, Point, ChildPoint, AppliedRule}
+
+    val derivationMap = new Array[Array[ListMap[Category, AppliedRule]]](j+1)
+    derivationMap.indices.foreach { derivationMap(_) = Array.fill(j+1)(new ListMap[Category, AppliedRule]) }
+    stack.foreach { _.foreachNode({
+      node:StackedNode => node.item match {
+        case WrappedCategory(category,ruleType,_,_,_,b,e) =>
+          if (node.isTerminal) {
+            derivationMap(b)(e) += category -> AppliedRule(NoneChildPoint(), "")
+          } else if (node.isUnary) {
+            derivationMap(b)(e) += category ->
+            AppliedRule(UnaryChildPoint(Point(b, e, node.left.get.item.category)), ruleType)
+          } else {
+            (node.left, node.right) match {
+              case (Some(StackedNode(leftItem,_,_)), Some(StackedNode(rightItem,_,_))) =>
+                derivationMap(b)(e) += category -> AppliedRule(BinaryChildrenPoints(
+                  Point(leftItem.begin, leftItem.end, leftItem.category),
+                  Point(rightItem.begin, rightItem.end, rightItem.category)), ruleType)
+              case _ =>
+            }
+          }
+      }})}
+    val roots = stack.map { node => Point(node.item.begin, node.item.end, node.item.category) }
+    Derivation(derivationMap, roots)
   }
 }
 

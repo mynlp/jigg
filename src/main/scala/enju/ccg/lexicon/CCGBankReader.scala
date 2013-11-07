@@ -146,11 +146,11 @@ class CCGBankReader(dict:Dictionary) {
         }
         children
       }
-      def readIntermediateNode: ParseTree[T] = {
+      def readIntermediateNode(ruleSymbol:String): ParseTree[T] = {
         val label = readLabel
         readChildren match {
-          case Seq(child) => UnaryTree(child, label) // unary
-          case Seq(left, right) => BinaryTree(left, right, label) // binary
+          case Seq(child) => UnaryTree(child, label, ruleSymbol) // unary
+          case Seq(left, right) => BinaryTree(left, right, label, ruleSymbol) // binary
           case _ => sys.error("parse error; more than 2 child nodes are found!")
         }
       }
@@ -164,7 +164,7 @@ class CCGBankReader(dict:Dictionary) {
           case '{' => // new tree
             readChar // '{'
             val ruleSymbol = readString // \{< , \{AVD, etc
-            val tree = if (isIntermediate(ruleSymbol)) readIntermediateNode else {
+            val tree = if (isIntermediate(ruleSymbol)) readIntermediateNode(ruleSymbol) else {
               skipSpaces
               val leafStr = ruleSymbol + ' ' + readString // leaf
               leafParser(leafStr)

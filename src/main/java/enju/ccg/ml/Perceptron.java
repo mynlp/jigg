@@ -6,7 +6,7 @@ import enju.ccg.util.Pair;
 
 public class Perceptron<L> extends AbstractClassifier<L> {
   private WeightVector averageWeight;
-  private int C; // count for averaging
+  private double C; // count for averaging
   public Perceptron(WeightVector weight) {
     super(weight);    
     averageWeight = new WeightVector();
@@ -35,7 +35,7 @@ public class Perceptron<L> extends AbstractClassifier<L> {
         }
       }
     }
-    C++;
+    C += 1;
   }
   // structured perceptron
   public void update(int[] predFeatures, int[] goldFeatures) {
@@ -47,9 +47,10 @@ public class Perceptron<L> extends AbstractClassifier<L> {
       weight.add(f, 1);
       averageWeight.add(f, C);
     }
-    C++;
+    C += 1;
   }
   public void finalize() {
+    System.out.println(C);
     for (int i = 0; i < weight.size(); ++i) {
       weight.set(i, weight.get(i) - averageWeight.get(i) / C);
     }

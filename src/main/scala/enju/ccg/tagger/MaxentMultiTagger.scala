@@ -38,11 +38,11 @@ class MaxentMultiTagger(indexer: FeatureIndexer,
     println("# features: " + indexer.size)
     println("# average of candidate labels: " + (cachedInstances.foldLeft(0) {
       case (sum, o) => sum + o.map { _.items.size }.getOrElse(0) } ).toDouble / numEffectiveInstances.toDouble )
-    import scala.collection.immutable.TreeMap
-    var labelNum2Count = new TreeMap[Int,Int]
-    cachedInstances.foreach { _.foreach { _.items.size match { case k => labelNum2Count += k -> (labelNum2Count.getOrElse(k, 0) + 1) } } }
-    println(labelNum2Count)
-    
+
+    // import scala.collection.immutable.TreeMap
+    // var labelNum2Count = new TreeMap[Int,Int]
+    // cachedInstances.foreach { _.foreach { _.items.size match { case k => labelNum2Count += k -> (labelNum2Count.getOrElse(k, 0) + 1) } } }
+    // println(labelNum2Count)
     
     (0 until numIters).foreach { j =>
       val shuffledInstances = Random.shuffle(cachedInstances)

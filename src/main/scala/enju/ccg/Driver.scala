@@ -34,8 +34,8 @@ class Runner extends Runnable {
     DriverOptions.actionType match {
       case ActionType.train => problem.train
       case ActionType.evaluate => problem.evaluate
-      case ActionType.predict => problem.predict
+      case ActionType.predict => sys.error("not supported yet.") // problem.predict
     }
-    if (OutputOptions.saveModelPath != "") problem.save
+    // if (OutputOptions.saveModelPath != "") problem.save // now, save is tied to train for safety
   }
 }

@@ -9,9 +9,6 @@ trait Options {
 
 object DriverOptions extends Options {
   import OptionEnumTypes.{ModelType, ActionType, Language}
-  // type ModelType = OptionEnumTypes.ModelType
-  // type ActionType = OptionEnumTypes.ActionType
-  // type Language = OptionEnumTypes.Language
   
   @Option(gloss="Running model", required=true) var modelType:ModelType = _
   @Option(gloss="Running action", required=true) var actionType:ActionType = _
@@ -25,7 +22,7 @@ object InputOptions extends Options {
   @Option(gloss = "Path to test CCGBank for evlauation") var testPath = ""
   @Option(gloss = "Test instances, -1 for all") var testSize = -1
 
-  @Option(gloss = "Path to Japanese AVM settings (required when training Tagger)") var avmPath = "avm_settings.txt"
+  @Option(gloss = "Path to Japanese AVM settings (currently, no need to change)") var avmPath = "avm_settings.txt"
   @Option(gloss = "Path to Japanese category expantion definitions (required when training Tagger)") var templatePath = ""
   @Option(gloss = "Path to lexicon (word/pos -> category mappings)") var lexiconPath = ""
 
@@ -33,9 +30,10 @@ object InputOptions extends Options {
 }
 
 object OutputOptions extends Options {
-  @Option(gloss = "Path to output of trained model after training") var saveModelPath = ""
+  @Option(gloss = "Path to output of trained model after the training") var saveModelPath = ""
   @Option(gloss = "Path to write trained tagger model in a readable form") var taggerFeaturePath = "features.tagger.txt"
   @Option(gloss = "Path to write trained parser model in a readable form") var parserFeaturePath = "features.parser.txt"
+  @Option(gloss = "Path to output tagger/parser predictions against test data") var outputPath = ""
 }
 
 object TrainingOptions extends Options {

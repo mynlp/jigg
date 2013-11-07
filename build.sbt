@@ -2,7 +2,9 @@ import AssemblyKeys._
 
 assemblySettings
 
-name := "shift-reduce-enju"
+name := "enju-ccg"
+
+scalaVersion := "2.10.2"
 
 version := "0.1"
 

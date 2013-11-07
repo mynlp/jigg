@@ -42,6 +42,9 @@ abstract class Dictionary(private val categoryDictionary:CategoryDictionary,
 
   def getCategoryCandidates(word:Word, pos:PoS):Array[Category] =
     categoryDictionary.getCandidates(word, pos)
+
+  def unkType:Word = wordManager.unknown
+  def unkPoS:PoS = posManager.unknown
   
   // def giveIdToWords(type2id:String => Int) = wordManager.transformValues({ word => word.assignClass(type2id(word.v)) })
 }

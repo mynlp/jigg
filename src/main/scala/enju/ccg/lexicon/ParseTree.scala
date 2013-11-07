@@ -18,8 +18,8 @@ sealed trait ParseTree[+T] { // T:LeafInfo (absorb language differences)
   }
 
   def getSequence: Seq[LeafNode[T]] = this match {
-    case UnaryTree(child, label) => child.getSequence
-    case BinaryTree(left, right, _) => left.getSequence ++ right.getSequence
+    case UnaryTree(child, label, _) => child.getSequence
+    case BinaryTree(left, right, _, _) => left.getSequence ++ right.getSequence
     case leaf: LeafNode[_] => leaf :: Nil
   }
   def setSpans(i:Int = 0): Int = {
@@ -38,25 +38,25 @@ sealed trait ParseTree[+T] { // T:LeafInfo (absorb language differences)
       case Some(Span(0, j)) => j
       case _ => sys.error("setSpans error.")
     }
-    val derivationMap = new Array[Array[ListMap[Category, ChildPoint]]](length+1)
-    derivationMap.indices.foreach { derivationMap(_) = Array.fill(length+1)(new ListMap[Category, ChildPoint]) }
+    val derivationMap = new Array[Array[ListMap[Category, AppliedRule]]](length+1)
+    derivationMap.indices.foreach { derivationMap(_) = Array.fill(length+1)(new ListMap[Category, AppliedRule]) }
 
-    def setDerivationMap(tree:ParseTree[_]): ChildPoint = tree match {
-      case LeafNode(_,l) => NoneChildPoint()
-      case UnaryTree(child, l) =>
+    def setDerivationMap(tree:ParseTree[_]): AppliedRule = tree match {
+      case LeafNode(_,l) => AppliedRule(NoneChildPoint(), "")
+      case UnaryTree(child, l, symbol) =>
         val (childBegin, childEnd) = extractSpan(child.span)
         derivationMap(childBegin)(childEnd) += child.label -> setDerivationMap(child)
-        UnaryChildPoint(Point(childBegin, childEnd, child.label))
-      case BinaryTree(left, right, l) =>
+        AppliedRule(UnaryChildPoint(Point(childBegin, childEnd, child.label)), symbol)
+      case BinaryTree(left, right, l, symbol) =>
         val (leftBegin, leftEnd) = extractSpan(left.span)
         val (rightBegin, rightEnd) = extractSpan(right.span)
         derivationMap(leftBegin)(leftEnd) += left.label -> setDerivationMap(left)
         derivationMap(rightBegin)(rightEnd) += right.label -> setDerivationMap(right)
-        BinaryChildrenPoints(Point(leftBegin, leftEnd, left.label), Point(rightBegin, rightEnd, right.label))
+        AppliedRule(BinaryChildrenPoints(Point(leftBegin, leftEnd, left.label), Point(rightBegin, rightEnd, right.label)), symbol)
     }
     derivationMap(0)(length) += label -> setDerivationMap(this)
 
-    Derivation(derivationMap, Point(0, length, label))
+    Derivation(derivationMap, Array(Point(0, length, label)))
   }
   def foreachTree(f:ParseTree[_]=>Unit): Unit = {
     f(this)
@@ -68,12 +68,13 @@ sealed trait ParseTree[+T] { // T:LeafInfo (absorb language differences)
   // }
 }
 
-sealed trait IntermediateTree[+T] extends ParseTree[T]
-
-case class UnaryTree[+T](child:ParseTree[T], override val label:Category) extends IntermediateTree[T] {
+sealed trait IntermediateTree[+T] extends ParseTree[T] {
+  def ruleSymbol: String
+}
+case class UnaryTree[+T](child:ParseTree[T], override val label:Category, override val ruleSymbol:String) extends IntermediateTree[T] {
   def children = child :: Nil
 }
-case class BinaryTree[+T](left:ParseTree[T], right:ParseTree[T], override val label:Category) extends IntermediateTree[T] {
+case class BinaryTree[+T](left:ParseTree[T], right:ParseTree[T], override val label:Category, override val ruleSymbol:String) extends IntermediateTree[T] {
   def children = left :: right :: Nil
 }
 case class LeafNode[+T](info:T, override val label:Category) extends ParseTree[T] {

@@ -1,6 +1,6 @@
 package enju.ccg.parser
 
-import enju.ccg.lexicon.{PoS, Word, Category, CandAssignedSentence}
+import enju.ccg.lexicon.{PoS, Word, Category, CandAssignedSentence, AppliedRule}
 import scala.collection.mutable.ArrayBuffer
 
 // these are return types of the parser
@@ -21,13 +21,14 @@ trait TransitionBasedParser {
     def possibleCombine:List[Action] = {
       val actions:Option[List[Action]] = for {
         s1 <- state.s1; s0 <- state.s0
-        combinedCategories <- rule.unify(s1.category, s0.category)
+        (combinedCategories) <- rule.unify(s1.category, s0.category)
       } yield combinedCategories.map {
-        val leftNodeInfo = HeadFinder.NodeInfo(
-          sentence.pos(s1.head), s1.category, s1.headCategory)
-        val rightNodeInfo = HeadFinder.NodeInfo(
-          sentence.pos(s0.head), s0.category, s0.headCategory)
-        Combine(_, rule.headFinder.get(leftNodeInfo, rightNodeInfo))
+        case (category, ruleType) =>
+          val leftNodeInfo = HeadFinder.NodeInfo(
+            sentence.pos(s1.head), s1.category, s1.headCategory)
+          val rightNodeInfo = HeadFinder.NodeInfo(
+            sentence.pos(s0.head), s0.category, s0.headCategory)
+          Combine(category, rule.headFinder.get(leftNodeInfo, rightNodeInfo), ruleType)
       }.toList
       actions getOrElse Nil
     }
@@ -35,7 +36,9 @@ trait TransitionBasedParser {
       val actions:Option[List[Action]] = for {
         s0 <- state.s0
         parentCategories <- rule.raise(s0.category)
-      } yield parentCategories.map { Unary(_) }.toList
+      } yield parentCategories.map {
+        case (category, ruleType) => Unary(category, ruleType)
+      }.toList
       actions getOrElse Nil
     }
     def possibleShifts:List[Action] = if (state.j < sentence.size) sentence.cand(state.j).map { Shift(_) }.toList else Nil

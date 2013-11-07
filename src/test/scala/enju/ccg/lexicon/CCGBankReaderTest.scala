@@ -52,7 +52,7 @@ class CCGBankReaderTest extends FunSuite {
     tree.label should equal (cat("S[nm,base]"))
     
     tree.children match {
-      case BinaryTree(left, right, label) :: LeafNode(info, leafLabel) :: Nil => {
+      case BinaryTree(left, right, label, _) :: LeafNode(info, leafLabel) :: Nil => {
         left.label should equal (cat("NP[ga,nm]"))
         right.label should equal (cat("S[nm,base]＼NP[ga,nm]"))
         label should equal (cat("S[nm,base]"))
@@ -71,14 +71,14 @@ class CCGBankReaderTest extends FunSuite {
     val rootCategory = dict.getCategory("NP[nc,nm]").get
     deriv.root should equal (Point(0, 6, rootCategory))
     deriv.get(0, 6, rootCategory) match {
-      case Some(BinaryChildrenPoints(left, right)) => {
+      case Some(AppliedRule(BinaryChildrenPoints(left, right),_)) => {
         left should equal (Point(0, 5, cat("NP[nc,nm]1／NP[nc,nm]1")))
         right should equal (Point(5, 6, cat("NP[nc,nm]")))
       }
       case _ => fail
     }
     deriv.get(2, 5, cat("S[adn,base]＼NP[ni,nm]")) match {
-      case Some(BinaryChildrenPoints(left, right)) => {
+      case Some(AppliedRule(BinaryChildrenPoints(left, right),_)) => {
         left should equal (Point(2, 4, cat("NP[o,nm]")))
         right should equal (Point(4, 5, cat("(S[adn,base]＼NP[ni,nm,ni])＼NP[o,nm,o]")))
       }

@@ -101,7 +101,7 @@ class ZhangExtractor extends FeatureExtractor {
     }
     
     s1 foreach { S1 => s0 foreach { S0 =>
-      features += WCWC(w(S0), c(S0), w(S1), c(S1), TMP.wS0_pQ0_cS0_cS1)
+      features += WCWC(w(S0), c(S0), w(S1), c(S1), TMP.wS0_cS0_wS1_cS1)
       features += WC(w(S1), c(S0), TMP.wS1_cS0)
       features += WC(w(S0), c(S1), TMP.wS0_cS1)
       features += CC(c(S0), c(S1), TMP.cS0_cS1)
@@ -110,7 +110,7 @@ class ZhangExtractor extends FeatureExtractor {
       features += WCWP(w(S0), c(S0), w(Q0), p(Q0), TMP.wS0_cS0_wQ0_pQ0)
       features += WPC(w(Q0), p(Q0), c(S0), TMP.wQ0_pQ0_cS0)
       features += WPC(w(S0), p(Q0), c(S0), TMP.wS0_pQ0_cS0)
-      features += PC(w(Q0), c(S0), TMP.pQ0_cS0)
+      features += PC(p(Q0), c(S0), TMP.pQ0_cS0)
     }}
     s1 foreach { S1 => q0 foreach { Q0 =>
       features += WCWP(w(S1), c(S1), w(Q0), p(Q0), TMP.wS1_cS1_wQ0_pQ0)
