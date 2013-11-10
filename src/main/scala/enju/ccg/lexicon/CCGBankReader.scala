@@ -67,9 +67,15 @@ class CCGBankReader(dict:Dictionary) {
   }
 
   private def getLexicalSign(str:String, train:Boolean): (Word, Word, PoS, Category) = {
-    def getWord(str:String) = if (train) dict.getWordOrCreate(str) else dict.getWord(str)
-    def getPoS(str:String) = if (train) dict.getPoSOrCreate(str) else dict.getPoS(str)
-    //def getCategory(str:String) = if (train) Some(dict.getCategoryOrCreate(str)) else dict.getCategory(str)
+    // The belows define how to convert wordStr -> word object
+    // TODO: rare word handling. If we need word counts on training corpus before registering it into dictionary, we have to change the logic. It may be achieved by first 
+
+    // def getWord(str:String) = if (train) dict.getWordOrCreate(str) else dict.getWord(str)
+    // def getPoS(str:String) = if (train) dict.getPoSOrCreate(str) else dict.getPoS(str)
+
+    def getWord(str:String) = dict.getWordOrCreate(str)
+    def getPoS(str:String) = dict.getPoSOrCreate(str)
+
     def getCategory(str:String) = dict.getCategoryOrCreate(str) // NOTE: unknown category is meaning-less; when we meet an unknown category at test time, create the new category. 
     str.split(" ") match {
       case a if a.size == 2 => (a(0), a(1)) match {

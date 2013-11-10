@@ -1,5 +1,7 @@
 package enju.ccg.lexicon
 
+// TODO: for output purpose, it is more convenient if sentence has Seq[String], which preserves the sequence of original surface forms. 
+
 trait hasSize {
   def size:Int
 }

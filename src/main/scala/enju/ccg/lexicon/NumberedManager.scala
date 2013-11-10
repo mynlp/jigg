@@ -32,7 +32,7 @@ trait NumberedManager[T<:Numbered[_]] extends Serializable {
   type GetType
 
   def getOrCreate(input:Input): T // how to convert input -> object (with id assigned)
-  def get(input:Input): GetType    // get without create. If not found, return special object for unknown object, which type can be defined in sub-classes (OptionT); user may return Option[T] if not found, but in some cases (such as Word), one may want predefined unknown token.
+  def get(input:Input): GetType    // get without create. If not found, return special object for unknown object, which type can be defined in sub-classes (GetType); user may return Option[T] if not found, but in some cases (such as Word), one may want predefined unknown token.
 
   protected def getOrNone(input:Input): Option[T] // this defines what input is the un-registered object. 
   
@@ -75,6 +75,18 @@ trait UnkObjectReturner[T<:Numbered[_]] {
     case Some(obj) => obj
     case None => unknown // unknown case
   }
+}
+// TODO: this is experimental; may be used when one want to treat rare-words with converted surface forms
+trait UnkWithTemplateReturner[T<:Numbered[_]] extends UnkObjectReturner[T] {
+  
+  override def get(str:String): GetType = getOrNone(str) match {
+    case Some(obj) => obj
+    case None => {
+      val convertedStr = extractTemplate(str)
+      super.get(convertedStr) // prevent infinite recurse
+    }
+  }
+  def extractTemplate(original:String): String
 }
 trait OptionReturner[T<:Numbered[_]] {
   type GetType = Option[T]
