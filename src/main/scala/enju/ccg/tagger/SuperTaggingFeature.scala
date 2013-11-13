@@ -17,6 +17,10 @@ case class SuperTaggingFeature(override val unlabeled:SuperTaggingUnlabeledFeatu
 trait FeatureWithoutDictionary extends SuperTaggingUnlabeledFeature {
   def mkString:String
 }
+case class RawFeature(unlabeledStr:String) extends FeatureWithoutDictionary {
+  def mkString = unlabeledStr
+}
+
 trait FeatureOnDictionary extends SuperTaggingUnlabeledFeature {
   def mkString(dict:Dictionary):String
 }
