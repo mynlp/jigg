@@ -3,6 +3,11 @@ Enju/CCG
 
 Shift-reduceに基づくCCG Parserです。
 
+プログラムの使用のみであれば、Scalaも含んだjarファイルが、プログラムのルートディレクトリにありますので、以下の `/path/to/jar` を置き換えて使用できます。
+
+ビルド方法
+-----
+
 ビルドシステムはsbtを使用しています。
 http://www.scala-sbt.org
 sbtの実行ファイルは添付していますので、特に用意は必要なくビルドが可能です。
@@ -16,11 +21,11 @@ Scalaのバージョンは2.10.2が必要です。以下の方法で付属のsbt
 
 Tagger, Parserなど全て、Driverと呼ばれるクラスを通して実行されます。このクラスのメイン関数は、assemblyで作られたjarファイルでデフォルトで呼ばれるので、今のコマンドで、全ての操作ができます。
 
-    > java -Xmx8g -jar target/enju-ccg-assembly-0.1.jar
+    > java -Xmx8g -jar /path/to/jar
 
 現在コマンドラインの解析に、fig (https://github.com/percyliang/fig) を使用しています。有効なオプションは、`-help`をつけて
 
-    > java -Xmx8g -jar target/enju-ccg-assembly-0.1.jar -help
+    > java -Xmx8g -jar /path/to/jar
 
 で一覧を見ることができます。
 
@@ -31,7 +36,7 @@ Tagger, Parserなど全て、Driverと呼ばれるクラスを通して実行さ
 
 まずレポジトリのCCGBankを解凍してください。その上で、以下のコマンドで、CCGBankの訓練データからSuper-taggerを訓練します。
 
-    > java -Xmx8g -jar target/enju-ccg-assembly-0.1.jar -modelType tagger -actionType train -bankDirPath ccgbank-20130828 -saveModelPath tagger.out -numIters 10 -lookupMethod surfaceAndSecondWithConj
+    > java -Xmx8g -jar /path/to/jar -modelType tagger -actionType train -bankDirPath ccgbank-20130828 -saveModelPath tagger.out -numIters 10 -lookupMethod surfaceAndSecondWithConj
 
 引数は以下のようになります。
 
@@ -41,19 +46,19 @@ Tagger, Parserなど全て、Driverと呼ばれるクラスを通して実行さ
 
 以上により、Super-taggerのモデルが、'tagger.out' に出力されます。このモデルを用い、Super-taggerの性能を評価する場合、以下を行います。
 
-    > java -Xmx8g -jar target/enju-ccg-assembly-0.1.jar -modelType tagger -actionType evaluate -bankDirPath ccgbank-20130828 -numIters 10 -beta 0.1 -loadModelPath tagger.out -outputPath develop.tagged.txt
+    > java -Xmx8g -jar /path/to/jar -modelType tagger -actionType evaluate -bankDirPath ccgbank-20130828 -numIters 10 -beta 0.1 -loadModelPath tagger.out -outputPath develop.tagged.txt
 
 loadModelPathで、先ほど保存したモデルを指定しています。'-beta 0.1' は、カテゴリの候補を複数決める場合の閾値を設定するための変数です。各予測は、ロジスティック回帰の局所的な多値分類で行われますが、 "最も高い確率の予測*beta" まで候補を取り出します。'-outputPath' は、予測したカテゴリの候補をテキスト形式で出力します。
 
 保存したTaggerのモデルを用いて、Parserの訓練を行います。
 
-    > java -Xmx8g -jar target/enju-ccg-assembly-0.1.jar -modelType parser -actionType train -bankDirPath ccgbank-20130828 -saveModelPath parser.out -numIters 5 -loadModelPath tagger.out -beam 8 -beta 0.1
+    > java -Xmx8g -jar /path/to/jar -modelType parser -actionType train -bankDirPath ccgbank-20130828 -saveModelPath parser.out -numIters 5 -loadModelPath tagger.out -beam 8 -beta 0.1
 
 モデルはBeam searchに基づく大域的なStructured perceptronです。'-beam 8' は、beam幅を表します。現在素性は、Yue Zhangの論文のものの一部のみを用いています。素性は自分で設計して簡単に追加することができます。(TBD)
 
 訓練したモデルを用いて、デベロップ用データで評価します。現在、Dependencyへの変換が行えないので、CCGBankに似た形式で、予測した木を出力しています。その際、カテゴリは、Parserが内部で保持する情報以外は失われています。例えば、"S1\S1"というカテゴリは、"S\S"と出力されます。また、導出した木に割り当てられたカテゴリの精度を出力します。
 
-    > java -Xmx8g -jar target/enju-ccg-assembly-0.1.jar -modelType parser -actionType evaluate -loadModelPath parser.out -beam 8 -beta 0.1 -outputPath develop.parsed.txt -bankDirPath ccgbank-20130828
+    > java -Xmx8g -jar /path/to/jar -modelType parser -actionType evaluate -loadModelPath parser.out -beam 8 -beta 0.1 -outputPath develop.parsed.txt -bankDirPath ccgbank-20130828
 
 ここでも 'outputPath' で、最終的な出力のファイルを指定しています。
 
