@@ -14,7 +14,7 @@ case class WrappedCategory(category:Category, // category of the intermediate no
                            begin:Int, end:Int) {
   def cat = category.id
   def toDerivationPoint = Point(begin, end, category)
-  
+
   override def toString = category + "(" + begin + ", " + head + ", " + end + ")"
 }
 
@@ -24,10 +24,10 @@ sealed trait State {
   def s1:Option[WrappedCategory]
   def s2:Option[WrappedCategory]
   def s3:Option[WrappedCategory]
-  
+
   def s0l:Option[WrappedCategory]
   def s0r:Option[WrappedCategory]
-  
+
   def s1l:Option[WrappedCategory]
   def s1r:Option[WrappedCategory]
 
@@ -62,7 +62,7 @@ case class StackedNode(item:WrappedCategory,
   //   if (isTerminal) {
   //     LeafNode(
   //   } else if (isUnary) {
-      
+
   //   }
   //   left.toParseFragment
   // }
@@ -77,7 +77,7 @@ case class FullState(private val stack:Array[StackedNode],
   override def s1 = if (stack.size > 1) Some(stack(stack.size - 2).item) else None
   override def s2 = if (stack.size > 2) Some(stack(stack.size - 3).item) else None
   override def s3 = if (stack.size > 3) Some(stack(stack.size - 4).item) else None
-  
+
   override def s0l = if (stack.size > 0) leftCategoryIfHeadIsLeft(stack(stack.size - 1)) else None
   override def s0r = if (stack.size > 0) rightCategoryIfHeadIsRight(stack(stack.size - 1)) else None
 
@@ -105,7 +105,7 @@ case class FullState(private val stack:Array[StackedNode],
     }
   } else None
   private def headChild(node:StackedNode):Option[WrappedCategory] = if (node.isUnary) {
-    childCategoryOfUnary(node) 
+    childCategoryOfUnary(node)
   } else {
     node match {
       case StackedNode(WrappedCategory(_,_,_,_,dir,_,_),left,right) => if (dir == Left) left match {
@@ -125,7 +125,7 @@ case class FullState(private val stack:Array[StackedNode],
     def doCombine(category:Category, dir:Direction, ruleType:String) = {
       val leftNode = stack(stack.size - 2)
       val rightNode = stack(stack.size - 1)
-      
+
       val wrappedCategory = WrappedCategory(
         category,
         ruleType,
@@ -184,5 +184,5 @@ case class FullState(private val stack:Array[StackedNode],
 
 // using SST described in Goldberg et al. (2013); might be more efficient ?
 // class PartialState {
-  
+
 // }
