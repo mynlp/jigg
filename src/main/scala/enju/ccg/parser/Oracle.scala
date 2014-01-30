@@ -37,7 +37,7 @@ class StaticArcStandardOracle(val sentence:TrainSentence, val gold:Derivation, v
       s0 <- state.s0
       (goldParent, ruleSymbol) <- gold.parentCategory(UnaryChildPoint(s0.toDerivationPoint))
     } yield { Unary(goldParent, ruleSymbol) }
-    
+
     require (state.isGold)
     val retAction = if (isFinished) Finish() else combineAction match {
       case Some(action) => action
@@ -54,7 +54,7 @@ class StaticArcStandardOracle(val sentence:TrainSentence, val gold:Derivation, v
 }
 
 // class NonDeterministicArcStandardOracle(val sentence:TrainSentence, val gold:Derivation) extends Oracle {
-    
+
 // }
 
 trait OracleGenerator {
@@ -66,6 +66,6 @@ object StaticOracleGenerator extends OracleGenerator {
   override def gen(sentence:TrainSentence, gold:Derivation, rule:Rule) = new StaticArcStandardOracle(sentence, gold, rule)
 }
 // object NonDeterministicOracleGenerator extends OracleGenerator {
-//   override def gen(sentence:TrainSentence, gold:Derivation, rule:Rule) = 
+//   override def gen(sentence:TrainSentence, gold:Derivation, rule:Rule) =
 //     new NonDeterministicArcStandardOracle(sentence, gold, rule)
 // }
