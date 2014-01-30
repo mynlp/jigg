@@ -1,8 +1,7 @@
 package enju.ccg.parser
 
 import enju.ccg.lexicon.{PoS, Word, Category, TaggedSentence, TrainSentence, TestSentence, Derivation, CandAssignedSentence}
-import enju.ccg.ml.{FeatureBase, Perceptron}
-
+import enju.ccg.ml.Perceptron
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 
 class FeatureIndexer extends HashMap[LF, Int] {
@@ -42,7 +41,7 @@ class BeamSearchDecoder(val indexer:FeatureIndexer,
       possibleActions(path.state, sentence).map { action =>
         val isGold = goldActions.contains(action) // support non-deterministic oracle; currently, goldActions only contain one element so this operation is simple equality check
         val featureIdxs = unlabeledFeatures.map { _.assignLabel(action.toLabel) }.map { indexer.getIndex(_) }.toArray
-        val sumScore = path.score + classifier.calcScore(featureIdxs)
+        val sumScore = path.score + classifier.featureScore(featureIdxs)
         Candidate(path, WrappedAction(action, isGold, featureIdxs), sumScore)
       }
     }
@@ -50,7 +49,7 @@ class BeamSearchDecoder(val indexer:FeatureIndexer,
       val unlabeledFeatures = extractors.extractUnlabeledFeatures(sentence, path.state)
       possibleActions(path.state, sentence).map { action =>
         val featureIdxs = unlabeledFeatures.map { _.assignLabel(action.toLabel) }.map { indexer.getOrElse(_, -1) }.toArray
-        val sumScore = path.score + classifier.calcScore(featureIdxs)
+        val sumScore = path.score + classifier.featureScore(featureIdxs)
         Candidate(path, WrappedAction(action, false), sumScore) // do not preserve (partial) features at test time
       }
     }
@@ -86,7 +85,7 @@ class BeamSearchDecoder(val indexer:FeatureIndexer,
                           currentOutputPath:Option[StatePath],
                           currentGoldPath:Option[StatePath]): TrainingInstance = {
       def pathScore(p:Option[StatePath]) = p map { _.score } getOrElse(Double.NegativeInfinity)
-      if (oldBeam.isEmpty) TrainingInstance(currentOutputPath, currentGoldPath) 
+      if (oldBeam.isEmpty) TrainingInstance(currentOutputPath, currentGoldPath)
       else {
         val candidates:List[Candidate] = oldBeam.collectCandidatesTrain(sentence, oracle)
 
@@ -106,7 +105,7 @@ class BeamSearchDecoder(val indexer:FeatureIndexer,
 
         val sortedUnfinished = unfinished.sortWith(_.score > _.score)
         val newBeam = oldBeam.resetQuick(sortedUnfinished)
-        
+
         // early-update check; when goldPath has value, we wait for exhausting the beam
         if (!newBeam.existsGold && updatedGoldPath == None) {
           val returnOutputPath = (updatedOutputPath, newBeam.kbest) match {

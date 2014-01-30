@@ -9,7 +9,7 @@ trait Options {
 
 object DriverOptions extends Options {
   import OptionEnumTypes.{ModelType, ActionType, Language}
-  
+
   @Option(gloss="Running model", required=true) var modelType:ModelType = _
   @Option(gloss="Running action", required=true) var actionType:ActionType = _
   @Option(gloss="Language") var language:Language = Language.japanese
@@ -40,11 +40,6 @@ object TrainingOptions extends Options {
   import OptionEnumTypes.StepSizeFunction
 
   @Option(gloss="Number of iterations") var numIters:Int = 10
-  
-  // todo: this can be more simple as in the interface of vowpal wabbit
-  @Option(gloss="Step size function of SGD") var stepSizeFunc:StepSizeFunction = StepSizeFunction.stepSize3
-  @Option(gloss="Parameter a of step size function") var stepSizeA = 0.2
-  @Option(gloss="Parameter b of step size function") var stepSizeB = 5.0
 }
 
 object DictionaryOptions extends Options {
@@ -53,7 +48,14 @@ object DictionaryOptions extends Options {
 }
 
 object TaggerOptions extends Options {
-  @Option(gloss="Beta for decising the threshold of k-best at prediction") var beta:Double = 0.001  
+  import OptionEnumTypes.TaggerTrainAlgorithm
+
+  @Option(gloss="Beta for decising the threshold of k-best at prediction") var beta:Double = 0.001
+  @Option(gloss="Parameter a of step size function = t^(-a) (used in sgd or cumulativeL1)") var stepSizeA = 0.2
+  @Option(gloss="Parameter eta of AdaGrad") var eta = 1.0
+  @Option(gloss="Reguralization strength called lambda (in AdaGrad) or C (in cumulative)") var lambda = 0.001
+
+  @Option(gloss="Which training method is used at optimization of superTagger") var taggerTrainAlg = TaggerTrainAlgorithm.adaGradL1
 }
 
 object ParserOptions extends Options {

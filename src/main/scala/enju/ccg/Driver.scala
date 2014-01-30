@@ -6,12 +6,12 @@ object Driver {
   def addQuiet(args:Array[String]) = args ++ Array("-startMainTrack", "false")
   def main(args:Array[String]) = {
     val runner = new Runner
-    Execution.run(addQuiet(args), runner, "driver", DriverOptions, 
-                  "input", InputOptions, 
-                  "output", OutputOptions, 
-                  "train", TrainingOptions, 
-                  "dict", DictionaryOptions, 
-                  "tagger", TaggerOptions, 
+    Execution.run(addQuiet(args), runner, "driver", DriverOptions,
+                  "input", InputOptions,
+                  "output", OutputOptions,
+                  "train", TrainingOptions,
+                  "dict", DictionaryOptions,
+                  "tagger", TaggerOptions,
                   "parser", ParserOptions)
   }
 }

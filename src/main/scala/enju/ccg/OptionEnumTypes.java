@@ -10,4 +10,6 @@ public class OptionEnumTypes {
   public enum StepSizeFunction { stepSize1, stepSize2, stepSize3 };
   
   public enum CategoryLookUpMethod { surfaceOnly, surfaceAndPoS, surfaceAndSecondFineTag, surfaceAndSecondWithConj };
+
+  public enum TaggerTrainAlgorithm { sgd, adaGradL1, cumulativeL1 };
 }

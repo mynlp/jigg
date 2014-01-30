@@ -6,11 +6,13 @@ import scala.collection.mutable.HashMap
 import java.io.{ObjectInputStream, ObjectOutputStream, FileWriter}
 
 trait ShiftReduceParsing extends Problem {
+  type WeightVector = ml.NumericBuffer[Double]
+
   var tagging: SuperTagging = _
   var indexer: parser.FeatureIndexer = _
-  var weights: ml.WeightVector = _
+  var weights: WeightVector = _
   var rule: parser.Rule = _
-  
+
   def featureExtractors = {
     val extractionMethods = Array(new parser.ZhangExtractor)
     new parser.FeatureExtractors(extractionMethods)
@@ -26,16 +28,16 @@ trait ShiftReduceParsing extends Problem {
     println("extracting CFG rules from all derivations ...")
     rule = parser.CFGRule.extractRulesFromDerivations(derivations, headFinder)
     println("done.")
-    
+
     indexer = new parser.FeatureIndexer
-    weights = new ml.WeightVector
+    weights = new WeightVector
 
     val perceptron = new ml.Perceptron[parser.ActionLabel](weights)
     val decoder = getDecoder(perceptron)
 
     println("training start!")
     decoder.trainSentences(trainingSentences, derivations, TrainingOptions.numIters)
-    perceptron.finalize // averaging weight
+    perceptron.takeAverage // averaging weight
     save
   }
   def readCCGBank(path: String, n:Int, train:Boolean):(Array[GoldSuperTaggedSentence],Array[Derivation]) = {
@@ -73,7 +75,7 @@ trait ShiftReduceParsing extends Problem {
     val parsingTime = System.currentTimeMillis - before
     val sentencePerSec = (sentences.size.toDouble / (parsingTime / 1000)).formatted("%.1f")
     val wordPerSec = (numInstances.toDouble / (parsingTime / 1000)).formatted("%.1f")
-    
+
     println("parsing time: " + parsingTime + "ms; " + sentencePerSec + "s/sec; " + wordPerSec + "w/sec")
     evaluateCategoryAccuracy(sentences, predDerivations)
     outputDerivations(sentences, predDerivations)
@@ -98,7 +100,7 @@ trait ShiftReduceParsing extends Problem {
   override def save = {
     import java.io._
     saveFeaturesToText
-    
+
     println("saving tagger+parser model to " + OutputOptions.saveModelPath)
     val os = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(OutputOptions.saveModelPath)))
     tagging.saveModel(os)
@@ -128,7 +130,7 @@ trait ShiftReduceParsing extends Problem {
             case unlabeled: parser.FeatureOnDictionary => unlabeled.mkString(dict)
           }) + "_=>_" + label.mkString(dict)
         }
-        fw.write(featureString + " " + weights.get(v) + "\n")
+        fw.write(featureString + " " + weights(v) + "\n")
     }
     fw.flush
     fw.close
@@ -163,7 +165,7 @@ trait ShiftReduceParsing extends Problem {
     indexer = in.readObject.asInstanceOf[parser.FeatureIndexer]
     println("parser feature templates load done.")
 
-    weights = in.readObject.asInstanceOf[ml.WeightVector]
+    weights = in.readObject.asInstanceOf[WeightVector]
     println("parser model weights load done.")
 
     // TODO: branch according to the setting of rule (cfg or not)
@@ -171,7 +173,7 @@ trait ShiftReduceParsing extends Problem {
     val unary = in.readObject.asInstanceOf[Map[Int, Array[(Category,String)]]]
     rule = parser.CFGRule(binary, unary, headFinder)
   }
-  def getDecoder(perceptron:ml.Perceptron[parser.ActionLabel]) = 
+  def getDecoder(perceptron:ml.Perceptron[parser.ActionLabel]) =
     new parser.BeamSearchDecoder(indexer,
                                  featureExtractors,
                                  perceptron,

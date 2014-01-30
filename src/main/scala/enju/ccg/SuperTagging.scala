@@ -1,21 +1,20 @@
 package enju.ccg
 
 import lexicon._
-import tagger.{SuperTaggingFeature, FeatureWithoutDictionary, FeatureOnDictionary}
-import tagger.{FeatureExtractors, UnigramWordExtractor, UnigramPoSExtractor, BigramPoSExtractor}
-import tagger.{FeatureIndexer, MaxentMultiTagger}
+import tagger._
 
 import scala.collection.mutable.ArraySeq
 import java.io.{ObjectInputStream, ObjectOutputStream, FileWriter}
 
 trait SuperTagging extends Problem {
   type DictionaryType <: Dictionary
+  type WeightVector = ml.NumericBuffer[Double]
 
-  var dict:DictionaryType
+  var dict: DictionaryType
   var indexer: FeatureIndexer = _  // feature -> int
-  var weights: ml.WeightVector = _ // featureId -> weight; these 3 variables are serialized/deserialized
+  var weights: WeightVector = _ // featureId -> weight; these 3 variables are serialized/deserialized
 
-  def featureExtractors = { // you can change features by modifying this function
+  lazy val featureExtractors = { // you can change features by modifying this function
     val extractionMethods = Array(new UnigramWordExtractor(5), // unigram feature of window size 5
                                   new UnigramPoSExtractor(5),  // unigram pos feature of window size 5
                                   new BigramPoSExtractor(5))   // bigram pos feature using window size 5
@@ -34,9 +33,10 @@ trait SuperTagging extends Problem {
     val numTrainInstances = trainSentences.foldLeft(0) { _ + _.size }
 
     indexer = new FeatureIndexer
-    weights = new ml.WeightVector
-    val classifier = new ml.LogisticSGD[Int](numTrainInstances, weights, stepsize(numTrainInstances))
-    val tagger = new MaxentMultiTagger(indexer, featureExtractors, classifier, dict)
+    weights = new WeightVector
+    val trainer = getClassifierTrainer(numTrainInstances)
+    val tagger = new MaxEntMultiTaggerTrainer(indexer, featureExtractors, trainer, dict)
+
     tagger.trainWithCache(trainSentences, TrainingOptions.numIters)
 
     save
@@ -46,19 +46,16 @@ trait SuperTagging extends Problem {
   }
   override def evaluate = {
     load
-    
+
     println("Reading CCGBank ...")
     val evalSentences:Array[GoldSuperTaggedSentence] = readSentencesFromCCGBank(developPath, false)
     val numInstances = evalSentences.foldLeft(0) { _ + _.size }
     println("done; # evaluating sentences: " + evalSentences.size)
 
     val before = System.currentTimeMillis
-    val classifier = new ml.LogisticSGD[Int](0, weights, stepsize(0))
-    // TODO: serialize featureExtractors setting at training
-    val tagger = new MaxentMultiTagger(indexer, featureExtractors, classifier, dict)
 
     val assignedSentences = superTagToSentences(evalSentences).toArray // evalSentences.map { s => new TrainSentence(s, tagger.candSeq(s, TaggerOptions.beta)) }
-    
+
     val taggingTime = System.currentTimeMillis - before
     val sentencePerSec = (evalSentences.size.toDouble / (taggingTime / 1000)).formatted("%.1f")
     val wordPerSec = (numInstances.toDouble / (taggingTime / 1000)).formatted("%.1f")
@@ -68,20 +65,25 @@ trait SuperTagging extends Problem {
     outputPredictions(assignedSentences)
   }
   def superTagToSentences[S<:TaggedSentence](sentences:Array[S]):ArraySeq[S#AssignedSentence] = {
-    val classifier = new ml.LogisticSGD[Int](0, weights, stepsize(0))
     // TODO: serialize featureExtractors setting at training
-    val tagger = new MaxentMultiTagger(indexer, featureExtractors, classifier, dict)
-    
-    val before = System.currentTimeMillis
+    val tagger = getTagger
     val assignedSentences = sentences.map { s =>
       s.assignCands(tagger.candSeq(s, TaggerOptions.beta))
     }
     assignedSentences
   }
-  def getTagger: MaxentMultiTagger = {
-    val classifier = new ml.LogisticSGD[Int](0, weights, stepsize(0))
-    new MaxentMultiTagger(indexer, featureExtractors, classifier, dict)
+  def getTagger = new MaxEntMultiTagger(indexer, featureExtractors, getClassifier, dict)
+  def getClassifier = new ml.ALogLinearClassifier[Int](weights)
+  def getClassifierTrainer(numInstances: Int): ml.OnlineLogLinearTrainer[Int] = {
+    import OptionEnumTypes.TaggerTrainAlgorithm
+    TaggerOptions.taggerTrainAlg match {
+      case TaggerTrainAlgorithm.sgd => new ml.LogLinearSGD(weights, TaggerOptions.stepSizeA)
+      case TaggerTrainAlgorithm.adaGradL1 => new ml.LogLinearAdaGradL1(weights, TaggerOptions.lambda, TaggerOptions.eta)
+      case TaggerTrainAlgorithm.cumulativeL1 =>
+        new ml.LogLinearSGDCumulativeL1(weights, TaggerOptions.stepSizeA, TaggerOptions.lambda, numInstances)
+    }
   }
+
   def evaluateTokenSentenceAccuracy(sentences:Array[TrainSentence]) = {
     var sumUnk = 0
     var correctUnk = 0
@@ -134,13 +136,13 @@ trait SuperTagging extends Problem {
             case unlabeled: FeatureOnDictionary => unlabeled.mkString(dict)
           }) + "_=>_" + dict.getCategory(label)
         }
-        fw.write(featureString + " " + weights.get(v) + "\n")
+        fw.write(featureString + " " + weights(v) + "\n")
     }
     fw.flush
     fw.close
     println("done.")
   }
-  def outputPredictions[S<:CandAssignedSentence](sentences:Array[S]) = if (OutputOptions.outputPath != "") {    
+  def outputPredictions[S<:CandAssignedSentence](sentences:Array[S]) = if (OutputOptions.outputPath != "") {
     println("saving tagger prediction results to " + OutputOptions.outputPath)
     val fw = new FileWriter(OutputOptions.outputPath)
     sentences.foreach { sentence =>
@@ -167,18 +169,8 @@ trait SuperTagging extends Problem {
     indexer = in.readObject.asInstanceOf[FeatureIndexer]
     println("tagger feature templates load done.")
 
-    weights = in.readObject.asInstanceOf[ml.WeightVector]
+    weights = in.readObject.asInstanceOf[WeightVector]
     println("tagger model weights load done.\n")
-  }
-  def stepsize(n:Int) = {
-    import OptionEnumTypes.StepSizeFunction
-    (TrainingOptions.stepSizeA, TrainingOptions.stepSizeB) match {
-      case (a, b) => TrainingOptions.stepSizeFunc match { 
-        case StepSizeFunction.stepSize1 => new ml.LogisticSGD.StepSize1(a, n)
-        case StepSizeFunction.stepSize2 => new ml.LogisticSGD.StepSize2(a, b, n)
-        case StepSizeFunction.stepSize3 => new ml.LogisticSGD.StepSize3(a)
-      }
-    }
   }
   protected def initializeDictionary: Unit
 
@@ -209,7 +201,7 @@ class JapaneseSuperTagging extends SuperTagging {
       case CategoryLookUpMethod.surfaceAndSecondWithConj => new WordSecondWithConj2CategoryDictionary
     }
     dict = new JapaneseDictionary(categoryDictionary)
-    
+
     val lexiconPath = pathWithBankDirPathAsDefault(InputOptions.lexiconPath, "Japanese.lexicon")
     val templatePath = pathWithBankDirPathAsDefault(InputOptions.templatePath, "template.lst")
     dict.readLexicon(lexiconPath, templatePath)

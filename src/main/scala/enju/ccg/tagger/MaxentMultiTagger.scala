@@ -2,34 +2,75 @@ package enju.ccg.tagger
 
 import enju.ccg.lexicon._
 //import enju.ccg.util.Indexer
-import enju.ccg.ml.{LogisticSGD, Example}
+import enju.ccg.ml.{LogLinearClassifier, OnlineLogLinearTrainer, Example}
 
 import scala.collection.mutable.{ArrayBuffer, HashMap}
-import scala.collection.JavaConversions._
 import scala.util.Random
 
 class FeatureIndexer extends HashMap[LF, Int] {
   def getIndex(key:LF) = getOrElseUpdate(key, size)
 }
 
-class MaxentMultiTagger(indexer: FeatureIndexer,
-                        extractors: FeatureExtractors,
-                        classifier: LogisticSGD[Int],
-                        dict: Dictionary) {
-  
+class MaxEntMultiTagger(
+  val indexer: FeatureIndexer,
+  val extractors: FeatureExtractors,
+  val classifier: LogLinearClassifier[Int],
+  val dict: Dictionary) {
+
+  val reusableFeatureIdxs = new ArrayBuffer[Int]
+
   trait Instance {
     def items:Array[Example[Int]]
     def goldLabel:Int = 0
   }
+  case class TestInstance(override val items:Array[Example[Int]]) extends Instance
+
+  def getTestInstance(sentence:TaggedSentence, i:Int): TestInstance = {
+    val candidateLabels = dict.getCategoryCandidates(sentence.base(i), sentence.pos(i)) map { _.id }
+    val unlabeled = extractors.extractUnlabeledFeatures(sentence, i).toArray
+    unlabeledToTestInstance(unlabeled, candidateLabels)
+  }
+
+  def unlabeledToTestInstance(features:Array[UF], candidateLabels:Array[Int]) =
+    TestInstance(getItems(features, candidateLabels, { f => indexer.getOrElse(f, -1) }))
+
+  def getItems(features:Array[UF], candidateLabels:Array[Int], f2index:(LF => Int)): Array[Example[Int]] = candidateLabels map { label =>
+    //val indexes = new Array[Int](features.size)
+    reusableFeatureIdxs.clear
+    var i = 0
+    while (i < features.size) {
+      val f = f2index(features(i).assignLabel(label))
+      if (f >= 0) reusableFeatureIdxs += f // discard -1 = unknown features
+      i += 1
+    }
+    Example(reusableFeatureIdxs.toArray, label)
+  }
+  def candSeq(sentence:TaggedSentence, beta:Double): Array[Seq[Category]] =
+    (0 until sentence.size).map { i =>
+      val instance = getTestInstance(sentence, i)
+      val dist = classifier.labelProbs(instance.items)
+      val (max, argmax) = dist.zipWithIndex.foldLeft((0.0, 0)) { case ((max, argmax), (p,i)) => if (p > max) (p, i) else (max, argmax) }
+      val threshold = max * beta
+      instance.items.zip(dist).filter { case (e, p) => p >= threshold }.map {
+        case (e, _) => dict.getCategory(e.label)
+      }.toSeq
+    }.toArray
+}
+
+class MaxEntMultiTaggerTrainer(
+  indexer: FeatureIndexer,
+  extractors: FeatureExtractors,
+  override val classifier: OnlineLogLinearTrainer[Int],
+  dict: Dictionary) extends MaxEntMultiTagger(indexer, extractors, classifier, dict) {
+
   case class TrainingInstance(override val items:Array[Example[Int]],
                               override val goldLabel:Int) extends Instance
-  case class TestInstance(override val items:Array[Example[Int]]) extends Instance
 
   def trainWithCache(sentences:Seq[GoldSuperTaggedSentence], numIters:Int) = {
     println("feature extraction start...")
     val cachedInstances:Seq[Option[Instance]] = sentences.zipWithIndex.flatMap { case (sentence, j) =>
       if (j % 100 == 0) print(j + "\t/" + sentences.size + " done \r")
-      (0 until sentence.size) map { i => getTrainingInstance(sentence, i, sentence.cat(i).id) }
+        (0 until sentence.size) map { i => getTrainingInstance(sentence, i, sentence.cat(i).id) }
     }
     println("\ndone.")
     val numEffectiveInstances = cachedInstances.filter(_ != None).size
@@ -43,7 +84,7 @@ class MaxentMultiTagger(indexer: FeatureIndexer,
     // var labelNum2Count = new TreeMap[Int,Int]
     // cachedInstances.foreach { _.foreach { _.items.size match { case k => labelNum2Count += k -> (labelNum2Count.getOrElse(k, 0) + 1) } } }
     // println(labelNum2Count)
-    
+
     (0 until numIters).foreach { j =>
       val shuffledInstances = Random.shuffle(cachedInstances)
       var correct = 0
@@ -54,7 +95,7 @@ class MaxentMultiTagger(indexer: FeatureIndexer,
     }
   }
   def trainInstance(instance:Instance):Boolean = {
-    val pred = classifier.predict(instance.items).getP1
+    val pred = classifier.predict(instance.items)._1
     classifier.update(instance.items, instance.goldLabel)
     pred == instance.goldLabel
   }
@@ -65,30 +106,6 @@ class MaxentMultiTagger(indexer: FeatureIndexer,
       Some(unlabeledToTrainingInstance(unlabeled, candidateLabels, goldLabel))
     }
   }
-  def getTestInstance(sentence:TaggedSentence, i:Int): TestInstance = {
-    val candidateLabels = dict.getCategoryCandidates(sentence.base(i), sentence.pos(i)) map { _.id }
-    val unlabeled = extractors.extractUnlabeledFeatures(sentence, i).toArray
-    unlabeledToTestInstance(unlabeled, candidateLabels)
-  }
   def unlabeledToTrainingInstance(features:Array[UF], candidateLabels:Array[Int], goldLabel:Int) =
     TrainingInstance(getItems(features, candidateLabels, { f => indexer.getIndex(f) }), goldLabel)
-  def unlabeledToTestInstance(features:Array[UF], candidateLabels:Array[Int]) =
-    TestInstance(getItems(features, candidateLabels, { f => indexer.getOrElse(f, -1) }))
-  
-  def getItems(features:Array[UF], candidateLabels:Array[Int], f2index:(LF => Int)): Array[Example[Int]] = candidateLabels map { label =>
-    val indexes = new Array[Int](features.size)
-    for (i <- 0 until indexes.size) indexes(i) = f2index(features(i).assignLabel(label))
-    var e = new Example(label)
-    e.setFeatureQuick(indexes); e
-  }
-  def candSeq(sentence:TaggedSentence, beta:Double): Array[Seq[Category]] =
-  (0 until sentence.size).map { i =>
-    val instance = getTestInstance(sentence, i)
-    val dist = classifier.calcLabelProbs(instance.items)
-    val (max, argmax) = dist.zipWithIndex.foldLeft((0.0, 0)) { case ((max, argmax), (p,i)) => if (p > max) (p, i) else (max, argmax) }
-    val threshold = max * beta
-    instance.items.zip(dist).filter { case (e, p) => p >= threshold }.map {
-      case (e, _) => dict.getCategory(e.getLabel)
-    }.toSeq
-  }.toArray
 }
