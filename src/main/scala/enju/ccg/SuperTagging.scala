@@ -39,6 +39,10 @@ trait SuperTagging extends Problem {
 
     tagger.trainWithCache(trainSentences, TrainingOptions.numIters)
 
+    trainer.postProcess // including lazy-updates of all weights
+    Problem.removeZeroWeightFeatures(indexer, weights)
+    weights.foreach { w => assert(w != 0) }
+
     save
   }
   override def predict = {
