@@ -9,7 +9,7 @@ trait LogLinearClassifier[L] extends LinearClassifier[L] {
   def labelProbs(examples: Seq[Example[L]]): Array[Double] = {
     val unnormalized: Array[Double] = examples.map { e =>
       val p = Math.exp(featureScore(e.featVec))
-      if (p < 1e-10) 1e-10 else p
+      if (p < 1e-100) 1e-100 else p
     }.toArray
     val z = unnormalized.sum
     unnormalized.map(_ / z)
