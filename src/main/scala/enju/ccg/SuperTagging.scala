@@ -1,7 +1,7 @@
 package enju.ccg
 
 import lexicon._
-import tagger._
+import tagger.{LF => Feature, _}
 
 import scala.collection.mutable.ArraySeq
 import java.io.{ObjectInputStream, ObjectOutputStream, FileWriter}
@@ -11,7 +11,7 @@ trait SuperTagging extends Problem {
   type WeightVector = ml.NumericBuffer[Double]
 
   var dict: DictionaryType
-  var indexer: FeatureIndexer = _  // feature -> int
+  var indexer: ml.FeatureIndexer[Feature] = _  // feature -> int
   var weights: WeightVector = _ // featureId -> weight; these 3 variables are serialized/deserialized
 
   lazy val featureExtractors = { // you can change features by modifying this function
@@ -32,7 +32,7 @@ trait SuperTagging extends Problem {
 
     val numTrainInstances = trainSentences.foldLeft(0) { _ + _.size }
 
-    indexer = new FeatureIndexer
+    indexer = new ml.FeatureIndexer[Feature]
     weights = new WeightVector
     val trainer = getClassifierTrainer(numTrainInstances)
     val tagger = new MaxEntMultiTaggerTrainer(indexer, featureExtractors, trainer, dict)
@@ -166,7 +166,7 @@ trait SuperTagging extends Problem {
     dict = in.readObject.asInstanceOf[DictionaryType]
     println("dict load done.")
 
-    indexer = in.readObject.asInstanceOf[FeatureIndexer]
+    indexer = in.readObject.asInstanceOf[ml.FeatureIndexer[Feature]]
     println("tagger feature templates load done.")
 
     weights = in.readObject.asInstanceOf[WeightVector]

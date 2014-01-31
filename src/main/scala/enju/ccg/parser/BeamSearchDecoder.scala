@@ -1,14 +1,10 @@
 package enju.ccg.parser
 
 import enju.ccg.lexicon.{PoS, Word, Category, TaggedSentence, TrainSentence, TestSentence, Derivation, CandAssignedSentence}
-import enju.ccg.ml.Perceptron
+import enju.ccg.ml.{Perceptron, FeatureIndexer}
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 
-class FeatureIndexer extends HashMap[LF, Int] {
-  def getIndex(key:LF) = getOrElseUpdate(key, size)
-}
-
-class BeamSearchDecoder(val indexer:FeatureIndexer,
+class BeamSearchDecoder(val indexer:FeatureIndexer[LF],
                         val extractors:FeatureExtractors,
                         val classifier:Perceptron[ActionLabel],
                         val oracleGen:OracleGenerator,

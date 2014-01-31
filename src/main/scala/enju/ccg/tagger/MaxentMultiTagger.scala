@@ -2,17 +2,13 @@ package enju.ccg.tagger
 
 import enju.ccg.lexicon._
 //import enju.ccg.util.Indexer
-import enju.ccg.ml.{LogLinearClassifier, OnlineLogLinearTrainer, Example}
+import enju.ccg.ml.{LogLinearClassifier, OnlineLogLinearTrainer, Example, FeatureIndexer}
 
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.util.Random
 
-class FeatureIndexer extends HashMap[LF, Int] {
-  def getIndex(key:LF) = getOrElseUpdate(key, size)
-}
-
 class MaxEntMultiTagger(
-  val indexer: FeatureIndexer,
+  val indexer: FeatureIndexer[LF],
   val extractors: FeatureExtractors,
   val classifier: LogLinearClassifier[Int],
   val dict: Dictionary) {
@@ -58,7 +54,7 @@ class MaxEntMultiTagger(
 }
 
 class MaxEntMultiTaggerTrainer(
-  indexer: FeatureIndexer,
+  indexer: FeatureIndexer[LF],
   extractors: FeatureExtractors,
   override val classifier: OnlineLogLinearTrainer[Int],
   dict: Dictionary) extends MaxEntMultiTagger(indexer, extractors, classifier, dict) {

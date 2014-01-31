@@ -1,7 +1,7 @@
 package enju.ccg
 
 import lexicon._
-
+import parser.{LF => Feature}
 import scala.collection.mutable.HashMap
 import java.io.{ObjectInputStream, ObjectOutputStream, FileWriter}
 
@@ -9,7 +9,7 @@ trait ShiftReduceParsing extends Problem {
   type WeightVector = ml.NumericBuffer[Double]
 
   var tagging: SuperTagging = _
-  var indexer: parser.FeatureIndexer = _
+  var indexer: ml.FeatureIndexer[Feature] = _
   var weights: WeightVector = _
   var rule: parser.Rule = _
 
@@ -29,7 +29,7 @@ trait ShiftReduceParsing extends Problem {
     rule = parser.CFGRule.extractRulesFromDerivations(derivations, headFinder)
     println("done.")
 
-    indexer = new parser.FeatureIndexer
+    indexer = new ml.FeatureIndexer[Feature]
     weights = new WeightVector
 
     val perceptron = new ml.Perceptron[parser.ActionLabel](weights)
@@ -162,7 +162,7 @@ trait ShiftReduceParsing extends Problem {
     tagging.load
   }
   def loadModel(in:ObjectInputStream) = {
-    indexer = in.readObject.asInstanceOf[parser.FeatureIndexer]
+    indexer = in.readObject.asInstanceOf[ml.FeatureIndexer[Feature]]
     println("parser feature templates load done.")
 
     weights = in.readObject.asInstanceOf[WeightVector]
