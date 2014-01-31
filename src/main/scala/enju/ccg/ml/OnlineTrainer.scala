@@ -5,4 +5,5 @@ package enju.ccg.ml
   */
 trait OnlineTrainer[L] extends Classifier[L] {
   def update(examples: Seq[Example[L]], gold:L): Unit
+  def postProcess: Unit = Unit
 }
