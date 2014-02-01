@@ -16,9 +16,15 @@ trait SuperTagging extends Problem {
 
   lazy val featureExtractors = { // you can change features by modifying this function
     val extractionMethods = Array(new UnigramWordExtractor(5), // unigram feature of window size 5
-                                  new UnigramPoSExtractor(5),  // unigram pos feature of window size 5
-                                  new BigramPoSExtractor(5))   // bigram pos feature using window size 5
-    new FeatureExtractors(extractionMethods, dict.getWord("@@BOS@@"), dict.getPoS("@@NULL@@"))
+      // new BigramWordExtractor(3),
+      new UnigramPoSExtractor(5),  // unigram pos feature of window size 5
+      new BigramPoSExtractor(5))   // bigram pos feature using window size 5
+    new FeatureExtractorsWithCustomPoSLevel(
+      extractionMethods,
+      dict.getWord("@@BOS@@"),
+      dict.getPoS("@@NULL@@"),
+      { pos => pos.secondWithConj.id })
+    //new FeatureExtractors(extractionMethods, dict.getWord("@@BOS@@"), dict.getPoS("@@NULL@@"))
   }
 
   override def train = {
