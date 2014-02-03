@@ -38,6 +38,7 @@ trait ShiftReduceParsing extends Problem {
     println("training start!")
     decoder.trainSentences(trainingSentences, derivations, TrainingOptions.numIters)
     perceptron.takeAverage // averaging weight
+    Problem.removeZeroWeightFeatures(indexer, weights)
     save
   }
   def readCCGBank(path: String, n:Int, train:Boolean):(Array[GoldSuperTaggedSentence],Array[Derivation]) = {
