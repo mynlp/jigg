@@ -13,6 +13,7 @@ case class UnaryChildPoint(p:Point) extends ChildPoint {
 case class BinaryChildrenPoints(left:Point, right:Point) extends ChildPoint {
   override def points = left :: right :: Nil
 }
+// TODO: make this case object
 case class NoneChildPoint() extends ChildPoint { // leaf node's children
   override def points = Nil
 }
@@ -39,7 +40,7 @@ case class Derivation(map:Array[Array[ListMap[Category, AppliedRule]]], roots:Ar
       case (category, appliedRule) if (appliedRule.childPoint == childPoint) => true
       case _ => false
     }.map { case (category, appliedRule) => (category, appliedRule.ruleSymbol) }
-    
+
     childPoint match {
       case UnaryChildPoint(child) => findParentAndRuleSpanning(child.x, child.y, childPoint)
       case BinaryChildrenPoints(left, right) => findParentAndRuleSpanning(left.x, right.y, childPoint)
@@ -49,6 +50,10 @@ case class Derivation(map:Array[Array[ListMap[Category, AppliedRule]]], roots:Ar
   def foreachPoint(f:Point=>Unit, point:Point = root):Unit = {
     f(point)
     get(point) map { _.childPoint.points.foreach { foreachPoint(f, _) } }
+  }
+  def foreachPointBottomup(f: Point => Unit, point: Point = root): Unit = {
+    get(point) map { _.childPoint.points.foreach { foreachPointBottomup(f, _) } }
+    f(point)
   }
   def categorySeq: Array[Option[Category]] = (0 until map.size - 1).map { i =>
     val terminalRule = rulesAt(i, i+1).collect {
