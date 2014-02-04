@@ -46,6 +46,7 @@ class ZhangExtractor extends FeatureExtractor {
     val s0l = ctx.state.s0l map { getItemsAt(_) }
     val s0r = ctx.state.s0r map { getItemsAt(_) }
     val s0u = ctx.state.s0u map { getItemsAt(_) }
+    val s0h = ctx.state.s0h map { getItemsAt(_) }
     val s1l = ctx.state.s1l map { getItemsAt(_) }
     val s1r = ctx.state.s1r map { getItemsAt(_) }
     val s1u = ctx.state.s1u map { getItemsAt(_) }
@@ -119,6 +120,48 @@ class ZhangExtractor extends FeatureExtractor {
       features += WPC(w(S1), p(Q0), c(S1), TMP.wS1_pQ0_cS1)
       features += PC(p(Q0), c(S1), TMP.pQ0_cS1)
     }}
+
+    s1 foreach { S1 => s0 foreach { S0 => q0 foreach { Q0 =>
+      features += WPCC(w(S0), p(Q0), c(S0), c(S1), TMP.wS0_pQ0_cS0_cS1)
+      features += WPCC(w(S1), p(Q0), c(S0), c(S1), TMP.wS1_pQ0_cS0_cS1)
+      features += WPCC(w(Q0), p(Q0), c(S0), c(S1), TMP.wQ0_pQ0_cS0_cS1)
+      features += PCC(p(Q0), c(S0), c(S1), TMP.pQ0_cS0_cS1)
+      features += PPP(p(S0), p(S1), p(Q0), TMP.pS0_pS1_pQ0)
+    }}}
+    s0 foreach { S0 => q0 foreach { Q0 => q1 foreach { Q1 =>
+      features += WPPC(w(S0), p(Q0), p(Q1), c(S0), TMP.wS0_pQ0_pQ1_cS0)
+      features += WPPC(w(Q0), p(Q0), p(Q1), c(S0), TMP.wQ0_pQ0_pQ1_cS0)
+      features += WPPC(w(Q1), p(S0), p(Q1), c(S0), TMP.wQ1_pQ0_pQ1_cS0)
+      features += PPC(p(Q0), p(Q1), c(S0), TMP.pQ0_pQ1_cS0)
+      features += PPP(p(S0), p(Q0), p(Q1), TMP.pS0_pQ0_pQ1)
+
+    }}}
+    s2 foreach { S2 => s1 foreach { S1 => s0 foreach { S0 =>
+      features += WCCC(w(S0), c(S0), c(S1), c(S2), TMP.wS0_cS0_cS1_cS2)
+      features += WCCC(w(S1), c(S0), c(S1), c(S2), TMP.wS1_cS0_cS1_cS2)
+      features += WCCC(w(S2), c(S0), c(S1), c(S2), TMP.wS2_cS0_cS1_cS2)
+      features += CCC(c(S0), c(S1), c(S2), TMP.cS0_cS1_cS2)
+      features += PPP(p(S0), p(S1), p(S2), TMP.pS0_pS1_S2p)
+    }}}
+
+    s0l foreach { S0L => s0h foreach { S0H => s0 foreach { S0 =>
+      features += CCC(c(S0), c(S0H), c(S0L), TMP.cS0_cS0H_cS0L)
+    }}}
+    s0r foreach { S0R => s0h foreach { S0H => s0 foreach { S0 =>
+      features += CCC(c(S0), c(S0H), c(S0R), TMP.cS0_cS0H_cS0R)
+    }}}
+    s0r foreach { S0R => q0 foreach { Q0 => s0 foreach { S0 =>
+      features += PCC(p(Q0), c(S0), c(S0R), TMP.pQ0_cS0_cS0R)
+      features += WCC(w(Q0), c(S0), c(S0R), TMP.wQ0_cS0_cS0R)
+    }}}
+    s0l foreach { S0L => s1 foreach { S1 => s0 foreach { S0 =>
+      features += CCC(c(S0), c(S0L), c(S1), TMP.cS0_cS0L_cS1)
+      features += WCC(w(S1), c(S0), c(S0L), TMP.wS1_cS0_cS0L)
+    }}}
+    s1r foreach { S1R => s1 foreach { S1 => s0 foreach { S0 =>
+      features += CCC(c(S0), c(S1), c(S1R), TMP.cS0_cS1_cS1R)
+      features += WCC(w(S0), c(S1), c(S1R), TMP.wS0_cS1_cS1R)
+    }}}
   }
 }
 
