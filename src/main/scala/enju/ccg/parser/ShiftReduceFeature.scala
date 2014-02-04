@@ -60,7 +60,10 @@ object FeatureTypes {
     override def mkString(d:Dictionary) = concat(tmpl, w(w1,d), p(p1,d), c(c1,d))
   }
   case class WPCC[T](w1:Int, p1:Int, c1:Int, c2:Int, tmpl:T) extends FeatureOnDictionary {
-    override def mkString(d:Dictionary) = concat(tmpl, w(w1,d), p(p1,d), c(c1,d))
+    override def mkString(d:Dictionary) = concat(tmpl, w(w1,d), p(p1,d), c(c1,d), c(c2,d))
+  }
+  case class WPPC[T](w1:Int, p1:Int, p2:Int, c1:Int, tmpl:T) extends FeatureOnDictionary {
+    override def mkString(d:Dictionary) = concat(tmpl, w(w1,d), p(p1,d), p(p2,d), c(c1,d))
   }
   case class WCCC[T](w1:Int, c1:Int, c2:Int, c3:Int, tmpl:T) extends FeatureOnDictionary {
     override def mkString(d:Dictionary) = concat(tmpl, w(w1,d), c(c1,d), c(c2,d), c(c3,d))
@@ -77,7 +80,10 @@ object FeatureTypes {
   case class PCC[T](p1:Int, c1:Int, c2:Int, tmpl:T) extends FeatureOnDictionary {
     override def mkString(d:Dictionary) = concat(tmpl, p(p1,d), c(c1,d), c(c2,d))
   }
-  
+  case class CCC[T](c1:Int, c2:Int, c3:Int, tmpl:T) extends FeatureOnDictionary {
+    override def mkString(d:Dictionary) = concat(tmpl, c(c1,d), c(c2,d), c(c3,d))
+  }
+
   object ZhangTemplate extends Enumeration {
     type ZhangTemplate = Value
     val wS0_pS0, cS0, pS0_cS0, wS0_cS0 = Value
@@ -92,14 +98,13 @@ object FeatureTypes {
     val wS0_cS0_wS1_cS1, wS1_cS0, wS0_cS1, cS0_cS1 = Value
     val wS0_cS0_wQ0_pQ0, wQ0_pQ0_cS0, wS0_pQ0_cS0, pQ0_cS0 = Value
     val wS1_cS1_wQ0_pQ0, wQ0_pQ0_cS1, wS1_pQ0_cS1, pQ0_cS1 = Value // 4
-    
+
     val wS0_pQ0_cS0_cS1, wS1_pQ0_cS0_cS1, wQ0_pQ0_cS0_cS1 = Value
     val pQ0_cS0_cS1, pS0_pS1_pQ0, wS0_pQ0_pQ1_cS0, wQ0_pQ0_pQ1_cS0, wQ1_pQ0_pQ1_cS0 = Value
     val pQ0_pQ1_cS0, pS0_pQ0_pQ1, wS0_cS0_cS1_cS2, wS1_cS0_cS1_cS2, wS2_cS0_cS1_cS2 = Value
     val cS0_cS1_cS2, pS0_pS1_S2p = Value // 5
-    
-    val cS0_cS0H_cS0L, c_S0_cS0H_cS0R, cS1_cS1H_cS1R = Value
+
+    val cS0_cS0H_cS0L, cS0_cS0H_cS0R, cS1_cS1H_cS1R = Value
     val pQ0_cS0_cS0R, wQ0_cS0_cS0R, cS0_cS0L_cS1, wS1_cS0_cS0L, cS0_cS1_cS1R, wS0_cS1_cS1R = Value
   }
 }
-
