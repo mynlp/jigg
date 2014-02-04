@@ -102,7 +102,7 @@ object FeatureTypes {
     val wS0_pQ0_cS0_cS1, wS1_pQ0_cS0_cS1, wQ0_pQ0_cS0_cS1 = Value
     val pQ0_cS0_cS1, pS0_pS1_pQ0, wS0_pQ0_pQ1_cS0, wQ0_pQ0_pQ1_cS0, wQ1_pQ0_pQ1_cS0 = Value
     val pQ0_pQ1_cS0, pS0_pQ0_pQ1, wS0_cS0_cS1_cS2, wS1_cS0_cS1_cS2, wS2_cS0_cS1_cS2 = Value
-    val cS0_cS1_cS2, pS0_pS1_S2p = Value // 5
+    val cS0_cS1_cS2, pS0_pS1_pS2 = Value // 5
 
     val cS0_cS0H_cS0L, cS0_cS0H_cS0R, cS1_cS1H_cS1R = Value
     val pQ0_cS0_cS0R, wQ0_cS0_cS0R, cS0_cS0L_cS1, wS1_cS0_cS0L, cS0_cS1_cS1R, wS0_cS1_cS1R = Value
