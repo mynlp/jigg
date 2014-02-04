@@ -10,6 +10,7 @@ class CategoryManager extends StringBaseNumberedManager[Category] with OptionRet
       val leftWithId = assignID(left)
       val rightWithId = assignID(right)
       ComplexCategory(newId, leftWithId, rightWithId, slash)
+    case _ => sys.error("UnkNode should not be regested in the manager.")
   }
   override def getOrNone(str:String): Option[Category] = str2objIndex.get(str) match {
     case Some(i) => Some(objects(i))
