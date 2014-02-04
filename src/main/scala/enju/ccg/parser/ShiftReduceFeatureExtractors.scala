@@ -8,12 +8,12 @@ trait Context {
   def sentence: CandAssignedSentence
   def state: State
   def word(i:Int): Int = sentence.word(i).id
-  def pos(i:Int): Int = sentence.pos(i).id // if you want to change the definition of pos, please override 
+  def pos(i:Int): Int = sentence.pos(i).id // if you want to change the definition of pos, please override
   val s0 = state.s0
   val s1 = state.s1
   val s2 = state.s2
   val s3 = state.s3
-  
+
   val q0:Option[Int] = if (state.j < sentence.size) Some(state.j) else None
   val q1:Option[Int] = if (state.j+1 < sentence.size) Some(state.j+1) else None
   val q2:Option[Int] = if (state.j+2 < sentence.size) Some(state.j+2) else None
@@ -28,13 +28,14 @@ class ZhangExtractor extends FeatureExtractor {
   import FeatureTypes._
   import FeatureTypes.{ZhangTemplate => TMP}
   def addFeatures(ctx:Context, features:ArrayBuffer[UF]) = {
-    @inline def w(item:(Int,Int,Int)) = item._1
-    @inline def p(item:(Int,Int,Int)) = item._2
-    @inline def c(item:(Int,Int,Int)) = item._3
+    type Item = (Int,Int,Int)
+    @inline def w(item: Item) = item._1
+    @inline def p(item: Item) = item._2
+    @inline def c(item: Item) = item._3
     def getItemsAt(s:WrappedCategory) = (ctx.word(s.head), ctx.pos(s.head), s.cat)
     def wordPoSAt(i:Int) = (ctx.word(i), ctx.pos(i), 0)
-    
-    val s0 = ctx.s0 map { getItemsAt(_) }
+
+    val s0: Option[Item] = ctx.s0 map { getItemsAt(_) }
     val s1 = ctx.s1 map { getItemsAt(_) }
     val s2 = ctx.s2 map { getItemsAt(_) }
     val s3 = ctx.s3 map { getItemsAt(_) }
@@ -48,13 +49,13 @@ class ZhangExtractor extends FeatureExtractor {
     val s1l = ctx.state.s1l map { getItemsAt(_) }
     val s1r = ctx.state.s1r map { getItemsAt(_) }
     val s1u = ctx.state.s1u map { getItemsAt(_) }
-    
+
     s0 foreach { S0 =>
       features += WP(w(S0), p(S0), TMP.wS0_pS0)
       features += C(c(S0), TMP.cS0)
       features += PC(p(S0), c(S0), TMP.pS0_cS0)
       features += WC(w(S0), c(S0), TMP.wS0_cS0)
-    }    
+    }
     s1 foreach { S1 =>
       features += WP(w(S1), p(S1), TMP.wS1_pS1)
       features += C(c(S1), TMP.cS1)
@@ -69,12 +70,12 @@ class ZhangExtractor extends FeatureExtractor {
       features += PC(p(S3), c(S3), TMP.pS3_cS3)
       features += WC(w(S3), c(S3), TMP.wS3_cS3)
     }
-    
+
     q0 foreach { Q0 => features += WP(w(Q0), p(Q0), TMP.wQ0_pQ0) }
     q1 foreach { Q1 => features += WP(w(Q1), p(Q1), TMP.wQ1_pQ1) }
     q2 foreach { Q2 => features += WP(w(Q2), p(Q2), TMP.wQ2_pQ2) }
     q3 foreach { Q3 => features += WP(w(Q3), p(Q3), TMP.wQ3_pQ3) }
-    
+
     s0l foreach { S0L =>
       features += PC(p(S0L), c(S0L), TMP.pS0L_cS0L)
       features += WC(w(S0L), c(S0L), TMP.wS0L_cS0L)
@@ -99,7 +100,7 @@ class ZhangExtractor extends FeatureExtractor {
       features += PC(p(S1U), c(S1U), TMP.pS1U_cS1U)
       features += WC(w(S1U), c(S1U), TMP.wS1U_cS1U)
     }
-    
+
     s1 foreach { S1 => s0 foreach { S0 =>
       features += WCWC(w(S0), c(S0), w(S1), c(S1), TMP.wS0_cS0_wS1_cS1)
       features += WC(w(S1), c(S0), TMP.wS1_cS0)
@@ -123,16 +124,16 @@ class ZhangExtractor extends FeatureExtractor {
 
 class FeatureExtractors(val methods:Seq[FeatureExtractor]) {
   var featureSize = 0
-  
+
   class ContextWithFullPoS(override val sentence:CandAssignedSentence, override val state:State) extends Context {
     override def pos(i:Int) = sentence.pos(i).id
   }
   def context(sentence:CandAssignedSentence, state:State): Context = new ContextWithFullPoS(sentence, state)
-  
+
   def extractUnlabeledFeatures(sentence:CandAssignedSentence, state:State): Seq[UF] = {
     val features = new ArrayBuffer[UF](featureSize)
     features += FeatureTypes.Bias()
-    
+
     val ctx = context(sentence, state)
     methods.foreach { _.addFeatures(ctx, features) }
     featureSize = features.size
