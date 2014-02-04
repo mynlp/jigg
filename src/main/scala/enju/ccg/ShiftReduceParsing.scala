@@ -106,7 +106,7 @@ trait ShiftReduceParsing extends Problem {
     val before = System.currentTimeMillis
     val predDerivations = sentences.zip(derivations).zipWithIndex map {
       case ((sentence, derivation), i) =>
-        if (i % 100 == 0) print(i + "\t/" + sentences.size + " have been processed.")
+        if (i % 100 == 0) print(i + "\t/" + sentences.size + " have been processed.\r")
         val superTaggedSentence = sentence.assignCands(tagger.candSeq(sentence, TaggerOptions.beta))
         decoder.predict(superTaggedSentence)
     }
