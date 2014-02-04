@@ -15,7 +15,7 @@ trait ShiftReduceParsing extends Problem {
 
   def featureExtractors = {
     val extractionMethods = Array(new parser.ZhangExtractor)
-    new parser.FeatureExtractors(extractionMethods)
+    new parser.FeatureExtractors(extractionMethods, { pos => pos.secondWithConj.id })
   }
   def instantiateSuperTagging: SuperTagging
   def headFinder: parser.HeadFinder

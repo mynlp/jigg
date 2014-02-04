@@ -1,6 +1,6 @@
 package enju.ccg.parser
 
-import enju.ccg.lexicon.{CandAssignedSentence}
+import enju.ccg.lexicon.{CandAssignedSentence, PoS}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -141,7 +141,7 @@ class ZhangExtractor extends FeatureExtractor {
       features += WCCC(w(S1), c(S0), c(S1), c(S2), TMP.wS1_cS0_cS1_cS2)
       features += WCCC(w(S2), c(S0), c(S1), c(S2), TMP.wS2_cS0_cS1_cS2)
       features += CCC(c(S0), c(S1), c(S2), TMP.cS0_cS1_cS2)
-      features += PPP(p(S0), p(S1), p(S2), TMP.pS0_pS1_S2p)
+      features += PPP(p(S0), p(S1), p(S2), TMP.pS0_pS1_pS2)
     }}}
 
     s0l foreach { S0L => s0h foreach { S0H => s0 foreach { S0 =>
@@ -165,21 +165,30 @@ class ZhangExtractor extends FeatureExtractor {
   }
 }
 
-class FeatureExtractors(val methods:Seq[FeatureExtractor]) {
-  var featureSize = 0
+trait FeatureExtractorsBase {
+  def methods: Seq[FeatureExtractor]
+  def pos2id: (PoS=>Int) = { pos => pos.id }
 
-  class ContextWithFullPoS(override val sentence:CandAssignedSentence, override val state:State) extends Context {
-    override def pos(i:Int) = sentence.pos(i).id
+  class ContextWithCustomPosLevel(
+    override val sentence:CandAssignedSentence,
+    override val state:State) extends Context {
+    override def pos(i:Int) = pos2id(sentence.pos(i))
   }
-  def context(sentence:CandAssignedSentence, state:State): Context = new ContextWithFullPoS(sentence, state)
+  def context(sentence:CandAssignedSentence, state:State): Context =
+    new ContextWithCustomPosLevel(sentence, state)
+
+  var features = new ArrayBuffer[UF]
 
   def extractUnlabeledFeatures(sentence:CandAssignedSentence, state:State): Seq[UF] = {
-    val features = new ArrayBuffer[UF](featureSize)
+    features.clear
     features += FeatureTypes.Bias()
 
     val ctx = context(sentence, state)
     methods.foreach { _.addFeatures(ctx, features) }
-    featureSize = features.size
     features
   }
 }
+
+class FeatureExtractors(
+  override val methods: Seq[FeatureExtractor],
+  override val pos2id: (PoS=>Int) = { pos => pos.id }) extends FeatureExtractorsBase
