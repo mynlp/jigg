@@ -191,4 +191,4 @@ trait FeatureExtractorsBase {
 
 class FeatureExtractors(
   override val methods: Seq[FeatureExtractor],
-  override val pos2id: (PoS=>Int) = { pos => pos.id }) extends FeatureExtractorsBase
+  override val pos2id: (PoS=>Int)) extends FeatureExtractorsBase
