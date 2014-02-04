@@ -14,8 +14,10 @@ object HeadFinder {
 object EnglishHeadFinder extends HeadFinder { def get(left:NodeInfo, right:NodeInfo) = Right }
 
 object JapaneseHeadFinder extends HeadFinder {
-  def get(left:NodeInfo, right:NodeInfo) = Right // (left, right) match {
-  //   case (JapanesePoS(_,vL,conjL,hierarL), JapanesePoS(_,vR,conjR,hierarR)) => Right
-  //   case _ => throw new RuntimeException("JapaneseHeadFinder should be used with JapanesePoS")
-  // }
+  val Symbol = "記号"
+  def get(left:NodeInfo, right:NodeInfo) = {
+    val leftPos = left.pos.first.v
+    val rightPos = right.pos.first.v
+    if (rightPos == Symbol) Left else Right
+  }
 }
