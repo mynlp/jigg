@@ -6,8 +6,7 @@ class CategoryManagerTest extends FunSuite {
   AVMInitializer.init
 
   test("the same child node should be assiged the same id") {
-    val manager = new CategoryManager
-    manager.assignID(CategoryParser.parse("NP")) // dummy category (to start the test with id > 0)
+    val manager = new CategoryManager // Constructor automatically creates unknown category which is assigned id 0
 
     val cat = CategoryParser.parse("NP[o,nm]／NP[o,nm]")
     manager.assignID(cat) match {

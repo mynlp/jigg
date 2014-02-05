@@ -49,10 +49,7 @@ class MaxEntMultiTagger(
       val threshold = max * beta
       instance.items.zip(dist).filter { case (e, p) => p >= threshold }.map {
         case (e, _) => dict.getCategory(e.label)
-      } match {
-        case Array() => Seq(UnkCategory)
-        case cands => cands.toSeq
-      }
+      }.toSeq
     }.toArray
 }
 

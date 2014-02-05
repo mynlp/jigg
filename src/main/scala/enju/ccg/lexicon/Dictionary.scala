@@ -5,7 +5,7 @@ package enju.ccg.lexicon
  * and (Word,Pos) -> Category candidates looking up
  * Currently, this class abstract away the language specific information, such as PoS information;
  * A subclass JapaneseDictionary handles JapanesePoS (including Japanese PoS-hierarchy information) instead of SimplePoS, which is handled in SimpleDictionary (we assume it for use in English)
- * 
+ *
  * @param catDictionary abstract away the way to look up the dictionary from word/pos to category candidates
  */
 
@@ -41,11 +41,14 @@ abstract class Dictionary(private val categoryDictionary:CategoryDictionary,
   def getCategory(id:Int): Category = categoryManager(id)
 
   def getCategoryCandidates(word:Word, pos:PoS):Array[Category] =
-    categoryDictionary.getCandidates(word, pos)
+    categoryDictionary.getCandidates(word, pos) match {
+      case Array() => Array(categoryManager.unkCategory)
+      case cands => cands
+    }
 
   def unkType:Word = wordManager.unknown
   def unkPoS:PoS = posManager.unknown
-  
+
   // def giveIdToWords(type2id:String => Int) = wordManager.transformValues({ word => word.assignClass(type2id(word.v)) })
 }
 
@@ -76,7 +79,7 @@ object DictionaryTest {
     val originalPoS = dict.getPoS("NN")
     out.writeObject(dict)
     out.close
-    
+
     val in = new ObjectInputStream(new FileInputStream(tmp))
     val decodedDict = in.readObject.asInstanceOf[Dictionary]
     assert(originalPoS == decodedDict.getPoS(originalPoS.id))
