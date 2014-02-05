@@ -69,7 +69,7 @@ class BeamSearchDecoder(val indexer:FeatureIndexer[LF],
   def trainSentence(sentence: TrainSentence, gold:Derivation): Boolean =
     getTrainingInstance(sentence, gold) match {
       case TrainingInstance(Some(pred), Some(gold)) =>
-        classifier.update(pred.fullFeatures, gold.fullFeatures)
+        if (!pred.state.isGold) classifier.update(pred.fullFeatures, gold.fullFeatures)
         return pred.state.isGold
       case _ => sys.error("")
     }
