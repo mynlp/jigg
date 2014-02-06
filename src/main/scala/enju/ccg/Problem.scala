@@ -18,22 +18,19 @@ trait Problem {
   protected def developPath = pathWithBankDirPathAsDefault(InputOptions.testPath, "devel.ccgbank")
 
   object Problem {
-    def removeZeroWeightFeatures[F](indexer: FeatureIndexer[F], weights: NumericBuffer[Double]): Unit = {
-      if (indexer.size > weights.size) {
-        indexer.removeElemsOver(weights.size)
+    def removeZeroWeightFeatures[F](indexer: FeatureIndexer[F], weightsList: NumericBuffer[Double]*): Unit = {
+      val baseWeights = weightsList(0)
+      if (indexer.size > baseWeights.size) {
+        indexer.removeElemsOver(baseWeights.size)
       }
       val oldSize = indexer.size
-      val removingIdxs = weights.zipWithIndex.filter(_._1 == 0).map(_._2)
+      val removingIdxs = baseWeights.zipWithIndex.filter(_._1 == 0).map(_._2)
       indexer.removeIndexes(removingIdxs)
-      weights.removeIndexes(removingIdxs)
 
-      // if (indexer.size != weights.size) {
-      //   println("indexer: " + indexer.size + " != weights: " + weights.size)
-      //   println("oldSize: " + oldSize)
-      //   println("removingIdxs size: " + removingIdxs.size)
-      //   println("so expected size is: " + (oldSize - removingIdxs.size))
-      // }
-      assert(indexer.size == weights.size)
+      weightsList.foreach { weights =>
+        weights.removeIndexes(removingIdxs)
+        assert(weights.size == indexer.size)
+      }
       println("feature size is reduced from " + oldSize + " -> " + indexer.size)
     }
   }

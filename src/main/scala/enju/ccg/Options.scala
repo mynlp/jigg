@@ -41,6 +41,7 @@ object TrainingOptions extends Options {
   import OptionEnumTypes.StepSizeFunction
 
   @Option(gloss="Number of iterations") var numIters:Int = 10
+  @Option(gloss="Whether removing zero weight features after each iteration") var removeZero:Boolean = false
 }
 
 object DictionaryOptions extends Options {

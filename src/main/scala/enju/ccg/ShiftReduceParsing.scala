@@ -36,7 +36,18 @@ trait ShiftReduceParsing extends Problem {
     val decoder = getDecoder(perceptron)
 
     println("training start!")
-    decoder.trainSentences(trainingSentences, derivations, TrainingOptions.numIters)
+
+    (0 until TrainingOptions.numIters) foreach { i =>
+      val correct = decoder.trainSentences(trainingSentences, derivations)
+      println("accuracy (" + i + "): " + correct.toDouble / sentences.size.toDouble + " [" + correct + "]")
+      println("# features: " + indexer.size)
+      if (TrainingOptions.removeZero) {
+        println(weights.size + " " + perceptron.averageWeights.size)
+        assert(weights.size == perceptron.averageWeights.size)
+        Problem.removeZeroWeightFeatures(indexer, weights, perceptron.averageWeights)
+      }
+    }
+    // decoder.trainSentences(trainingSentences, derivations, TrainingOptions.numIters)
     perceptron.takeAverage // averaging weight
     Problem.removeZeroWeightFeatures(indexer, weights)
     save

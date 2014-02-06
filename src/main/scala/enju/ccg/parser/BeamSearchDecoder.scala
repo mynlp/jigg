@@ -55,16 +55,13 @@ class BeamSearchDecoder(val indexer:FeatureIndexer[LF],
   }
   case class TrainingInstance(predictedPath:Option[StatePath], goldPath:Option[StatePath])
 
-  def trainSentences(sentences: Array[TrainSentence], golds:Array[Derivation], numIters:Int):Unit = {
-    (0 until numIters).foreach { i =>
-      var correct = 0
-      sentences.zip(golds).zipWithIndex.foreach {
-        case ((sentence, derivation), numProcessed) =>
-          if (trainSentence(sentence, derivation)) correct += 1
-      }
-      println("accuracy (" + i + "): " + correct.toDouble / sentences.size.toDouble + " [" + correct + "]")
-      println("# features: " + indexer.size)
+  def trainSentences(sentences: Array[TrainSentence], golds:Array[Derivation]):Int = {
+    var correct = 0
+    sentences.zip(golds).zipWithIndex.foreach {
+      case ((sentence, derivation), numProcessed) =>
+        if (trainSentence(sentence, derivation)) correct += 1
     }
+    correct
   }
   def trainSentence(sentence: TrainSentence, gold:Derivation): Boolean =
     getTrainingInstance(sentence, gold) match {
