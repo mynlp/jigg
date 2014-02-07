@@ -118,7 +118,7 @@ trait ShiftReduceParsing extends Problem {
     val predDerivations = sentences.zip(derivations).zipWithIndex map {
       case ((sentence, derivation), i) =>
         if (i % 100 == 0) print(i + "\t/" + sentences.size + " have been processed.\r")
-        val superTaggedSentence = sentence.assignCands(tagger.candSeq(sentence, TaggerOptions.beta))
+        val superTaggedSentence = sentence.assignCands(tagger.candSeq(sentence, TaggerOptions.beta, TaggerOptions.maxK))
         decoder.predict(superTaggedSentence)
     }
     println()
@@ -164,6 +164,14 @@ trait ShiftReduceParsing extends Problem {
     println("-----------------------")
     println("token accuracy: " + numCorrects.toDouble / numInstances.toDouble)
     println("sentence accuracy: " + numCompletes.toDouble / preds.size.toDouble)
+
+    val (activeNumCorrect, activeSum) = preds.zip(golds).foldLeft(0, 0) {
+      case ((corrects, sum), (pred, gold)) =>
+        val activeHeadIdxs = (0 until pred.headSeq.size - 1).filter(pred.headSeq(_) != -1)
+        val numCorrectHeads = activeHeadIdxs.count { i => pred.headSeq(i) == gold.headSeq(i) }
+        (corrects + numCorrectHeads, sum + activeHeadIdxs.size)
+    }
+    println("active token accuracy: " + activeNumCorrect.toDouble / activeSum.toDouble)
   }
 
   override def predict = {
