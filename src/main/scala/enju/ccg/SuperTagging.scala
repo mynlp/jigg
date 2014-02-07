@@ -78,7 +78,7 @@ trait SuperTagging extends Problem {
     // TODO: serialize featureExtractors setting at training
     val tagger = getTagger
     val assignedSentences = sentences.map { s =>
-      s.assignCands(tagger.candSeq(s, TaggerOptions.beta))
+      s.assignCands(tagger.candSeq(s, TaggerOptions.beta, TaggerOptions.maxK))
     }
     assignedSentences
   }

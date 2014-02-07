@@ -41,13 +41,14 @@ class MaxEntMultiTagger(
     }
     Example(reusableFeatureIdxs.toArray, label)
   }
-  def candSeq(sentence:TaggedSentence, beta:Double): Array[Seq[Category]] =
+  def candSeq(sentence:TaggedSentence, beta:Double, maxK: Int): Array[Seq[Category]] =
     (0 until sentence.size).map { i =>
       val instance = getTestInstance(sentence, i)
       val dist = classifier.labelProbs(instance.items)
       val (max, argmax) = dist.zipWithIndex.foldLeft((0.0, 0)) { case ((max, argmax), (p,i)) => if (p > max) (p, i) else (max, argmax) }
       val threshold = max * beta
-      instance.items.zip(dist).filter { case (e, p) => p >= threshold }.map {
+      val numTake = if (maxK == -1) dist.size else maxK
+      instance.items.zip(dist).filter { case (e, p) => p >= threshold }.take(numTake).map {
         case (e, _) => dict.getCategory(e.label)
       }.toSeq
     }.toArray
