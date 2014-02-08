@@ -10,7 +10,7 @@ trait SuperTagging extends Problem {
   type DictionaryType <: Dictionary
   type WeightVector = ml.NumericBuffer[Double]
 
-  var dict: DictionaryType
+  var dict: DictionaryType = _
   var indexer: ml.FeatureIndexer[Feature] = _  // feature -> int
   var weights: WeightVector = _ // featureId -> weight; these 3 variables are serialized/deserialized
 
@@ -185,19 +185,18 @@ trait SuperTagging extends Problem {
 
   // TODO: separate dictionary part into another class
   protected def readSentencesFromCCGBank(path:String, train:Boolean): Array[GoldSuperTaggedSentence] = {
-    val reader = new CCGBankReader(dict)
+    val reader = newCCGBankReader(dict)
     reader.readSentences(path, InputOptions.trainSize, train)
   }
   def readCCGBank(path:String, n:Int, train:Boolean): (Array[GoldSuperTaggedSentence],Array[Derivation]) = {
-    val reader = new CCGBankReader(dict)
+    val reader = newCCGBankReader(dict)
     reader.readSentenceAndDerivations(path, n, train)
   }
+  def newCCGBankReader(dict: Dictionary): CCGBankReader = new CCGBankReader(dict)
 }
 
 class JapaneseSuperTagging extends SuperTagging {
   override type DictionaryType = JapaneseDictionary
-
-  override var dict:DictionaryType = _
 
   override def initializeDictionary = {
     import OptionEnumTypes.CategoryLookUpMethod
@@ -216,4 +215,6 @@ class JapaneseSuperTagging extends SuperTagging {
 }
 
 // class EnglishSuperTagging extends SuperTagging {
+//   override type DictionaryType = SimpleDictionary
+
 // }
