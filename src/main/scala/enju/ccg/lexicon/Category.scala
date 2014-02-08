@@ -3,8 +3,8 @@ import Slash._
 
 sealed trait Category extends Numbered[Unit] { override def v:Unit = {} }
 
-case class AtomicCategory(override val id:Int, base:String, avm:AVM = AVM.empty) extends Category {
-  override def toString = avm.toString match {
+case class AtomicCategory(override val id:Int, base:String, feature:CategoryFeature) extends Category {
+  override def toString = feature.toString match {
     case "" => base
     case s => base + "[" + s + "]"
   }

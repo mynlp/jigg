@@ -8,34 +8,57 @@ import Slash._
  * do this. In other words, this class create the Category skeleton, which must be transformed
  * into the complete object with correct ids assigned by the manager class.
  */
-object CategoryParser {
-  
-  class Reader {
+
+object JapaneseCategoryParser extends CategoryParser {
+  class JapaneseReader extends Reader {
+    override def newCategoryFeature(vals: Seq[String]) = JPCategoryFeature.createFromValues(vals)
+  }
+  override def newReader = new JapaneseReader
+}
+
+object EnglishCategoryParser extends CategoryParser {
+  class EnglishReader extends Reader {
+    override val maxFeatureSize = -1
+    override val slashLeft = '\\'
+    override val slashRight = '/'
+
+    override def newCategoryFeature(vals: Seq[String]) = EnCategoryFeature.createFromValues(vals)
+  }
+  override def newReader = new EnglishReader
+}
+
+trait CategoryParser {
+  trait Reader {
+    val maxFeatureSize = 2
+
     var pos = 0
     var currentStr = ""
     def strToCategoryTree(catStr:String) = getSimplifiedCategoryTree(catStr)
     def categoryTreeToCategory(catTree:CategoryTree):Category = {
-      if (catTree.isLeaf) createAtomicCategory(catTree.surface) 
+      if (catTree.isLeaf) createAtomicCategory(catTree.surface)
       else ComplexCategory(
         0, categoryTreeToCategory(catTree.left), categoryTreeToCategory(catTree.right), catTree.slash)
     }
     def getSimplifiedCategoryTree(catStr:String) = {
       def simplify(surface:String) = {
-        var simplified = removeFeaturesExceeding(2, surface)
+        var simplified = removeRedundantFeatures(surface)
         simplified = removeInfoFollowsFeature(simplified)
         removeNumbers(simplified)
       }
-      def removeFeaturesExceeding(n:Int,surface:String) = {
-        val commaIndices = surface.zipWithIndex.withFilter {
-          case (c, i) => c == ',' }.map { case (c, i) => i }
-        if (commaIndices.size > n)
-          surface.substring(0, commaIndices(n)) + surface.substring(surface.indexOf(']'))
-        else surface
+      def removeRedundantFeatures(surface:String) = {
+        if (maxFeatureSize < 0) surface
+        else {
+          val commaIndices = surface.zipWithIndex.withFilter {
+            case (c, i) => c == ',' }.map { case (c, i) => i }
+          if (commaIndices.size > maxFeatureSize)
+            surface.substring(0, commaIndices(maxFeatureSize)) + surface.substring(surface.indexOf(']'))
+          else surface
+        }
       }
       def removeInfoFollowsFeature(surface:String) = surface.indexOf(']') match {
         case -1 => surface
         case featureEnd => surface.substring(0, featureEnd + 1)}
-      def removeNumbers(surface:String) = 
+      def removeNumbers(surface:String) =
         if (surface.last.isDigit) surface.substring(0, surface.size - 1) else surface
 
       val catTree = parseToCategoryTree(catStr)
@@ -53,7 +76,7 @@ object CategoryParser {
       val targetTree = parseTargetCategoryTree
       val slash = parseSlash
       if (slash == null) targetTree
-      else { 
+      else {
         pos += 1
         val argumentTree = parseToCategoryTreeHelper
         CategoryTree.createInternal(slash, targetTree, argumentTree)
@@ -95,17 +118,17 @@ object CategoryParser {
     def isSlash(ch:Char) = ch == slashLeft || ch == slashRight
     def isLeftParen(ch:Char) = ch == '('
     def isRightParen(ch:Char) = ch == ')'
-    
-    def extractAVM(avmStr:String) = avmStr match {
-      case "" => AVM.empty
-      case _ => AVM.createFromValues(avmStr.split(","))
-    }
+
+    def extractCategoryFeature(featureStr:String): CategoryFeature = newCategoryFeature(featureStr.split(","))
+
+    def newCategoryFeature(vals: Seq[String]): CategoryFeature
+
     def createAtomicCategory(catStr:String) = {
-      val avmStr = catStr.indexOf('[') match {
+      val featureStr = catStr.indexOf('[') match {
         case -1 => ""
         case begin => catStr.substring(begin + 1, catStr.indexOf(']'))
       }
-      AtomicCategory(0, getBasicTag(catStr), extractAVM(avmStr))
+      AtomicCategory(0, getBasicTag(catStr), extractCategoryFeature(featureStr))
     }
     def getBasicTag(catStr:String) = catStr.indexOf('[') match {
       case -1 => // e.g. NP or S1
@@ -115,9 +138,10 @@ object CategoryParser {
       case begin => catStr.substring(0, begin)
     }
   }
-  
+  def newReader: Reader
+
   def parse(catStr:String):Category = {
-    val reader = new Reader()
+    val reader = newReader
     val catTree = reader.strToCategoryTree(catStr)
     reader.categoryTreeToCategory(catTree)
   }

@@ -23,7 +23,6 @@ object InputOptions extends Options {
   @Option(gloss = "Test instances, -1 for all") var testSize = -1
   @Option(gloss = "Path to cabocha-format corpus for evaluating bunsetsu dependencies") var cabochaPath = ""
 
-  @Option(gloss = "Path to Japanese AVM settings (currently, no need to change)") var avmPath = "avm_settings.txt"
   @Option(gloss = "Path to Japanese category expantion definitions (required when training Tagger)") var templatePath = ""
   @Option(gloss = "Path to lexicon (word/pos -> category mappings)") var lexiconPath = ""
 

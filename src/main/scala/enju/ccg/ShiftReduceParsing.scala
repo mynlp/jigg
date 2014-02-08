@@ -237,7 +237,6 @@ trait ShiftReduceParsing extends Problem {
     println("done")
   }
   def load = {
-    AVM.readK2V(InputOptions.avmPath)
     import java.io._
     val in = new ObjectInputStream(new BufferedInputStream(new FileInputStream(InputOptions.loadModelPath)))
     println("load start")

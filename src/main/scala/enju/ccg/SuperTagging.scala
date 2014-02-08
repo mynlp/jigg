@@ -167,7 +167,6 @@ trait SuperTagging extends Problem {
   }
   def load = {
     import java.io._
-    AVM.readK2V(InputOptions.avmPath)
     val in = new ObjectInputStream(new BufferedInputStream(new FileInputStream(InputOptions.loadModelPath)))
     loadModel(in)
     in.close
@@ -201,8 +200,6 @@ class JapaneseSuperTagging extends SuperTagging {
   override var dict:DictionaryType = _
 
   override def initializeDictionary = {
-    AVM.readK2V(InputOptions.avmPath)
-
     import OptionEnumTypes.CategoryLookUpMethod
     val categoryDictionary = DictionaryOptions.lookupMethod match {
       case CategoryLookUpMethod.surfaceOnly => new Word2CategoryDictionary

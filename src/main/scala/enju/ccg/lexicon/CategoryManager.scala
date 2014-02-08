@@ -16,7 +16,7 @@ class CategoryManager extends StringBaseNumberedManager[Category] with OptionRet
     case None => canonicalMap.get(createCanonicalInstance(str))
   }
 
-  override def createCanonicalInstance(str:String): Category = CategoryParser.parse(str)
+  override def createCanonicalInstance(str:String): Category = JapaneseCategoryParser.parse(str)
 
   // This is used when candidate shift category is empty
   // It sometimes happen if for example, PoS not registered in the dictionary is detected.

@@ -4,8 +4,6 @@ import org.scalatest.FunSuite
 import org.scalatest.Matchers._
 
 class JapaneseDictionaryTest extends FunSuite {
-  AVMInitializer.init
-
   def findPath(localPath:String) = getClass.getClassLoader.getResource(localPath).getPath
   def checkDictionary(dict:JapaneseDictionary, wordStr:String, posStr:String, expectedCategories:Seq[String]) {
     val word = dict.getWord(wordStr)
@@ -13,7 +11,7 @@ class JapaneseDictionaryTest extends FunSuite {
     val candidates = dict.getCategoryCandidates(word, pos)
     //val candidateStrs = candidates.map { c => c.toString }
     candidates.size should equal (expectedCategories.size)
-    
+
     expectedCategories.foreach { str => dict.getCategory(str).get match {
       case c => candidates.indexOf(c) should not equal (-1)
     }}
@@ -53,7 +51,7 @@ class JapaneseDictionaryTest extends FunSuite {
     val lexiconPath = findPath("data/Japanese.unkVerb.lexicon")
     val templatePath = findPath("data/template.unkVerb.lst") // this is dummy; the lexicon above need no mappings
     dict.readLexicon(lexiconPath, templatePath)
-    
+
     val candidates = dict.getCategoryCandidates(dict.getWord("みちご"), dict.getPoS("動詞-非自立/連用形"))
   }
 }
