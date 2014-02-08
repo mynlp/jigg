@@ -25,7 +25,7 @@ abstract class Dictionary(private val categoryDictionary:CategoryDictionary,
     override def createWithId(original:Word) = SimpleWord(newId, original.v)
     override def createCanonicalInstance(str:String) = SimpleWord(0, str)
   }) extends Serializable {
-  private val categoryManager = new CategoryManager
+  protected val categoryManager = new CategoryManager
   protected def posManager: PoSManager
 
   def getPoSOrCreate(str:String): PoS = posManager.getOrCreate(str)

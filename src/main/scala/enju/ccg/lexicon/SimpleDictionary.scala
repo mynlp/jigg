@@ -5,5 +5,7 @@ class SimpleDictionary(categoryDictionary:CategoryDictionary = new Word2Category
     def createWithId(original: PoS) = SimplePoS(newId, original.v)
     def createCanonicalInstance(str:String) = SimplePoS(0, str)
   }
-
+  override val categoryManager = new CategoryManager {
+    override def createCanonicalInstance(str: String): Category = EnglishCategoryParser.parse(str)
+  }
 }
