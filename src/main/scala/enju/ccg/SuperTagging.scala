@@ -15,7 +15,7 @@ trait SuperTagging extends Problem {
   var indexer: ml.FeatureIndexer[Feature] = _  // feature -> int
   var weights: WeightVector = _ // featureId -> weight; these 3 variables are serialized/deserialized
 
-  lazy val featureExtractors = { // you can change features by modifying this function
+  def featureExtractors = { // you can change features by modifying this function
     val extractionMethods = Array(new UnigramWordExtractor(5), // unigram feature of window size 5
       // new BigramWordExtractor(3),
       new UnigramPoSExtractor(5),  // unigram pos feature of window size 5
@@ -198,7 +198,7 @@ trait SuperTagging extends Problem {
     newCCGBankReader.readParseTrees(path, n, train).map { convert(_) }.toArray
   }
 
-  def newCCGBankReader: CCGBankReader = new CCGBankReader(dict) // default reader
+  def newCCGBankReader: CCGBankReader
   def parseTreeConverter: ParseTreeConverter // language specific tree converter
 }
 
@@ -225,13 +225,26 @@ class JapaneseSuperTagging extends SuperTagging {
     dict.readLexicon(lexiconPath, templatePath)
   }
 
+  override def newCCGBankReader = new CCGBankReader(dict) // default reader
   override def parseTreeConverter = new JapaneseParseTreeConverter(dict)
 }
 
 class EnglishSuperTagging extends SuperTagging {
   override type DictionaryType = SimpleDictionary
 
+  override def featureExtractors = {
+    val extractionMethods = Array(new UnigramWordExtractor(3),
+      new UnigramPoSExtractor(5))
+      //new BigramPoSExtractor(5))
+    new FeatureExtractorsWithCustomPoSLevel(
+      extractionMethods,
+      dict.getWord("@@BOS@@"),
+      dict.getPoS("@@NULL@@"),
+      { pos => pos.id })
+  }
+
   def newDictionary = new SimpleDictionary
 
+  override def newCCGBankReader = new EnglishCCGBankReader(dict)
   override def parseTreeConverter = new EnglishParseTreeConverter(dict)
 }

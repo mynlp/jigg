@@ -23,11 +23,11 @@ class Runner extends Runnable {
     val problem = DriverOptions.modelType match {
       case ModelType.tagger => DriverOptions.language match {
         case Language.japanese => new JapaneseSuperTagging
-        case Language.english => throw new UnsupportedOperationException
+        case Language.english => new EnglishSuperTagging
       }
       case ModelType.parser => DriverOptions.language match {
         case Language.japanese => new JapaneseShiftReduceParsing
-        case Language.english => throw new UnsupportedOperationException
+        case Language.english => new EnglishShiftReduceParsing
       }
     }
 

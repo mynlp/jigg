@@ -280,6 +280,11 @@ class JapaneseShiftReduceParsing extends ShiftReduceParsing {
 }
 
 class EnglishShiftReduceParsing extends ShiftReduceParsing {
-  override def instantiateSuperTagging = new JapaneseSuperTagging
+  override def featureExtractors = {
+    val extractionMethods = Array(new parser.ZhangExtractor)
+    new parser.FeatureExtractors(extractionMethods, { pos => pos.id })
+  }
+
+  override def instantiateSuperTagging = new EnglishSuperTagging
   override def getHeadFinder(trees: Seq[ParseTree[NodeLabel]]) = parser.EnglishHeadFinder.createFromParseTrees(trees)
 }

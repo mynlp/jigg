@@ -59,11 +59,16 @@ trait CategoryParser {
         case -1 => surface
         case featureEnd => surface.substring(0, featureEnd + 1)}
       def removeNumbers(surface:String) =
-        if (surface.last.isDigit) surface.substring(0, surface.size - 1) else surface
+        if (surface.size > 0 && surface.last.isDigit) {
+          surface.substring(0, surface.size - 1)
+        } else surface
+
 
       val catTree = parseToCategoryTree(catStr)
       catTree.setSurface
-      catTree.foreachLeaf((tree:CategoryTree) => tree.surface = simplify(tree.surface))
+      catTree.foreachLeaf { tree: CategoryTree =>
+        tree.surface = simplify(tree.surface)
+      }
       catTree
     }
     def parseToCategoryTree(catStr:String):CategoryTree = {
@@ -133,7 +138,7 @@ trait CategoryParser {
     def getBasicTag(catStr:String) = catStr.indexOf('[') match {
       case -1 => // e.g. NP or S1
         var j = catStr.size - 1
-        while (catStr(j).isDigit) j -= 1
+        while (j >= 0 && catStr(j).isDigit) j -= 1
         catStr.substring(0, j + 1)
       case begin => catStr.substring(0, begin)
     }

@@ -122,14 +122,70 @@ class CCGBankReader(dict:Dictionary) {
       }
     }
   }
-  def newTreeReader(in: java.io.Reader) = new ATreeReader(in)
+  def newTreeReader(in: java.io.Reader): TreeReader = new ATreeReader(in)
 }
 
 class EnglishCCGBankReader(dict:Dictionary) extends CCGBankReader(dict) {
-  class EnglishTreeReader(in: java.io.Reader) extends ATreeReader(in)
-  // class EnglishTreeReader(override val in: java.io.Reader) extends TreeReader {
+  class EnglishTreeReader(override val in: java.io.Reader) extends TreeReader {
+    def readLabel: String = {
+      val sb = new StringBuilder
+      readChar // <
+      var c = peekChar
+      //assert(c.toChar == '<')
+      while (c != -1 && c != '>') {
+        sb.append(c.toChar)
+        readChar
+        c = peekChar
+      }
+      readChar
+      sb.toString
+    }
+    def removeBracket(label: String) = {
+      assert(label(0) == '<' && label.last == '>')
+      label.slice(1, label.size - 1)
+    }
 
+    def readChildren: Seq[Tree] = {
+      skipSpaces
+      val children = new ArrayBuffer[Tree]
+      while (!(peekChar == ')')) {
+        val tree = readTree match {
+          case Some(t) => t
+          case None => sys.error("parser error")
+        }
+        children += tree
+        skipSpaces
+      }
+      children
+    }
+    def readIntermediateNode(label: String): Tree = {
+      skipSpaces
+      readChildren match {
+        case Seq(child) => UnaryTree(child, label) // unary
+        case Seq(left, right) => BinaryTree(left, right, label) // binary
+        case _ => sys.error("parse error; more than 2 child nodes are found!")
+      }
+    }
+    def isNonterminal(label: String): Boolean = label(0) == 'T'
 
-  // }
+    def readTree: Option[Tree] = {
+      skipSpaces
+      peekChar match {
+        case '(' => // new tree
+          readChar // '('
+          //val nodeLabel = removeBracket(readLabel)
+          val nodeLabel = readLabel
+          val tree = if (isNonterminal(nodeLabel)) readIntermediateNode(nodeLabel) else {
+            skipSpaces
+            LeafTree(nodeLabel)
+          }
+          readChar // ')'
+
+          Some(tree)
+        case ')' => sys.error("Extract ')' found")
+        case -1 => None
+      }
+    }
+  }
   override def newTreeReader(in: java.io.Reader) = new EnglishTreeReader(in)
 }

@@ -40,11 +40,8 @@ sealed trait CategoryDictionary extends Serializable {
 
     sentences foreach { sentence => (0 until sentence.size) foreach { i =>
       val k = key(sentence.base(i), sentence.pos(i))
-      counts(k) match {
-        // TODO: this is very inefficient; we might be better to cache all candidates for word/pos pairs and call registCandidates once for each entry.
-        case n if n >= unkThreathold => registCandidates(sentence.base(i), sentence.pos(i), Array(sentence.cat(i)))
-        case _ => registUnkCandiates(sentence.pos(i), Array(sentence.cat(i)))
-      }
+      if (counts(k) >= unkThreathold) registCandidates(sentence.base(i), sentence.pos(i), Array(sentence.cat(i)))
+      registUnkCandiates(sentence.pos(i), Array(sentence.cat(i)))
     }}
   }
 }

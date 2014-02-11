@@ -48,11 +48,10 @@ object TerminalLabel {
     */
   def parseSimple(terminalStr: String, dict: Dictionary) = terminalStr.split(" ") match {
     case a if a.size == 6 => (a(1), a(2), a(3), a(4)) match {
-      case (categoryStr, modPoSStr, origPoSStr, wordStr) =>
-        SimpleTerminalLabel(
-          dict.getWordOrCreate(wordStr),
-          dict.getPoSOrCreate(origPoSStr),
-          dict.getCategoryOrCreate(categoryStr))
+      case (categoryStr, modPoSStr, origPoSStr, wordStr) => SimpleTerminalLabel(
+        dict.getWordOrCreate(wordStr),
+        dict.getPoSOrCreate(origPoSStr),
+        dict.getCategoryOrCreate(categoryStr))
     }
     case _ => sys.error("invalid form for SimpleTerminalLabel: " + terminalStr)
   }

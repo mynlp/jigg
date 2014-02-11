@@ -86,3 +86,46 @@ class CCGBankReaderTest extends FunSuite {
     }
   }
 }
+
+class EnglishCCGBankReaderTest extends FunSuite {
+  val line = """(<T S[dcl] 0 2> (<T S[dcl] 1 2> (<T NP 0 2> (<T NP 0 2> (<T NP 0 2> (<T NP 0 1> (<T N 1 2> (<L N/N NNP NNP Pierre N_73/N_73>) (<L N NNP NNP Vinken N>) ) ) (<L , , , , ,>) ) (<T NP\NP 0 1> (<T S[adj]\NP 1 2> (<T NP 0 1> (<T N 1 2> (<L N/N CD CD 61 N_93/N_93>) (<L N NNS NNS years N>) ) ) (<L (S[adj]\NP)\NP JJ JJ old (S[adj]\NP_83)\NP_84>) ) ) ) (<L , , , , ,>) ) (<T S[dcl]\NP 0 2> (<L (S[dcl]\NP)/(S[b]\NP) MD MD will (S[dcl]\NP_10)/(S[b]_11\NP_10:B)_11>) (<T S[b]\NP 0 2> (<T S[b]\NP 0 2> (<T (S[b]\NP)/PP 0 2> (<L ((S[b]\NP)/PP)/NP VB VB join ((S[b]\NP_20)/PP_21)/NP_22>) (<T NP 1 2> (<L NP[nb]/N DT DT the NP[nb]_29/N_29>) (<L N NN NN board N>) ) ) (<T PP 0 2> (<L PP/NP IN IN as PP/NP_34>) (<T NP 1 2> (<L NP[nb]/N DT DT a NP[nb]_48/N_48>) (<T N 1 2> (<L N/N JJ JJ nonexecutive N_43/N_43>) (<L N NN NN director N>) ) ) ) ) (<T (S\NP)\(S\NP) 0 2> (<L ((S\NP)\(S\NP))/N[num] NNP NNP Nov. ((S_61\NP_56)_61\(S_61\NP_56)_61)/N[num]_62>) (<L N[num] CD CD 29 N[num]>) ) ) ) ) (<L . . . . .>) )"""
+
+  val dict = new SimpleDictionary
+  def cat(str:String) = dict.getCategory(str).get
+
+  def converter = new EnglishParseTreeConverter(dict)
+
+  def getParsedTree(lineStr:String = line): ParseTree[NodeLabel] = {
+    val reader = new EnglishCCGBankReader(dict)
+    val stringTrees = reader.readParseTree(lineStr, true)
+    converter.toLabelTree(stringTrees)
+  }
+
+  test("read sentence test") {
+    val reader = new EnglishCCGBankReader(dict)
+
+    val sentence = converter.toSentenceFromStringTree(reader.readParseTree(line, true))
+    sentence.word(0) should equal (dict.getWord("Pierre"))
+    sentence.pos(0) should equal (dict.getPoS("NNP"))
+    sentence.cat(0) should equal (cat("N/N"))
+  }
+  test("read with derivation test") {
+    val tree = getParsedTree(line)
+    tree.children.size should equal (2)
+    tree.label.category should equal (cat("S[dcl]"))
+
+    tree.children match {
+      case BinaryTree(left, right, label) :: LeafTree(leafLabel: TerminalLabel) :: Nil => {
+        left.label.category should equal (cat("NP"))
+        right.label.category should equal (cat("S[dcl]\\NP"))
+        label.category should equal (cat("S[dcl]"))
+
+        leafLabel.word should equal (dict.getWord("."))
+        leafLabel.baseForm should equal (dict.getWord("."))
+        leafLabel.pos should equal (dict.getPoS("."))
+        leafLabel.category should equal (cat("."))
+      }
+      case _ => fail
+    }
+  }
+}

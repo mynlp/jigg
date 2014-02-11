@@ -18,13 +18,7 @@ case class NoneChildPoint() extends ChildPoint { // leaf node's children
   override def points = Nil
 }
 
-case class AppliedRule(childPoint:ChildPoint, ruleSymbol:String = "") {
-  childPoint match {
-    case UnaryChildPoint(_) => require(ruleSymbol == "ADV" || ruleSymbol == "ADN")
-    case BinaryChildrenPoints(_,_) => require(ruleSymbol == "<" || ruleSymbol == ">" || ruleSymbol == "Φ")
-    case NoneChildPoint() => require(ruleSymbol == "")
-  }
-}
+case class AppliedRule(childPoint:ChildPoint, ruleSymbol:String = "")
 
 /**
  * Internal representation of gold tree, and parsed tree for output (and evaluation)
