@@ -42,16 +42,17 @@ trait TransitionBasedParser {
       actions getOrElse Nil
     }
     def possibleShifts:List[Action] = if (state.j < sentence.size) sentence.cand(state.j).map { Shift(_) }.toList else Nil
-    def addFinishIfNecessary(actions:List[Action]) = 
+    def addFinishIfNecessary(actions:List[Action]) =
       // TODO: this procedure might be unappropriate
-      actions match { case Nil => Finish() :: actions; case _ => actions }
+      //actions match { case Nil => Finish() :: actions; case _ => actions }
+
       // this latter adds Finish action regardness of whether there are other actions
-      // if (state.j >= sentence.size) Finish() :: actions else actions
+      if (state.j >= sentence.size) Finish() :: actions else actions
     val actions = possibleCombine ::: possibleUnary ::: possibleShifts
     addFinishIfNecessary(actions)
   }
 }
 
 class DeterministicDecoder(val oracleGen:OracleGenerator, override val rule:Rule) extends TransitionBasedParser {
-  
+
 }
