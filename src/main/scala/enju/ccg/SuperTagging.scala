@@ -233,9 +233,9 @@ class EnglishSuperTagging extends SuperTagging {
   override type DictionaryType = SimpleDictionary
 
   override def featureExtractors = {
-    val extractionMethods = Array(new UnigramWordExtractor(3),
-      new UnigramPoSExtractor(5))
-      //new BigramPoSExtractor(5))
+    val extractionMethods = Array(new UnigramWordExtractor(5),
+      new UnigramPoSExtractor(5),
+      new BigramPoSExtractor(5))
     new FeatureExtractorsWithCustomPoSLevel(
       extractionMethods,
       dict.getWord("@@BOS@@"),
