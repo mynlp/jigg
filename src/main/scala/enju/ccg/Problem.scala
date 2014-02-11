@@ -15,7 +15,7 @@ trait Problem {
       case (_, path) => path
     }
   protected def trainPath = pathWithBankDirPathAsDefault(InputOptions.trainPath, "train.ccgbank")
-  protected def developPath = pathWithBankDirPathAsDefault(InputOptions.testPath, "devel.ccgbank")
+  protected def developPath = pathWithBankDirPathAsDefault(InputOptions.developPath, "devel.ccgbank")
 
   object Problem {
     def removeZeroWeightFeatures[F](indexer: FeatureIndexer[F], weightsList: NumericBuffer[Double]*): Unit = {

@@ -20,6 +20,7 @@ object InputOptions extends Options {
   @Option(gloss = "Path to training CCGBank") var trainPath = ""
   @Option(gloss = "Training instances, -1 for all") var trainSize = -1
   @Option(gloss = "Path to test CCGBank for evlauation") var testPath = ""
+  @Option(gloss = "Path to develop CCGBank for evlauation") var developPath = ""
   @Option(gloss = "Test instances, -1 for all") var testSize = -1
   @Option(gloss = "Path to cabocha-format corpus for evaluating bunsetsu dependencies") var cabochaPath = ""
 
