@@ -1,8 +1,10 @@
 package enju.ccg.parser
+
+import scala.collection.mutable.HashMap
 import enju.ccg.lexicon.{PoS, JapanesePoS, Category}
 import enju.ccg.lexicon.Direction._
 
-trait HeadFinder {
+trait HeadFinder extends Serializable {
   type NodeInfo = HeadFinder.NodeInfo
   def get(left:NodeInfo, right:NodeInfo): Direction
 }
@@ -10,8 +12,26 @@ object HeadFinder {
   case class NodeInfo(pos:PoS, category:Category, headCategory:Category)
 }
 
-// TODO: write rule; currently deterministic
-object EnglishHeadFinder extends HeadFinder { def get(left:NodeInfo, right:NodeInfo) = Right }
+case class EnglishHeadFinder(children2dir: Map[(Int, Int), Direction]) extends HeadFinder {
+  def get(left:NodeInfo, right:NodeInfo) =
+    children2dir.get(left.category.id, right.category.id) match {
+      case Some(dir) => dir
+      case _ => Left
+    }
+}
+
+object EnglishHeadFinder {
+  import enju.ccg.lexicon.{ParseTree, NodeLabel, BinaryTree, NonterminalLabel}
+  def createFromParseTrees(trees: Seq[ParseTree[NodeLabel]]): EnglishHeadFinder = {
+    val map = new HashMap[(Int, Int), Direction]
+    trees.foreach { _.foreachTree { _ match {
+      case BinaryTree(left, right, NonterminalLabel(dir, _, _)) =>
+        map += (left.label.category.id, right.label.category.id) -> dir
+      case _ =>
+    }}}
+    EnglishHeadFinder(map.toMap)
+  }
+}
 
 object JapaneseHeadFinder extends HeadFinder {
   val Symbol = "記号"

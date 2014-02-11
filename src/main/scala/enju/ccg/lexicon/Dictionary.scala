@@ -19,7 +19,7 @@ trait PoSManager extends StringBaseNumberedManager[PoS] with UnkObjectReturner[P
 }
 
 @SerialVersionUID(1L)
-abstract class Dictionary(private val categoryDictionary:CategoryDictionary,
+abstract class Dictionary(val categoryDictionary:CategoryDictionary,
                           protected val wordManager:WordManager = // you can override when you want to add information to each word type
   new WordManager {
     override def createWithId(original:Word) = SimpleWord(newId, original.v)

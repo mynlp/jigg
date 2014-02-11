@@ -1,6 +1,6 @@
 package enju.ccg.lexicon
 
-class SimpleDictionary(categoryDictionary:CategoryDictionary = new Word2CategoryDictionary) extends Dictionary(categoryDictionary) {
+class SimpleDictionary extends Dictionary(new Word2CategoryDictionary) {
   override val posManager = new PoSManager {
     def createWithId(original: PoS) = SimplePoS(newId, original.v)
     def createCanonicalInstance(str:String) = SimplePoS(0, str)

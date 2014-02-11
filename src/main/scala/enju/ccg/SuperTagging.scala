@@ -4,6 +4,7 @@ import lexicon._
 import tagger.{LF => Feature, _}
 
 import scala.collection.mutable.ArraySeq
+import scala.reflect.ClassTag
 import java.io.{ObjectInputStream, ObjectOutputStream, FileWriter}
 
 trait SuperTagging extends Problem {
@@ -28,13 +29,15 @@ trait SuperTagging extends Problem {
   }
 
   override def train = {
-    println("Prapare for training...")
-    initializeDictionary
-    println("Dictionary load done.")
+    dict = newDictionary
 
     println("Reading CCGBank...")
-    val trainSentences = readSentencesFromCCGBank(trainPath, true)
+    val trainSentences = readSentencesFromCCGBank(trainPath, InputOptions.trainSize, true)
     println("done; # train sentences: " + trainSentences.size)
+
+    println("Setting word -> category mapping...")
+    setCategoryDictionary(trainSentences)
+    println("done.")
 
     val numTrainInstances = trainSentences.foldLeft(0) { _ + _.size }
 
@@ -58,7 +61,7 @@ trait SuperTagging extends Problem {
     load
 
     println("Reading CCGBank ...")
-    val evalSentences:Array[GoldSuperTaggedSentence] = readSentencesFromCCGBank(developPath, false)
+    val evalSentences = readSentencesFromCCGBank(developPath, InputOptions.testSize, false)
     val numInstances = evalSentences.foldLeft(0) { _ + _.size }
     println("done; # evaluating sentences: " + evalSentences.size)
 
@@ -181,40 +184,54 @@ trait SuperTagging extends Problem {
     weights = in.readObject.asInstanceOf[WeightVector]
     println("tagger model weights load done.\n")
   }
-  protected def initializeDictionary: Unit
+  def setCategoryDictionary(sentences: Seq[GoldSuperTaggedSentence]): Unit =
+    dict.categoryDictionary.resetWithSentences(sentences, DictionaryOptions.unkThreathold)
+
+  def newDictionary: DictionaryType
 
   // TODO: separate dictionary part into another class
-  protected def readSentencesFromCCGBank(path:String, train:Boolean): Array[GoldSuperTaggedSentence] = {
-    val reader = newCCGBankReader(dict)
-    reader.readSentences(path, InputOptions.trainSize, train)
+  protected def readSentencesFromCCGBank(path:String, n:Int, train:Boolean): Array[GoldSuperTaggedSentence] = readAndConvertCCGBankTrees(path, n, train, parseTreeConverter.toSentenceFromStringTree _)
+
+  def readParseTreesFromCCGBank(path:String, n:Int, train:Boolean): Array[ParseTree[NodeLabel]] = readAndConvertCCGBankTrees(path, n, train, parseTreeConverter.toLabelTree _)
+
+  private def readAndConvertCCGBankTrees[A:ClassTag](path:String, n:Int, train:Boolean, convert:ParseTree[String]=>A): Array[A] = {
+    newCCGBankReader.readParseTrees(path, n, train).map { convert(_) }.toArray
   }
-  def readCCGBank(path:String, n:Int, train:Boolean): (Array[GoldSuperTaggedSentence],Array[Derivation]) = {
-    val reader = newCCGBankReader(dict)
-    reader.readSentenceAndDerivations(path, n, train)
-  }
-  def newCCGBankReader(dict: Dictionary): CCGBankReader = new CCGBankReader(dict)
+
+  def newCCGBankReader: CCGBankReader = new CCGBankReader(dict) // default reader
+  def parseTreeConverter: ParseTreeConverter // language specific tree converter
 }
 
 class JapaneseSuperTagging extends SuperTagging {
   override type DictionaryType = JapaneseDictionary
 
-  override def initializeDictionary = {
+  def newDictionary =  new JapaneseDictionary(newCategoryDictionary)
+
+  def newCategoryDictionary = {
     import OptionEnumTypes.CategoryLookUpMethod
-    val categoryDictionary = DictionaryOptions.lookupMethod match {
+    DictionaryOptions.lookupMethod match {
       case CategoryLookUpMethod.surfaceOnly => new Word2CategoryDictionary
       case CategoryLookUpMethod.surfaceAndPoS => new WordPoS2CategoryDictionary
       case CategoryLookUpMethod.surfaceAndSecondFineTag => new WordSecondFineTag2CategoryDictionary
       case CategoryLookUpMethod.surfaceAndSecondWithConj => new WordSecondWithConj2CategoryDictionary
     }
-    dict = new JapaneseDictionary(categoryDictionary)
-
+  }
+  override def setCategoryDictionary(sentences: Seq[GoldSuperTaggedSentence]): Unit =
+    if (DictionaryOptions.useLexiconFiles) setCategoryDictionaryFromLexiconFiles
+    else super.setCategoryDictionary(sentences)
+  def setCategoryDictionaryFromLexiconFiles = {
     val lexiconPath = pathWithBankDirPathAsDefault(InputOptions.lexiconPath, "Japanese.lexicon")
     val templatePath = pathWithBankDirPathAsDefault(InputOptions.templatePath, "template.lst")
     dict.readLexicon(lexiconPath, templatePath)
   }
+
+  override def parseTreeConverter = new JapaneseParseTreeConverter(dict)
 }
 
-// class EnglishSuperTagging extends SuperTagging {
-//   override type DictionaryType = SimpleDictionary
+class EnglishSuperTagging extends SuperTagging {
+  override type DictionaryType = SimpleDictionary
 
-// }
+  def newDictionary = new SimpleDictionary
+
+  override def parseTreeConverter = new EnglishParseTreeConverter(dict)
+}

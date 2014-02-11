@@ -45,7 +45,9 @@ object TrainingOptions extends Options {
 
 object DictionaryOptions extends Options {
   import OptionEnumTypes.CategoryLookUpMethod
-  @Option(gloss="How to look up category candidates ?") var lookupMethod:CategoryLookUpMethod = CategoryLookUpMethod.surfaceAndSecondFineTag
+  @Option(gloss="How to look up category candidates? (for Japanese only)") var lookupMethod:CategoryLookUpMethod = CategoryLookUpMethod.surfaceAndSecondFineTag
+  @Option(gloss="Whether using lexicon files to create word -> category mappings") var useLexiconFiles: Boolean = true
+  @Option(gloss="Minimum number of occurences for registering as lexicalized entry") var unkThreathold = 15
 }
 
 object TaggerOptions extends Options {

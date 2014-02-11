@@ -29,16 +29,18 @@ class CCGBankReaderTest extends FunSuite {
   val dict = new JapaneseDictionary
   def cat(str:String) = dict.getCategory(str).get
 
-  def getParsedTree(lineStr:String = line): ParseTree[CCGBankReader#JapaneseLeafItem] = {
+  def converter = new JapaneseParseTreeConverter(dict)
+
+  def getParsedTree(lineStr:String = line): ParseTree[NodeLabel] = {
     val reader = new CCGBankReader(dict)
-    val parser = reader.japaneseTreeParser(true)
-    val parseTrees = parser.parse(lineStr)
-    parseTrees(0)
+    val stringTrees = reader.readParseTree(lineStr, true)
+    converter.toLabelTree(stringTrees)
   }
 
   test("read sentence test") {
     val reader = new CCGBankReader(dict)
-    val sentence = reader.readSentence(line, true)
+
+    val sentence = converter.toSentenceFromStringTree(reader.readParseTree(line, true))
     sentence.word(0) should equal (dict.getWord("村山"))
     sentence.pos(0) should equal (dict.getPoS("名詞-固有名詞-人名-姓/_"))
     sentence.cat(0) should equal (cat("NP[nc,nm]1／NP[nc,nm]1"))
@@ -47,25 +49,25 @@ class CCGBankReaderTest extends FunSuite {
   test("read with derivation test") {
     val tree = getParsedTree(line)
     tree.children.size should equal (2)
-    tree.label should equal (cat("S[nm,base]"))
+    tree.label.category should equal (cat("S[nm,base]"))
 
     tree.children match {
-      case BinaryTree(left, right, label, _) :: LeafNode(info, leafLabel) :: Nil => {
-        left.label should equal (cat("NP[ga,nm]"))
-        right.label should equal (cat("S[nm,base]＼NP[ga,nm]"))
-        label should equal (cat("S[nm,base]"))
+      case BinaryTree(left, right, label) :: LeafTree(leafLabel: TerminalLabel) :: Nil => {
+        left.label.category should equal (cat("NP[ga,nm]"))
+        right.label.category should equal (cat("S[nm,base]＼NP[ga,nm]"))
+        label.category should equal (cat("S[nm,base]"))
 
-        info.word should equal (dict.getWord("。"))
-        info.base should equal (dict.getWord("。"))
-        info.pos should equal (dict.getPoS("記号-句点/_"))
-        leafLabel should equal (cat("S1＼S1"))
+        leafLabel.word should equal (dict.getWord("。"))
+        leafLabel.baseForm should equal (dict.getWord("。"))
+        leafLabel.pos should equal (dict.getPoS("記号-句点/_"))
+        leafLabel.category should equal (cat("S1＼S1"))
       }
       case _ => fail
     }
   }
   test("converting parse tree to derivation test") {
     val tree = getParsedTree(simpleLine)
-    val deriv = tree.toDerivation
+    val deriv = converter.toDerivation(tree)
     val rootCategory = dict.getCategory("NP[nc,nm]").get
     deriv.root should equal (Point(0, 6, rootCategory))
     deriv.get(0, 6, rootCategory) match {

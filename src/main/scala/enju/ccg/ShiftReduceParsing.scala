@@ -18,15 +18,19 @@ trait ShiftReduceParsing extends Problem {
     new parser.FeatureExtractors(extractionMethods, { pos => pos.secondWithConj.id })
   }
   def instantiateSuperTagging: SuperTagging
-  def headFinder: parser.HeadFinder
+  def getHeadFinder(trees: Seq[ParseTree[NodeLabel]]): parser.HeadFinder
 
   override def train = { // asuming the model of SuperTagging is saved
     loadSuperTagging
-    val (sentences, derivations) = readCCGBank(trainPath, InputOptions.trainSize, true)
+    val parseTrees = readParseTreesFromCCGBank(trainPath, InputOptions.trainSize, true)
+
+    val sentences = parseTrees.map { tagging.parseTreeConverter.toSentenceFromLabelTree(_) }
+    val derivations = parseTrees.map { tagging.parseTreeConverter.toDerivation(_) }
+
     val trainingSentences = superTaggingToSentences(sentences) // assign candidates
 
     println("extracting CFG rules from all derivations ...")
-    rule = parser.CFGRule.extractRulesFromDerivations(derivations, headFinder)
+    rule = parser.CFGRule.extractRulesFromDerivations(derivations, getHeadFinder(parseTrees))
     println("done.")
 
     indexer = new ml.FeatureIndexer[Feature]
@@ -52,11 +56,11 @@ trait ShiftReduceParsing extends Problem {
     Problem.removeZeroWeightFeatures(indexer, weights)
     save
   }
-  def readCCGBank(path: String, n:Int, train:Boolean):(Array[GoldSuperTaggedSentence],Array[Derivation]) = {
+  def readParseTreesFromCCGBank(path: String, n:Int, train:Boolean) = {
     println("reading CCGBank sentences ...")
-    val (sentences, derivations) = tagging.readCCGBank(path, n, train)
+    val trees = tagging.readParseTreesFromCCGBank(path, n, train)
     println("done.")
-    (sentences, derivations)
+    trees
   }
   // TODO: segment into a cabocha-specific reader class
   def readCabochaSentences[S<:TaggedSentence](path: String, ccgSentences: Array[S]): Array[ParsedBunsetsuSentence] = {
@@ -108,7 +112,11 @@ trait ShiftReduceParsing extends Problem {
   }
   override def evaluate = {
     load
-    val (sentences, derivations) = readCCGBank(developPath, InputOptions.testSize, false)
+    val parseTrees = readParseTreesFromCCGBank(developPath, InputOptions.testSize, false)
+
+    val sentences = parseTrees.map { tagging.parseTreeConverter.toSentenceFromLabelTree(_) }
+    val derivations = parseTrees.map { tagging.parseTreeConverter.toDerivation(_) }
+
     val tagger = tagging.getTagger
     val decoder = getDecoder(new ml.Perceptron[parser.ActionLabel](weights))
 
@@ -190,13 +198,7 @@ trait ShiftReduceParsing extends Problem {
   def saveModel(os:ObjectOutputStream) = {
     os.writeObject(indexer)
     os.writeObject(weights)
-    rule match {
-      case parser.CFGRule(binary,unary,_) => {
-        os.writeObject(binary)
-        os.writeObject(unary)
-      }
-      case _ => // unification -> nothing
-    }
+    os.writeObject(rule)
   }
   def saveFeaturesToText = if (OutputOptions.parserFeaturePath != "") {
     println("saving features in text to " + OutputOptions.parserFeaturePath)
@@ -257,9 +259,10 @@ trait ShiftReduceParsing extends Problem {
     println("parser model weights load done.")
 
     // TODO: branch according to the setting of rule (cfg or not)
-    val binary = in.readObject.asInstanceOf[Map[(Int,Int), Array[(Category,String)]]]
-    val unary = in.readObject.asInstanceOf[Map[Int, Array[(Category,String)]]]
-    rule = parser.CFGRule(binary, unary, headFinder)
+    rule = in.readObject.asInstanceOf[parser.CFGRule]
+    // val binary = in.readObject.asInstanceOf[Map[(Int,Int), Array[(Category,String)]]]
+    // val unary = in.readObject.asInstanceOf[Map[Int, Array[(Category,String)]]]
+    // rule = parser.CFGRule(binary, unary, headFinder)
   }
   def getDecoder(perceptron:ml.Perceptron[parser.ActionLabel]) =
     new parser.BeamSearchDecoder(indexer,
@@ -273,5 +276,10 @@ trait ShiftReduceParsing extends Problem {
 
 class JapaneseShiftReduceParsing extends ShiftReduceParsing {
   override def instantiateSuperTagging = new JapaneseSuperTagging
-  override def headFinder:parser.HeadFinder = parser.JapaneseHeadFinder
+  override def getHeadFinder(trees: Seq[ParseTree[NodeLabel]]) = parser.JapaneseHeadFinder
+}
+
+class EnglishShiftReduceParsing extends ShiftReduceParsing {
+  override def instantiateSuperTagging = new JapaneseSuperTagging
+  override def getHeadFinder(trees: Seq[ParseTree[NodeLabel]]) = parser.EnglishHeadFinder.createFromParseTrees(trees)
 }
