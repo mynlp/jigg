@@ -1,6 +1,7 @@
 package enju.ccg.parser
 
-import enju.ccg.lexicon.{PoS, Word, Category, CandAssignedSentence, AppliedRule}
+import enju.ccg.lexicon.{PoS, Word, Category, CandAssignedSentence, AppliedRule, TrainSentence, Derivation}
+import enju.ccg.ml.{Perceptron, FeatureIndexer, Example}
 import scala.collection.mutable.ArrayBuffer
 
 // these are return types of the parser
@@ -51,8 +52,58 @@ trait TransitionBasedParser {
     val actions = possibleCombine ::: possibleUnary ::: possibleShifts
     addFinishIfNecessary(actions)
   }
+
+  def trainSentences(sentences: Array[TrainSentence], golds:Array[Derivation]):Int = {
+    var correct = 0
+    sentences.zip(golds).zipWithIndex.foreach {
+      case ((sentence, derivation), numProcessed) =>
+        if (trainSentence(sentence, derivation)) correct += 1
+    }
+    correct
+  }
+  def trainSentence(sentence: TrainSentence, gold:Derivation): Boolean
+  def predict(sentence: CandAssignedSentence): Derivation
 }
 
-class DeterministicDecoder(val oracleGen:OracleGenerator, override val rule:Rule) extends TransitionBasedParser {
+class DeterministicDecoder(
+  val indexer:FeatureIndexer[LF],
+  val extractors:FeatureExtractors,
+  val classifier:Perceptron[ActionLabel],
+  val oracleGen:OracleGenerator,
+  override val rule:Rule,
+  val initialState:State) extends TransitionBasedParser {
 
+  def trainSentence(sentence: TrainSentence, gold:Derivation): Boolean = {
+    val oracle = oracleGen.gen(sentence, gold, rule)
+
+    val stateOracleSeq: Seq[(State, Action)] = {
+      val stateSeq = ArrayBuffer(initialState)
+      val oracleSeq = new ArrayBuffer[Action]
+
+      while (oracleSeq.isEmpty || oracleSeq.last != Finish()) {
+        val goldAction = oracle.goldActions(stateSeq.last)(0)
+        oracleSeq += goldAction
+        if (goldAction != Finish())
+          stateSeq += stateSeq.last.proceed(goldAction, true)
+      }
+      stateSeq zip oracleSeq
+    }
+
+    var allCorrect = true
+    stateOracleSeq foreach { case (state, goldAction) =>
+      val goldLabel = goldAction.toLabel
+      val unlabeledFeatures = extractors.extractUnlabeledFeatures(sentence, state)
+      val examples = possibleActions(state, sentence).map { action =>
+        val featureIdxs = unlabeledFeatures.map { _.assignLabel(action.toLabel) }.map { indexer.getIndex(_) }.toArray
+        Example(featureIdxs, action.toLabel)
+      }
+      val predict = classifier.predict(examples)._1
+      classifier.update(examples, goldLabel)
+      classifier.c -= 1.0
+      allCorrect = allCorrect && predict == goldLabel
+    }
+    classifier.c += 1.0 // only update c when one sentence is processed
+    allCorrect
+  }
+  def predict(sentence: CandAssignedSentence): Derivation = sys.error("Please use BeamSearchDecoder with k=1 when predict!")
 }

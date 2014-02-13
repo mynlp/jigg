@@ -264,14 +264,22 @@ trait ShiftReduceParsing extends Problem {
     // val unary = in.readObject.asInstanceOf[Map[Int, Array[(Category,String)]]]
     // rule = parser.CFGRule(binary, unary, headFinder)
   }
-  def getDecoder(perceptron:ml.Perceptron[parser.ActionLabel]) =
-    new parser.BeamSearchDecoder(indexer,
-                                 featureExtractors,
-                                 perceptron,
-                                 parser.StaticOracleGenerator,
-                                 rule,
-                                 ParserOptions.beam,
-                                 parser.InitialFullState)
+  def getDecoder(perceptron:ml.Perceptron[parser.ActionLabel], train:Boolean = true) =
+    if (train && ParserOptions.beam == 1)
+      new parser.DeterministicDecoder(indexer,
+        featureExtractors,
+        perceptron,
+        parser.StaticOracleGenerator,
+        rule,
+        parser.InitialFullState)
+    else
+      new parser.BeamSearchDecoder(indexer,
+        featureExtractors,
+        perceptron,
+        parser.StaticOracleGenerator,
+        rule,
+        ParserOptions.beam,
+        parser.InitialFullState)
 }
 
 class JapaneseShiftReduceParsing extends ShiftReduceParsing {

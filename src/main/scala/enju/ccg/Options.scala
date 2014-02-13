@@ -64,7 +64,7 @@ object TaggerOptions extends Options {
 }
 
 object ParserOptions extends Options {
-  @Option(gloss="Beam width") var beam:Int = 8
+  @Option(gloss="Beam width; if k=1, deterministic decoder is used") var beam:Int = 8
 }
 
 // object OP extends Options

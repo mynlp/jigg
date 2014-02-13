@@ -55,14 +55,6 @@ class BeamSearchDecoder(val indexer:FeatureIndexer[LF],
   }
   case class TrainingInstance(predictedPath:Option[StatePath], goldPath:Option[StatePath])
 
-  def trainSentences(sentences: Array[TrainSentence], golds:Array[Derivation]):Int = {
-    var correct = 0
-    sentences.zip(golds).zipWithIndex.foreach {
-      case ((sentence, derivation), numProcessed) =>
-        if (trainSentence(sentence, derivation)) correct += 1
-    }
-    correct
-  }
   def trainSentence(sentence: TrainSentence, gold:Derivation): Boolean =
     getTrainingInstance(sentence, gold) match {
       case TrainingInstance(Some(pred), Some(gold)) =>
@@ -116,7 +108,7 @@ class BeamSearchDecoder(val indexer:FeatureIndexer[LF],
     }
     findOutputAndGold(Beam.init(initialState), None, None)
   }
-  def predict(sentence: CandAssignedSentence): Derivation = {
+  override def predict(sentence: CandAssignedSentence): Derivation = {
     def beamSearch(oldBeam:Beam, finishedCandidates: List[Candidate]): List[Candidate] = {
       if (oldBeam.isEmpty) return finishedCandidates
       else {
