@@ -36,14 +36,17 @@ class BeamSearchDecoder(val indexer:FeatureIndexer[LF],
 
       possibleActions(path.state, sentence).map { action =>
         val isGold = goldActions.contains(action) // support non-deterministic oracle; currently, goldActions only contain one element so this operation is simple equality check
-        val featureIdxs = unlabeledFeatures.map { _.assignLabel(action.toLabel) }.map { indexer.getIndex(_) }.toArray
-        val sumScore = path.score + classifier.featureScore(featureIdxs)
-        Candidate(path, WrappedAction(action, isGold, featureIdxs), sumScore)
+        val features = LabeledFeatures(unlabeledFeatures.map { _.assignLabel(action.toLabel) }.toArray)
+
+        val sumScore = path.score + classifier.featureScore(features.expand(indexer))
+        Candidate(path, WrappedAction(action, isGold, features), sumScore)
       }
     }
     def collectCandidatesTest(sentence:CandAssignedSentence) = kbest.flatMap { path =>
       val unlabeledFeatures = extractors.extractUnlabeledFeatures(sentence, path.state)
       possibleActions(path.state, sentence).map { action =>
+
+        // We don't need to cache feature values at test time; so we directly calculate featureIdxs from unlabeled features
         val featureIdxs = unlabeledFeatures.map { _.assignLabel(action.toLabel) }.map { indexer.getOrElse(_, -1) }.toArray
         val sumScore = path.score + classifier.featureScore(featureIdxs)
         Candidate(path, WrappedAction(action, false), sumScore) // do not preserve (partial) features at test time
@@ -55,13 +58,29 @@ class BeamSearchDecoder(val indexer:FeatureIndexer[LF],
   }
   case class TrainingInstance(predictedPath:Option[StatePath], goldPath:Option[StatePath])
 
-  def trainSentence(sentence: TrainSentence, gold:Derivation): Boolean =
+  def trainSentence(sentence: TrainSentence, gold:Derivation): Boolean = {
+    def excludeCommonActions(predActions: List[WrappedAction], goldActions: List[WrappedAction]): (List[WrappedAction], List[WrappedAction]) =
+      (predActions, goldActions) match {
+        case (pred :: predTail, gold :: goldTail) =>
+          if (pred.v == gold.v) excludeCommonActions(predTail, goldTail)
+          else (predActions, goldActions)
+        case (_, _) => (predActions, goldActions)
+      }
+    def expandFeaturesForTrain(actions: List[WrappedAction]) =
+      actions.toArray.flatMap { _.partialFeatures.expandForTrain(indexer) }
+
     getTrainingInstance(sentence, gold) match {
       case TrainingInstance(Some(pred), Some(gold)) =>
-        if (!pred.state.isGold) classifier.update(pred.fullFeatures, gold.fullFeatures)
+        if (!pred.state.isGold) {
+          excludeCommonActions(pred.actionPath.reverse, gold.actionPath.reverse) match {
+            case (predActions, goldActions) =>
+              classifier.update(expandFeaturesForTrain(predActions), expandFeaturesForTrain(goldActions))
+          }
+        }
         else classifier.c += 1.0F // average parameter must be updated
         return pred.state.isGold
       case _ => sys.error("")
+    }
     }
   // TODO: add test in sample sentence
   def getTrainingInstance(sentence:TrainSentence, gold:Derivation): TrainingInstance = {

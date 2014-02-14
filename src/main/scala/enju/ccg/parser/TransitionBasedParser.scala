@@ -4,15 +4,22 @@ import enju.ccg.lexicon.{PoS, Word, Category, CandAssignedSentence, AppliedRule,
 import enju.ccg.ml.{Perceptron, FeatureIndexer, Example}
 import scala.collection.mutable.ArrayBuffer
 
+case class LabeledFeatures(features: Array[LF]) {
+  def expand(indexer: FeatureIndexer[LF]) = features.map { indexer.getOrElse(_, -1) }
+  def expandForTrain(indexer: FeatureIndexer[LF]) = features.map { indexer.getIndex(_) }
+}
+object LabeledFeatures {
+  def empty = LabeledFeatures(Array.empty[LF])
+}
+
 // these are return types of the parser
-case class WrappedAction(v:Action, isGold:Boolean, partialFeatures:Array[Int] = Array.empty[Int])
+case class WrappedAction(
+  v:Action,
+  isGold:Boolean,
+  partialFeatures:LabeledFeatures = LabeledFeatures.empty)
+
 case class StatePath(state:State, actionPath:List[WrappedAction], score:Double = 0) {
-  // remove feature information (which might be heavy for later process, e.g., error analysis)
-  def toLight:StatePath = {
-    val lighterActionPath = actionPath.map { case WrappedAction(v, isGold, _) => WrappedAction(v, isGold) }
-    StatePath(state, lighterActionPath, score)
-  }
-  def fullFeatures:Array[Int] = actionPath.flatMap { _.partialFeatures }.toArray
+  //def fullFeatures:Array[Int] = actionPath.flatMap { _.partialFeatures }.toArray
 }
 
 trait TransitionBasedParser {
