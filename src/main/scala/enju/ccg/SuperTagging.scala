@@ -90,10 +90,10 @@ trait SuperTagging extends Problem {
   def getClassifierTrainer(numInstances: Int): ml.OnlineLogLinearTrainer[Int] = {
     import OptionEnumTypes.TaggerTrainAlgorithm
     TaggerOptions.taggerTrainAlg match {
-      case TaggerTrainAlgorithm.sgd => new ml.LogLinearSGD(weights, TaggerOptions.stepSizeA)
-      case TaggerTrainAlgorithm.adaGradL1 => new ml.LogLinearAdaGradL1(weights, TaggerOptions.lambda, TaggerOptions.eta)
+      case TaggerTrainAlgorithm.sgd => new ml.LogLinearSGD(weights, TaggerOptions.stepSizeA.toFloat)
+      case TaggerTrainAlgorithm.adaGradL1 => new ml.LogLinearAdaGradL1(weights, TaggerOptions.lambda.toFloat, TaggerOptions.eta.toFloat)
       case TaggerTrainAlgorithm.cumulativeL1 =>
-        new ml.LogLinearSGDCumulativeL1(weights, TaggerOptions.stepSizeA, TaggerOptions.lambda, numInstances)
+        new ml.LogLinearSGDCumulativeL1(weights, TaggerOptions.stepSizeA.toFloat, TaggerOptions.lambda.toFloat, numInstances)
     }
   }
 
