@@ -118,7 +118,7 @@ trait ShiftReduceParsing extends Problem {
     val derivations = parseTrees.map { tagging.parseTreeConverter.toDerivation(_) }
 
     val tagger = tagging.getTagger
-    val decoder = getDecoder(new ml.Perceptron[parser.ActionLabel](weights))
+    val decoder = getDecoder(new ml.Perceptron[parser.ActionLabel](weights), false)
 
     val numInstances = sentences.foldLeft(0) { _ + _.size }
 
