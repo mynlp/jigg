@@ -31,13 +31,13 @@ object FeatureTypes {
   case class Bias() extends FeatureWithoutDictionary {
     override def mkString = "bias"
   }
-  case class WP[T](word:Int, pos:Short, tmpl:T) extends FeatureOnDictionary {
+  case class WP[T](word:Char, pos:Short, tmpl:T) extends FeatureOnDictionary {
     override def mkString(dict:Dictionary) = concat(tmpl, w(word,dict), p(pos,dict))
   }
   case class PC[T](pos:Short, category:Short, tmpl:T) extends FeatureOnDictionary {
     override def mkString(dict:Dictionary) = concat(tmpl, p(pos,dict), c(category,dict))
   }
-  case class WC[T](word:Int, category:Short, tmpl:T) extends FeatureOnDictionary {
+  case class WC[T](word:Char, category:Short, tmpl:T) extends FeatureOnDictionary {
     override def mkString(dict:Dictionary) = concat(tmpl, w(word,dict), c(category,dict))
   }
   case class C[T](category:Short,tmpl:T) extends FeatureOnDictionary {
@@ -47,25 +47,25 @@ object FeatureTypes {
     override def mkString(dict:Dictionary) = concat(tmpl, p(pos,dict))
   }
 
-  case class WCWC[T](w1:Int, c1:Short, w2:Int, c2:Short, tmpl:T) extends FeatureOnDictionary {
+  case class WCWC[T](w1:Char, c1:Short, w2:Char, c2:Short, tmpl:T) extends FeatureOnDictionary {
     override def mkString(d:Dictionary) = concat(tmpl, w(w1,d), c(c1,d), w(w2,d), c(c2,d))
   }
   case class CC[T](c1:Short, c2:Short, tmpl:T) extends FeatureOnDictionary {
     override def mkString(d:Dictionary) = concat(tmpl, c(c1,d), c(c2,d))
   }
-  case class WCWP[T](w1:Int, c1:Short, w2:Int, p1:Short, tmpl:T) extends FeatureOnDictionary {
+  case class WCWP[T](w1:Char, c1:Short, w2:Char, p1:Short, tmpl:T) extends FeatureOnDictionary {
     override def mkString(d:Dictionary) = concat(tmpl, w(w1,d), c(c1,d), w(w2,d), p(p1,d))
   }
-  case class WPC[T](w1:Int, p1:Short, c1:Short, tmpl:T) extends FeatureOnDictionary {
+  case class WPC[T](w1:Char, p1:Short, c1:Short, tmpl:T) extends FeatureOnDictionary {
     override def mkString(d:Dictionary) = concat(tmpl, w(w1,d), p(p1,d), c(c1,d))
   }
-  case class WPCC[T](w1:Int, p1:Short, c1:Short, c2:Short, tmpl:T) extends FeatureOnDictionary {
+  case class WPCC[T](w1:Char, p1:Short, c1:Short, c2:Short, tmpl:T) extends FeatureOnDictionary {
     override def mkString(d:Dictionary) = concat(tmpl, w(w1,d), p(p1,d), c(c1,d), c(c2,d))
   }
-  case class WPPC[T](w1:Int, p1:Short, p2:Short, c1:Short, tmpl:T) extends FeatureOnDictionary {
+  case class WPPC[T](w1:Char, p1:Short, p2:Short, c1:Short, tmpl:T) extends FeatureOnDictionary {
     override def mkString(d:Dictionary) = concat(tmpl, w(w1,d), p(p1,d), p(p2,d), c(c1,d))
   }
-  case class WCCC[T](w1:Int, c1:Short, c2:Short, c3:Short, tmpl:T) extends FeatureOnDictionary {
+  case class WCCC[T](w1:Char, c1:Short, c2:Short, c3:Short, tmpl:T) extends FeatureOnDictionary {
     override def mkString(d:Dictionary) = concat(tmpl, w(w1,d), c(c1,d), c(c2,d), c(c3,d))
   }
   case class PPC[T](p1:Short, p2:Short, c1:Short, tmpl:T) extends FeatureOnDictionary {
@@ -74,7 +74,7 @@ object FeatureTypes {
   case class PPP[T](p1:Short, p2:Short, p3:Short, tmpl:T) extends FeatureOnDictionary {
     override def mkString(d:Dictionary) = concat(tmpl, p(p1,d), p(p2,d), p(p3,d))
   }
-  case class WCC[T](w1:Int, c1:Short, c2:Short, tmpl:T) extends FeatureOnDictionary {
+  case class WCC[T](w1:Char, c1:Short, c2:Short, tmpl:T) extends FeatureOnDictionary {
     override def mkString(d:Dictionary) = concat(tmpl, w(w1,d), c(c1,d), c(c2,d))
   }
   case class PCC[T](p1:Short, c1:Short, c2:Short, tmpl:T) extends FeatureOnDictionary {
