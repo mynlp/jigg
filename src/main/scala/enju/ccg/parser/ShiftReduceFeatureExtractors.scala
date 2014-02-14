@@ -29,9 +29,9 @@ class ZhangExtractor extends FeatureExtractor {
   import FeatureTypes.{ZhangTemplate => TMP}
   def addFeatures(ctx:Context, features:ArrayBuffer[UF]) = {
     type Item = (Int,Int,Int)
-    @inline def w(item: Item) = item._1
-    @inline def p(item: Item) = item._2
-    @inline def c(item: Item) = item._3
+    @inline def w(item: Item):Int = item._1
+    @inline def p(item: Item):Short = item._2.toShort
+    @inline def c(item: Item):Short = item._3.toShort
     def getItemsAt(s:WrappedCategory) = (ctx.word(s.head), ctx.pos(s.head), s.cat)
     def wordPoSAt(i:Int) = (ctx.word(i), ctx.pos(i), 0)
 
