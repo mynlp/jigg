@@ -11,8 +11,7 @@ class NumericBuffer[A](initSize:Int)(implicit numeric: Numeric[A]) extends Array
     super.update(idx, elem)
   }
   def removeIndexes(idxs: Seq[Int]): Unit = {
-    val newElems = this.clone
-    newElems.clear
+    val newElems = new ArrayBuffer[A]
     (0 to idxs.size) foreach { i =>
       val idx = if (i == idxs.size) size else idxs(i)
       val lastIdx = if (i == 0) -1 else idxs(i - 1)
