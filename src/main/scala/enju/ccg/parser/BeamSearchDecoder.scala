@@ -12,19 +12,19 @@ class BeamSearchDecoder(val indexer:FeatureIndexer[LF],
                         val beamSize:Int,
                         val initialState:State) extends TransitionBasedParser {
 
-  case class Candidate(path:StatePath, wrappedAction:WrappedAction, score:Double)
+  case class Candidate(path:StatePath, wrappedAction:WrappedAction, score:Double) {
+    def toProceedPath: StatePath = {
+      val newState = path.state.proceed(wrappedAction.v, wrappedAction.isGold)
+      StatePath(newState, wrappedAction :: path.actionPath, score)
+    }
+  }
 
   case class Beam(kbest:List[StatePath]) {
     def isEmpty:Boolean = kbest.isEmpty
 
     def reset(candidates:List[Candidate]) = resetQuick(candidates.sortWith(_.score > _.score))
     def resetQuick(sortedCandidates:List[Candidate]) = {
-      val newKBest = sortedCandidates.take(beamSize).map {
-        case Candidate(path, wrappedAction, score) =>
-          val newState = path.state.proceed(wrappedAction.v, wrappedAction.isGold)
-          StatePath(newState, wrappedAction :: path.actionPath, score)
-      }
-      Beam(newKBest)
+      Beam(sortedCandidates.take(beamSize).map { _.toProceedPath })
     }
     def existsGold = kbest.exists(_.state.isGold)
 
@@ -93,21 +93,25 @@ class BeamSearchDecoder(val indexer:FeatureIndexer[LF],
 
         // early-update check; when goldPath has value, we wait for exhausting the beam
         if (!newBeam.existsGold && updatedGoldPath == None) {
+          val proceededGoldPath = unfinished.find(_.wrappedAction.isGold).map { _.toProceedPath }
+          //val returnGoldPath = unfinished.find(_.wrappedAction.isGold) map { _.path }
+
           val returnOutputPath = (updatedOutputPath, newBeam.kbest) match {
             case (None, best :: _) => Some(best)
             case (currentOutput, best :: _) if (best.score > pathScore(currentOutput)) => Some(best)
             case _ => updatedOutputPath
           }
-          val returnGoldPath = unfinished.find(_.wrappedAction.isGold) map { _.path }
-          if (returnGoldPath == None) {
+
+          if (proceededGoldPath == None) {
             println("BeamSearchDecoder.scala: cannot find gold tree; this may or may not be correct?")
           }
-          TrainingInstance(returnOutputPath, returnGoldPath)
+          TrainingInstance(returnOutputPath, proceededGoldPath)
         } else findOutputAndGold(newBeam, updatedOutputPath, updatedGoldPath)
       }
     }
     findOutputAndGold(Beam.init(initialState), None, None)
   }
+
   override def predict(sentence: CandAssignedSentence): Derivation = {
     def beamSearch(oldBeam:Beam, finishedCandidates: List[Candidate]): List[Candidate] = {
       if (oldBeam.isEmpty) return finishedCandidates
