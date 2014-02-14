@@ -9,7 +9,7 @@ import java.io.{ObjectInputStream, ObjectOutputStream, FileWriter}
 
 trait SuperTagging extends Problem {
   type DictionaryType <: Dictionary
-  type WeightVector = ml.NumericBuffer[Double]
+  type WeightVector = ml.NumericBuffer[Float]
 
   var dict: DictionaryType = _
   var indexer: ml.FeatureIndexer[Feature] = _  // feature -> int

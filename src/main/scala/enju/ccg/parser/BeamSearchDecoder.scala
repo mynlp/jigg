@@ -59,7 +59,7 @@ class BeamSearchDecoder(val indexer:FeatureIndexer[LF],
     getTrainingInstance(sentence, gold) match {
       case TrainingInstance(Some(pred), Some(gold)) =>
         if (!pred.state.isGold) classifier.update(pred.fullFeatures, gold.fullFeatures)
-        else classifier.c += 1.0 // average parameter must be updated
+        else classifier.c += 1.0F // average parameter must be updated
         return pred.state.isGold
       case _ => sys.error("")
     }

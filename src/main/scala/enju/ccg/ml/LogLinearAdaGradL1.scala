@@ -1,28 +1,28 @@
 package enju.ccg.ml
 
-class LogLinearAdaGradL1[L](override val weights: NumericBuffer[Double], val lambda: Double, val eta: Double)
+class LogLinearAdaGradL1[L](override val weights: NumericBuffer[Float], val lambda: Float, val eta: Float)
     extends OnlineLogLinearTrainer[L] {
   val lastUpdates = new NumericBuffer[Int](weights.size)
-  val diagGt = new NumericBuffer[Double](weights.size)
+  val diagGt = new NumericBuffer[Float](weights.size)
 
-  override protected def weight(idx: Int): Double =
+  override protected def weight(idx: Int): Float =
     if (lastUpdates(idx) == time) weights(idx)
     else {
       val currentXti = weights(idx)
-      if (currentXti == 0.0) 0.0
+      if (currentXti == 0.0F) 0.0F
       else {
         val t0 = lastUpdates(idx)
         assert(time != 0)
         val ht0ii = 1.0 + Math.sqrt(diagGt(idx))
         val newWeight = Math.signum(currentXti) * Math.max(
           0.0, Math.abs(currentXti) - (lambda * eta / ht0ii) * (time - t0))
-        weights(idx) = newWeight
+        weights(idx) = newWeight.toFloat
         lastUpdates(idx) = time
-        newWeight
+        newWeight.toFloat
       }
     }
 
-  override def updateExampleWeights(e: Example[L], gold: L, derivative: Double): Unit = {
+  override def updateExampleWeights(e: Example[L], gold: L, derivative: Float): Unit = {
     // Here, we negate the gradient. This is because original formulation by Duch et al.
     // minimizes the objective, while we maximize the objective.
     val gti = -derivative
@@ -40,7 +40,7 @@ class LogLinearAdaGradL1[L](override val weights: NumericBuffer[Double], val lam
       val etaOverHtii = eta / htii
       val tempXti = xti - etaOverHtii * gti
 
-      weights(i) = Math.signum(tempXti) * Math.max(0.0, Math.abs(tempXti) - lambda * etaOverHtii)
+      weights(i) = (Math.signum(tempXti) * Math.max(0.0, Math.abs(tempXti) - lambda * etaOverHtii)).toFloat
       lastUpdates(i) = time + 1
 
       j += 1

@@ -99,10 +99,10 @@ class DeterministicDecoder(
       }
       val predict = classifier.predict(examples)._1
       classifier.update(examples, goldLabel)
-      classifier.c -= 1.0
+      classifier.c -= 1.0F
       allCorrect = allCorrect && predict == goldLabel
     }
-    classifier.c += 1.0 // only update c when one sentence is processed
+    classifier.c += 1.0F // only update c when one sentence is processed
     allCorrect
   }
   def predict(sentence: CandAssignedSentence): Derivation = sys.error("Please use BeamSearchDecoder with k=1 when predict!")

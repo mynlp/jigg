@@ -18,7 +18,7 @@ trait Problem {
   protected def developPath = pathWithBankDirPathAsDefault(InputOptions.developPath, "devel.ccgbank")
 
   object Problem {
-    def removeZeroWeightFeatures[F](indexer: FeatureIndexer[F], weightsList: NumericBuffer[Double]*): Unit = {
+    def removeZeroWeightFeatures[F](indexer: FeatureIndexer[F], weightsList: NumericBuffer[Float]*): Unit = {
       val baseWeights = weightsList(0)
       if (indexer.size > baseWeights.size) {
         indexer.removeElemsOver(baseWeights.size)

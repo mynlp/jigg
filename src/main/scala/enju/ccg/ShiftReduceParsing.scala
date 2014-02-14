@@ -6,7 +6,7 @@ import scala.collection.mutable.HashMap
 import java.io.{ObjectInputStream, ObjectOutputStream, FileWriter}
 
 trait ShiftReduceParsing extends Problem {
-  type WeightVector = ml.NumericBuffer[Double]
+  type WeightVector = ml.NumericBuffer[Float]
 
   var tagging: SuperTagging = _
   var indexer: ml.FeatureIndexer[Feature] = _

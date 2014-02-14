@@ -6,16 +6,16 @@ package enju.ccg.ml
   *   Models with Cumulative Penalty, IJCNLP
   */
 class LogLinearSGDCumulativeL1[L](
-  weights: NumericBuffer[Double],
-  a: Double,
-  val c: Double,
+  weights: NumericBuffer[Float],
+  a: Float,
+  val c: Float,
   val numInstances: Int) extends LogLinearSGD[L](weights, a) {
 
-  val q = new NumericBuffer[Double](weights.size)
-  var u: Double = 0.0
+  val q = new NumericBuffer[Float](weights.size)
+  var u = 0.0F
 
   override def reguralizeWeights(examples: Seq[Example[L]]): Unit = {
-    val eta: Double = (c / numInstances) * stepSize
+    val eta: Float = (c / numInstances) * stepSize
     u += eta
 
     var j = 0

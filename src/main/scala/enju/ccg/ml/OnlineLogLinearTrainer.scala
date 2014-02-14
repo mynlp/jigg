@@ -18,6 +18,6 @@ trait OnlineLogLinearTrainer[L] extends OnlineTrainer[L] with LogLinearClassifie
     reguralizeWeights(examples)
     time += 1
   }
-  def updateExampleWeights(e: Example[L], gold: L, derivative: Double): Unit
+  def updateExampleWeights(e: Example[L], gold: L, derivative: Float): Unit
   def reguralizeWeights(examples: Seq[Example[L]]): Unit = {} // Some algorithms reguralize weights after temporalily updating the values and this method defines that postprocessing. See LogLinearSGDCumulativeL1 for example.
 }

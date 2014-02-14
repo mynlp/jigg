@@ -1,7 +1,7 @@
 package enju.ccg.ml
 
 import scala.collection.mutable.ArrayBuffer
-import gnu.trove.TDoubleArrayList
+import gnu.trove.TFloatArrayList
 
 class NumericBuffer[A](initSize:Int)(implicit numeric: Numeric[A]) extends ArrayBuffer[A](initSize) {
   def this()(implicit numeric: Numeric[A]) = this(16)(numeric)
