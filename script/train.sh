@@ -4,9 +4,21 @@ beta=$1
 beam=$2
 iters=$3
 
-HEAP=100g
+HEAP=50g
 
-java -Xmx${HEAP} -jar ./target/enju-ccg-assembly-0.1.jar -modelType tagger -actionType train -bankDirPath ccgbank-20130828 -saveModelPath tagger.out -numIters 15 -lookupMethod surfaceAndSecondWithConj -taggerTrainAlg adaGradL1 -lambda 0.000000005 -eta 0.1
+taggerModel=ja.tagger.out
+parserModel=ja.parser.beta=$beta.beam=$beam.out
+parseOutput=ja.develop.parsed.beta=$beta.beam=$beam.txt
 
-java -Xmx${HEAP} -jar ./target/enju-ccg-assembly-0.1.jar -modelType parser -actionType train -bankDirPath ccgbank-20130828 -saveModelPath parser.out.beta=$beta.beam=$beam -numIters $3 -loadModelPath tagger.out -beam $beam -beta $beta -removeZero
+java -Xmx${HEAP} -jar ./target/enju-ccg-assembly-0.1.jar -modelType tagger \
+    -actionType train -bankDirPath ccgbank-20130828 -saveModelPath $taggerModel \
+    -numIters 15 -lookupMethod surfaceAndSecondWithConj
 
+java -Xmx${HEAP} -jar ./target/enju-ccg-assembly-0.1.jar -modelType parser -actionType train \
+    -bankDirPath ccgbank-20130828 -saveModelPath  \
+    -numIters $3 -loadModelPath $taggerModel -beam $beam -beta $beta \
+    -parserFeaturePath ja.features.parser.beta=$beta.beam=$beam.txt
+
+java -Xmx8g -jar target/enju-ccg-assembly-0.1.jar -modelType parser -actionType evaluate \
+    -loadModelPath $parserModel -beam $beam -beta $beta -outputPath develop.parsed.txt \
+    -bankDirPath ccgbank-20130828 -cabochaPath ./data/devel.removed
