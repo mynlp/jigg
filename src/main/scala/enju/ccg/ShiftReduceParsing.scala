@@ -62,44 +62,7 @@ trait ShiftReduceParsing extends Problem {
     println("done.")
     trees
   }
-  // TODO: segment into a cabocha-specific reader class
-  def readCabochaSentences[S<:TaggedSentence](path: String, ccgSentences: Array[S]): Array[ParsedBunsetsuSentence] = {
-    val bunsetsuStart = """\* (\d+) (-?\d+)[A-Z]""".r
-    def addBunsetsuTo(curSent: List[(String, Int)], curBunsetsu: List[String]) = curBunsetsu.reverse match {
-      case Nil => curSent
-      case headIdx :: tail => (tail.mkString(""), headIdx.toInt) :: curSent
-    }
 
-    val bunsetsuSegedSentences: List[List[(String, Int)]] =
-      scala.io.Source.fromFile(path).getLines.filter(_ != "").foldLeft(
-        (List[List[(String, Int)]](), List[(String, Int)](), List[String]())) {
-        case ((processed, curSent, curBunsetsu), line) => line match {
-          case bunsetsuStart(_, nextHeadIdx) =>
-            (processed, addBunsetsuTo(curSent, curBunsetsu), nextHeadIdx :: Nil) // use first elem as the head idx
-          case "EOS" => (addBunsetsuTo(curSent, curBunsetsu).reverse :: processed, Nil, Nil)
-          case word => (processed, curSent, word.split("\t")(0) :: curBunsetsu)
-        }
-      }._1.reverse
-
-    ccgSentences.zip(bunsetsuSegedSentences).map { case (ccgSentence, bunsetsuSentence) =>
-      val bunsetsuSegCharIdxs: List[Int] = bunsetsuSentence.map { _._1.size }.scanLeft(0)(_+_).tail // 5 10 ...
-      val ccgWordSegCharIdxs: List[Int] = ccgSentence.wordSeq.toList.map { _.v.size }.scanLeft(0)(_+_).tail // 2 5 7 10 ...
-
-      assert(bunsetsuSegCharIdxs.last == ccgWordSegCharIdxs.last)
-      val bunsetsuSegWordIdxs: List[Int] = ccgWordSegCharIdxs.zipWithIndex.foldLeft((List[Int](), 0)) { // 1 3 ...
-        case ((segWordIdxs, curBunsetsuIdx), (wordIdx, i)) =>
-          if (wordIdx >= bunsetsuSegCharIdxs(curBunsetsuIdx)) (i :: segWordIdxs, curBunsetsuIdx + 1)
-          else (segWordIdxs, curBunsetsuIdx) // wait until wordIdx exceeds the next bunsetsu segment
-      }._1.reverse
-      val bunsetsuSeq = bunsetsuSegWordIdxs.zip(-1 :: bunsetsuSegWordIdxs).map { case (bunsetsuIdx, prevIdx) =>
-        val offset = prevIdx + 1
-        Bunsetsu(offset,
-          ccgSentence.wordSeq.slice(offset, bunsetsuIdx + 1),
-          ccgSentence.posSeq.slice(offset, bunsetsuIdx + 1))
-      }
-      ParsedBunsetsuSentence(bunsetsuSeq, bunsetsuSentence.map { _._2 })
-    }
-  }
   def superTaggingToSentences(sentences:Array[GoldSuperTaggedSentence]): Array[TrainSentence] = {
     println("super tagging: assign candidate categories to sentences ...")
     val taggedSentences = tagging.superTagToSentences(sentences)
@@ -136,15 +99,10 @@ trait ShiftReduceParsing extends Problem {
 
     println("parsing time: " + parsingTime + "ms; " + sentencePerSec + "s/sec; " + wordPerSec + "w/sec")
 
-    val goldCabochaSentences = readCabochaSentences(InputOptions.cabochaPath, sentences)
-    val predCabochaSentences = goldCabochaSentences.zip(predDerivations).map { case (sent, deriv) =>
-      BunsetsuSentence(sent.bunsetsuSeq).parseWithCCGDerivation(deriv)
-    }
     evaluateCategoryAccuracy(sentences, predDerivations)
-    evaluateBunsetsuDepAccuracy(predCabochaSentences, goldCabochaSentences)
-
     outputDerivations(sentences, predDerivations)
-    outputBunsetsuDeps(predCabochaSentences)
+
+    evaluateBunsetsu(sentences, predDerivations)
   }
   def evaluateCategoryAccuracy(sentences:Array[GoldSuperTaggedSentence], derivations:Array[Derivation]) = {
     val (numCorrects, numCompletes) = sentences.zip(derivations).foldLeft(0, 0) {
@@ -161,26 +119,7 @@ trait ShiftReduceParsing extends Problem {
     println("token accuracy: " + numCorrects.toDouble / numInstances.toDouble)
     println("sentence accuracy: " + numCompletes.toDouble / sentences.size.toDouble)
   }
-  def evaluateBunsetsuDepAccuracy(preds: Array[ParsedBunsetsuSentence], golds: Array[ParsedBunsetsuSentence]) = {
-    val (numCorrects, numCompletes) = preds.zip(golds).foldLeft(0, 0) {
-      case ((corrects, completes), (pred, gold)) =>
-        val numCorrectHeads = gold.headSeq.dropRight(1).zip(pred.headSeq).count { a => a._1 == a._2 }
-        (corrects + numCorrectHeads, completes + (if (numCorrectHeads == pred.size - 1) 1 else 0))
-    }
-    val numInstances = preds.map(_.size - 1).sum
-    println("\ndependency accuracies:")
-    println("-----------------------")
-    println("token accuracy: " + numCorrects.toDouble / numInstances.toDouble)
-    println("sentence accuracy: " + numCompletes.toDouble / preds.size.toDouble)
-
-    val (activeNumCorrect, activeSum) = preds.zip(golds).foldLeft(0, 0) {
-      case ((corrects, sum), (pred, gold)) =>
-        val activeHeadIdxs = (0 until pred.headSeq.size - 1).filter(pred.headSeq(_) != -1)
-        val numCorrectHeads = activeHeadIdxs.count { i => pred.headSeq(i) == gold.headSeq(i) }
-        (corrects + numCorrectHeads, sum + activeHeadIdxs.size)
-    }
-    println("active token accuracy: " + activeNumCorrect.toDouble / activeSum.toDouble)
-  }
+  def evaluateBunsetsu(sentences:Array[GoldSuperTaggedSentence], derivations:Array[Derivation]) = {} // defualt = do nothing
 
   override def predict = {
     //load
@@ -225,15 +164,6 @@ trait ShiftReduceParsing extends Problem {
       case (sentence, derivation) =>
         fw.write(derivation.render(sentence) + "\n")
     }
-    fw.flush
-    fw.close
-    println("done")
-  }
-  def outputBunsetsuDeps(sentences:Seq[ParsedBunsetsuSentence]) = {
-    val depsPath = OutputOptions.outputPath + ".cabocha"
-    println("saving predicted bunsetsu dependencies to " + depsPath)
-    val fw = new FileWriter(depsPath)
-    sentences.foreach { sent => fw.write(sent.renderInCabocha + "\n") }
     fw.flush
     fw.close
     println("done")
@@ -285,6 +215,85 @@ trait ShiftReduceParsing extends Problem {
 class JapaneseShiftReduceParsing extends ShiftReduceParsing {
   override def instantiateSuperTagging = new JapaneseSuperTagging
   override def getHeadFinder(trees: Seq[ParseTree[NodeLabel]]) = parser.JapaneseHeadFinder
+
+  override def evaluateBunsetsu(sentences:Array[GoldSuperTaggedSentence], derivations:Array[Derivation]) = {
+    val goldCabochaSentences = readCabochaSentences(InputOptions.cabochaPath, sentences)
+    val predCabochaSentences = goldCabochaSentences.zip(derivations).map { case (sent, deriv) =>
+      BunsetsuSentence(sent.bunsetsuSeq).parseWithCCGDerivation(deriv)
+    }
+    evaluateBunsetsuDepAccuracy(predCabochaSentences, goldCabochaSentences)
+    outputBunsetsuDeps(predCabochaSentences)
+  }
+
+  // TODO: segment into a cabocha-specific reader class
+  def readCabochaSentences[S<:TaggedSentence](path: String, ccgSentences: Array[S]): Array[ParsedBunsetsuSentence] = {
+    val bunsetsuStart = """\* (\d+) (-?\d+)[A-Z]""".r
+    def addBunsetsuTo(curSent: List[(String, Int)], curBunsetsu: List[String]) = curBunsetsu.reverse match {
+      case Nil => curSent
+      case headIdx :: tail => (tail.mkString(""), headIdx.toInt) :: curSent
+    }
+
+    val bunsetsuSegedSentences: List[List[(String, Int)]] =
+      scala.io.Source.fromFile(path).getLines.filter(_ != "").foldLeft(
+        (List[List[(String, Int)]](), List[(String, Int)](), List[String]())) {
+        case ((processed, curSent, curBunsetsu), line) => line match {
+          case bunsetsuStart(_, nextHeadIdx) =>
+            (processed, addBunsetsuTo(curSent, curBunsetsu), nextHeadIdx :: Nil) // use first elem as the head idx
+          case "EOS" => (addBunsetsuTo(curSent, curBunsetsu).reverse :: processed, Nil, Nil)
+          case word => (processed, curSent, word.split("\t")(0) :: curBunsetsu)
+        }
+      }._1.reverse
+
+    ccgSentences.zip(bunsetsuSegedSentences).map { case (ccgSentence, bunsetsuSentence) =>
+      val bunsetsuSegCharIdxs: List[Int] = bunsetsuSentence.map { _._1.size }.scanLeft(0)(_+_).tail // 5 10 ...
+      val ccgWordSegCharIdxs: List[Int] = ccgSentence.wordSeq.toList.map { _.v.size }.scanLeft(0)(_+_).tail // 2 5 7 10 ...
+
+      assert(bunsetsuSegCharIdxs.last == ccgWordSegCharIdxs.last)
+      val bunsetsuSegWordIdxs: List[Int] = ccgWordSegCharIdxs.zipWithIndex.foldLeft((List[Int](), 0)) { // 1 3 ...
+        case ((segWordIdxs, curBunsetsuIdx), (wordIdx, i)) =>
+          if (wordIdx >= bunsetsuSegCharIdxs(curBunsetsuIdx)) (i :: segWordIdxs, curBunsetsuIdx + 1)
+          else (segWordIdxs, curBunsetsuIdx) // wait until wordIdx exceeds the next bunsetsu segment
+      }._1.reverse
+      val bunsetsuSeq = bunsetsuSegWordIdxs.zip(-1 :: bunsetsuSegWordIdxs).map { case (bunsetsuIdx, prevIdx) =>
+        val offset = prevIdx + 1
+        Bunsetsu(offset,
+          ccgSentence.wordSeq.slice(offset, bunsetsuIdx + 1),
+          ccgSentence.posSeq.slice(offset, bunsetsuIdx + 1))
+      }
+      ParsedBunsetsuSentence(bunsetsuSeq, bunsetsuSentence.map { _._2 })
+    }
+  }
+
+  def evaluateBunsetsuDepAccuracy(preds: Array[ParsedBunsetsuSentence], golds: Array[ParsedBunsetsuSentence]) = {
+    val (numCorrects, numCompletes) = preds.zip(golds).foldLeft(0, 0) {
+      case ((corrects, completes), (pred, gold)) =>
+        val numCorrectHeads = gold.headSeq.dropRight(1).zip(pred.headSeq).count { a => a._1 == a._2 }
+        (corrects + numCorrectHeads, completes + (if (numCorrectHeads == pred.size - 1) 1 else 0))
+    }
+    val numInstances = preds.map(_.size - 1).sum
+    println("\ndependency accuracies:")
+    println("-----------------------")
+    println("token accuracy: " + numCorrects.toDouble / numInstances.toDouble)
+    println("sentence accuracy: " + numCompletes.toDouble / preds.size.toDouble)
+
+    val (activeNumCorrect, activeSum) = preds.zip(golds).foldLeft(0, 0) {
+      case ((corrects, sum), (pred, gold)) =>
+        val activeHeadIdxs = (0 until pred.headSeq.size - 1).filter(pred.headSeq(_) != -1)
+        val numCorrectHeads = activeHeadIdxs.count { i => pred.headSeq(i) == gold.headSeq(i) }
+        (corrects + numCorrectHeads, sum + activeHeadIdxs.size)
+    }
+    println("active token accuracy: " + activeNumCorrect.toDouble / activeSum.toDouble)
+  }
+
+  def outputBunsetsuDeps(sentences:Seq[ParsedBunsetsuSentence]) = {
+    val depsPath = OutputOptions.outputPath + ".cabocha"
+    println("saving predicted bunsetsu dependencies to " + depsPath)
+    val fw = new FileWriter(depsPath)
+    sentences.foreach { sent => fw.write(sent.renderInCabocha + "\n") }
+    fw.flush
+    fw.close
+    println("done")
+  }
 }
 
 class EnglishShiftReduceParsing extends ShiftReduceParsing {
