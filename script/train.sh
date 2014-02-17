@@ -20,5 +20,5 @@ java -Xmx${HEAP} -jar ./target/enju-ccg-assembly-0.1.jar -modelType parser -acti
     -parserFeaturePath ja.features.parser.beta=$beta.beam=$beam.txt
 
 java -Xmx8g -jar target/enju-ccg-assembly-0.1.jar -modelType parser -actionType evaluate \
-    -loadModelPath $parserModel -beam $beam -beta $beta -outputPath develop.parsed.txt \
+    -loadModelPath $parserModel -beam $beam -beta $beta -outputPath $parseOutput \
     -bankDirPath ccgbank-20130828 -cabochaPath ./data/devel.removed

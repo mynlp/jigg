@@ -8,6 +8,7 @@ HEAP=50g
 
 taggerModel=en.tagger.out
 parserModel=en.parser.beta=$beta.beam=$beam.out
+parseOutput=en.develop.parsed.beta=$beta.beam=$beam.txt
 
 java -Xmx${HEAP} -jar ./target/enju-ccg-assembly-0.1.jar -modelType tagger \
     -actionType train -trainPath data/english.train.removed -language english \
@@ -19,4 +20,7 @@ java -Xmx${HEAP} -jar ./target/enju-ccg-assembly-0.1.jar -modelType parser -acti
     -loadModelPath $taggerModel -beam $beam -beta $beta \
     -parserFeaturePath en.features.parser.beta=$beta.beam=$beam.txt
 
-# English evaluation is not supported yet
+java -Xmx8g -jar target/enju-ccg-assembly-0.1.jar -modelType parser -actionType evaluate \
+    -loadModelPath $parserModel -beam $beam -beta $beta -outputPath $parseOutput \
+    -language english -developPath data/english.devel
+
