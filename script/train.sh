@@ -15,7 +15,7 @@ java -Xmx${HEAP} -jar ./target/enju-ccg-assembly-0.1.jar -modelType tagger \
     -numIters 15 -lookupMethod surfaceAndSecondWithConj
 
 java -Xmx${HEAP} -jar ./target/enju-ccg-assembly-0.1.jar -modelType parser -actionType train \
-    -bankDirPath ccgbank-20130828 -saveModelPath  \
+    -bankDirPath ccgbank-20130828 -saveModelPath $parserModel \
     -numIters $3 -loadModelPath $taggerModel -beam $beam -beta $beta \
     -parserFeaturePath ja.features.parser.beta=$beta.beam=$beam.txt
 
