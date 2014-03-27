@@ -1,6 +1,6 @@
 package enju.ccg.lexicon
 
-// TODO: for output purpose, it is more convenient if sentence has Seq[String], which preserves the sequence of original surface forms. 
+// TODO: for output purpose, it is more convenient if sentence has Seq[String], which preserves the sequence of original surface forms.
 
 trait hasSize {
   def size:Int
@@ -31,7 +31,7 @@ class Sentence(override val wordSeq:Seq[Word]) extends WordSeq {
 }
 
 trait TaggedSentence extends Sentence with BaseFormSeq with PoSSeq {
-  type AssignedSentence
+  type AssignedSentence <: CandAssignedSentence
   def assignCands(candSeq:Seq[Seq[Category]]): AssignedSentence
 }
 
@@ -70,7 +70,7 @@ case class TestSentence(
   override val posSeq:Seq[PoS],
   override val candSeq:Seq[Seq[Category]]) extends PoSTaggedSentence(wordSeq, baseSeq, posSeq) with CandAssignedSentence {
   require (wordSeq.size == posSeq.size && posSeq.size == candSeq.size)
-  
+
   def this(s:PoSTaggedSentence, candSeq:Seq[Seq[Category]]) = this(s.wordSeq, s.baseSeq, s.posSeq, candSeq)
   override def size = wordSeq.size
 }
@@ -82,7 +82,7 @@ case class TrainSentence(
   override val catSeq:Seq[Category],
   override val candSeq:Seq[Seq[Category]]) extends GoldSuperTaggedSentence(wordSeq, baseSeq, posSeq, catSeq) with CandAssignedSentence {
   require (wordSeq.size == posSeq.size && posSeq.size == catSeq.size &&  catSeq.size == candSeq.size)
-  
+
   def this(s:GoldSuperTaggedSentence, candSeq:Seq[Seq[Category]]) = this(s.wordSeq, s.baseSeq, s.posSeq, s.catSeq, candSeq)
   override def size = wordSeq.size
 
@@ -99,4 +99,3 @@ case class TrainSentence(
     this.copy(candSeq = newCandSeq);
   }
 }
-

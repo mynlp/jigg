@@ -200,6 +200,8 @@ trait SuperTagging extends Problem {
 
   def newCCGBankReader: CCGBankReader
   def parseTreeConverter: ParseTreeConverter // language specific tree converter
+
+  def readPoSTaggedSentences(path:String, n:Int): Array[PoSTaggedSentence]
 }
 
 class JapaneseSuperTagging extends SuperTagging {
@@ -227,6 +229,11 @@ class JapaneseSuperTagging extends SuperTagging {
 
   override def newCCGBankReader = new CCGBankReader(dict) // default reader
   override def parseTreeConverter = new JapaneseParseTreeConverter(dict)
+
+  override def readPoSTaggedSentences(path:String, n:Int): Array[PoSTaggedSentence] = {
+    val reader = new MecabReader(dict)
+    reader.readSentences(path, n)
+  }
 }
 
 class EnglishSuperTagging extends SuperTagging {
@@ -247,4 +254,7 @@ class EnglishSuperTagging extends SuperTagging {
 
   override def newCCGBankReader = new EnglishCCGBankReader(dict)
   override def parseTreeConverter = new EnglishParseTreeConverter(dict)
+
+  override def readPoSTaggedSentences(path:String, n:Int): Array[PoSTaggedSentence] =
+    sys.error("not yet implemented.")
 }

@@ -65,7 +65,7 @@ trait ShiftReduceParsing extends Problem {
 
   def superTaggingToSentences(sentences:Array[GoldSuperTaggedSentence]): Array[TrainSentence] = {
     println("super tagging: assign candidate categories to sentences ...")
-    val taggedSentences = tagging.superTagToSentences(sentences)
+    val taggedSentences:Seq[TrainSentence] = tagging.superTagToSentences(sentences)
     println("done.")
     val sumCandidates = taggedSentences.foldLeft(0) { case (sum, s) => sum + s.candSeq.map(_.size).sum }
     val numInstances = sentences.foldLeft(0) { _ + _.size }
@@ -80,20 +80,12 @@ trait ShiftReduceParsing extends Problem {
     val sentences = parseTrees.map { tagging.parseTreeConverter.toSentenceFromLabelTree(_) }
     val derivations = parseTrees.map { tagging.parseTreeConverter.toDerivation(_) }
 
-    val tagger = tagging.getTagger
-    val decoder = getDecoder(new ml.Perceptron[parser.ActionLabel](weights), false)
-
     val numInstances = sentences.foldLeft(0) { _ + _.size }
 
     val before = System.currentTimeMillis
-    val predDerivations = sentences.zip(derivations).zipWithIndex map {
-      case ((sentence, derivation), i) =>
-        if (i % 100 == 0) print(i + "\t/" + sentences.size + " have been processed.\r")
-        val superTaggedSentence = sentence.assignCands(tagger.candSeq(sentence, TaggerOptions.beta, TaggerOptions.maxK))
-        decoder.predict(superTaggedSentence)
-    }
-    println()
+    val predDerivations = getPredDerivations(sentences)
     val parsingTime = System.currentTimeMillis - before
+
     val sentencePerSec = (sentences.size.toDouble / (parsingTime / 1000)).formatted("%.1f")
     val wordPerSec = (numInstances.toDouble / (parsingTime / 1000)).formatted("%.1f")
 
@@ -104,6 +96,21 @@ trait ShiftReduceParsing extends Problem {
 
     evaluateBunsetsu(sentences, predDerivations)
   }
+  // return prediction time
+  def getPredDerivations[S<:TaggedSentence](sentences:Array[S]): Array[Derivation] = {
+    val tagger = tagging.getTagger
+    val decoder = getDecoder(new ml.Perceptron[parser.ActionLabel](weights), false)
+
+    val predDerivations = sentences.zipWithIndex map {
+      case (sentence, i) =>
+        if (i % 100 == 0) print(i + "\t/" + sentences.size + " have been processed.\r")
+        val superTaggedSentence = sentence.assignCands(tagger.candSeq(sentence, TaggerOptions.beta, TaggerOptions.maxK))
+        decoder.predict(superTaggedSentence)
+    }
+    println()
+    predDerivations
+  }
+
   def evaluateCategoryAccuracy(sentences:Array[GoldSuperTaggedSentence], derivations:Array[Derivation]) = {
     val (numCorrects, numCompletes) = sentences.zip(derivations).foldLeft(0, 0) {
       case ((corrects, completes), (sentence, derivation)) =>
@@ -122,7 +129,15 @@ trait ShiftReduceParsing extends Problem {
   def evaluateBunsetsu(sentences:Array[GoldSuperTaggedSentence], derivations:Array[Derivation]) = {} // defualt = do nothing
 
   override def predict = {
-    //load
+    load
+
+    val sentences = tagging.readPoSTaggedSentences(InputOptions.testPath, InputOptions.testSize)
+
+    val before = System.currentTimeMillis
+    val predDerivations = getPredDerivations(sentences)
+    val parsingTime = System.currentTimeMillis - before
+
+    outputDerivations(sentences, predDerivations)
   }
   override def save = {
     import java.io._
