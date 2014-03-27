@@ -83,4 +83,22 @@ case class Derivation(map:Array[Array[ListMap[Category, AppliedRule]]], roots:Ar
     }
     leftSides.zip(rightSides).map { case(a,b)=> a+b }.mkString(" ").trim
   }
+
+  /** This method combines separated subtrees in the derivation into one tree by force.
+    * Currently, this combine process is done in left-to-right order, that is,
+    * the most left two subtrees are combined, which head is the right child.
+    * This procedure is intended for head-last language, e.g., Japanese, so not generally applicable, but partly solve the problem of separated subtrees on bunsetsu-dependency evaluation.
+    */
+  def toSingleRoot: Derivation = {
+    val newMap = map.map { _.clone }
+    (1 until roots.size) foreach { j =>
+      val i = j - 1
+
+      newMap(0)(roots(j).y) += roots(j).category -> AppliedRule(BinaryChildrenPoints(
+        Point(0, roots(i).y, roots(i).category),
+        roots(j)), ">")
+    }
+    val newRoot = Point(0, roots.last.y, roots.last.category)
+    Derivation(newMap, Array(newRoot))
+  }
 }

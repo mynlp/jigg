@@ -234,7 +234,8 @@ class JapaneseShiftReduceParsing extends ShiftReduceParsing {
   override def evaluateBunsetsu(sentences:Array[GoldSuperTaggedSentence], derivations:Array[Derivation]) = {
     val goldCabochaSentences = readCabochaSentences(InputOptions.cabochaPath, sentences)
     val predCabochaSentences = goldCabochaSentences.zip(derivations).map { case (sent, deriv) =>
-      BunsetsuSentence(sent.bunsetsuSeq).parseWithCCGDerivation(deriv)
+      val modifiedDeriv = deriv.toSingleRoot
+      BunsetsuSentence(sent.bunsetsuSeq).parseWithCCGDerivation(modifiedDeriv)
     }
     evaluateBunsetsuDepAccuracy(predCabochaSentences, goldCabochaSentences)
     outputBunsetsuDeps(predCabochaSentences)
