@@ -2,6 +2,7 @@ package enju.ccg
 
 import lexicon._
 import parser.{LF => Feature}
+import scala.io.Source
 import scala.collection.mutable.HashMap
 import java.io.{ObjectInputStream, ObjectOutputStream, FileWriter}
 
@@ -29,9 +30,9 @@ trait ShiftReduceParsing extends Problem {
 
     val trainingSentences = superTaggingToSentences(sentences) // assign candidates
 
-    println("extracting CFG rules from all derivations ...")
+    System.err.println("extracting CFG rules from all derivations ...")
     rule = parser.CFGRule.extractRulesFromDerivations(derivations, getHeadFinder(parseTrees))
-    println("done.")
+    System.err.println("done.")
 
     indexer = new ml.FeatureIndexer[Feature]
     weights = new WeightVector
@@ -39,14 +40,14 @@ trait ShiftReduceParsing extends Problem {
     val perceptron = new ml.Perceptron[parser.ActionLabel](weights)
     val decoder = getDecoder(perceptron)
 
-    println("training start!")
+    System.err.println("training start!")
 
     (0 until TrainingOptions.numIters) foreach { i =>
       val correct = decoder.trainSentences(trainingSentences, derivations)
-      println("accuracy (" + i + "): " + correct.toDouble / sentences.size.toDouble + " [" + correct + "]")
-      println("# features: " + indexer.size)
+      System.err.println("accuracy (" + i + "): " + correct.toDouble / sentences.size.toDouble + " [" + correct + "]")
+      System.err.println("# features: " + indexer.size)
       if (TrainingOptions.removeZero) {
-        println(weights.size + " " + perceptron.averageWeights.size)
+        System.err.println(weights.size + " " + perceptron.averageWeights.size)
         assert(weights.size == perceptron.averageWeights.size)
         Problem.removeZeroWeightFeatures(indexer, weights, perceptron.averageWeights)
       }
@@ -57,19 +58,19 @@ trait ShiftReduceParsing extends Problem {
     save
   }
   def readParseTreesFromCCGBank(path: String, n:Int, train:Boolean) = {
-    println("reading CCGBank sentences ...")
+    System.err.println("reading CCGBank sentences ...")
     val trees = tagging.readParseTreesFromCCGBank(path, n, train)
-    println("done.")
+    System.err.println("done.")
     trees
   }
 
   def superTaggingToSentences(sentences:Array[GoldSuperTaggedSentence]): Array[TrainSentence] = {
-    println("super tagging: assign candidate categories to sentences ...")
+    System.err.println("super tagging: assign candidate categories to sentences ...")
     val taggedSentences:Seq[TrainSentence] = tagging.superTagToSentences(sentences)
-    println("done.")
+    System.err.println("done.")
     val sumCandidates = taggedSentences.foldLeft(0) { case (sum, s) => sum + s.candSeq.map(_.size).sum }
     val numInstances = sentences.foldLeft(0) { _ + _.size }
-    println("# average of candidate labels after super-tagging: " + sumCandidates.toDouble / numInstances.toDouble)
+    System.err.println("# average of candidate labels after super-tagging: " + sumCandidates.toDouble / numInstances.toDouble)
 
     taggedSentences.map { _.pickUpGoldCategory }.toArray // for training
   }
@@ -89,7 +90,7 @@ trait ShiftReduceParsing extends Problem {
     val sentencePerSec = (sentences.size.toDouble / (parsingTime / 1000)).formatted("%.1f")
     val wordPerSec = (numInstances.toDouble / (parsingTime / 1000)).formatted("%.1f")
 
-    println("parsing time: " + parsingTime + "ms; " + sentencePerSec + "s/sec; " + wordPerSec + "w/sec")
+    System.err.println("parsing time: " + parsingTime + "ms; " + sentencePerSec + "s/sec; " + wordPerSec + "w/sec")
 
     evaluateCategoryAccuracy(sentences, predDerivations)
     outputDerivations(sentences, predDerivations)
@@ -103,11 +104,11 @@ trait ShiftReduceParsing extends Problem {
 
     val predDerivations = sentences.zipWithIndex map {
       case (sentence, i) =>
-        if (i % 100 == 0) print(i + "\t/" + sentences.size + " have been processed.\r")
+        if (i % 100 == 0) System.err.print(i + "\t/" + sentences.size + " have been processed.\r")
         val superTaggedSentence = sentence.assignCands(tagger.candSeq(sentence, TaggerOptions.beta, TaggerOptions.maxK))
         decoder.predict(superTaggedSentence)
     }
-    println()
+    System.err.println()
     predDerivations
   }
 
@@ -121,17 +122,20 @@ trait ShiftReduceParsing extends Problem {
         (corrects + numCorrectTokens, completes + (if (numCorrectTokens == sentence.size) 1 else 0))
     }
     val numInstances = sentences.foldLeft(0) { _ + _.size }
-    println("\ncategory accuracies:")
-    println("-----------------------")
-    println("token accuracy: " + numCorrects.toDouble / numInstances.toDouble)
-    println("sentence accuracy: " + numCompletes.toDouble / sentences.size.toDouble)
+    System.err.println("\ncategory accuracies:")
+    System.err.println("-----------------------")
+    System.err.println("token accuracy: " + numCorrects.toDouble / numInstances.toDouble)
+    System.err.println("sentence accuracy: " + numCompletes.toDouble / sentences.size.toDouble)
   }
   def evaluateBunsetsu(sentences:Array[GoldSuperTaggedSentence], derivations:Array[Derivation]) = {} // defualt = do nothing
 
   override def predict = {
     load
 
-    val sentences = tagging.readPoSTaggedSentences(InputOptions.testPath, InputOptions.testSize)
+    val sentences = tagging.readPoSTaggedSentences(
+      //if (InputOptions.testPath == "") Source.stdin else Source.fromFile(InputOptions.testPath),
+      Source.fromFile(InputOptions.testPath),
+      InputOptions.testSize)
 
     val before = System.currentTimeMillis
     val predDerivations = getPredDerivations(sentences)
@@ -143,7 +147,7 @@ trait ShiftReduceParsing extends Problem {
     import java.io._
     saveFeaturesToText
 
-    println("saving tagger+parser model to " + OutputOptions.saveModelPath)
+    System.err.println("saving tagger+parser model to " + OutputOptions.saveModelPath)
     val os = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(OutputOptions.saveModelPath)))
     tagging.saveModel(os)
     saveModel(os)
@@ -155,7 +159,7 @@ trait ShiftReduceParsing extends Problem {
     os.writeObject(rule)
   }
   def saveFeaturesToText = if (OutputOptions.parserFeaturePath != "") {
-    println("saving features in text to " + OutputOptions.parserFeaturePath)
+    System.err.println("saving features in text to " + OutputOptions.parserFeaturePath)
     val dict = tagging.dict
     val fw = new FileWriter(OutputOptions.parserFeaturePath)
     indexer.foreach {
@@ -170,10 +174,10 @@ trait ShiftReduceParsing extends Problem {
     }
     fw.flush
     fw.close
-    println("done.")
+    System.err.println("done.")
   }
   def outputDerivations[S<:TaggedSentence](sentences:Array[S], derivations:Array[Derivation]) = if (OutputOptions.outputPath != "") {
-    println("saving predicted derivations to " + OutputOptions.outputPath)
+    System.err.println("saving predicted derivations to " + OutputOptions.outputPath)
     val fw = new FileWriter(OutputOptions.outputPath)
     sentences.zip(derivations).map {
       case (sentence, derivation) =>
@@ -181,12 +185,12 @@ trait ShiftReduceParsing extends Problem {
     }
     fw.flush
     fw.close
-    println("done")
+    System.err.println("done")
   }
   def load = {
     import java.io._
     val in = new ObjectInputStream(new BufferedInputStream(new FileInputStream(InputOptions.loadModelPath)))
-    println("load start")
+    System.err.println("load start")
     tagging = instantiateSuperTagging
     tagging.loadModel(in)
     loadModel(in)
@@ -198,10 +202,10 @@ trait ShiftReduceParsing extends Problem {
   }
   def loadModel(in:ObjectInputStream) = {
     indexer = in.readObject.asInstanceOf[ml.FeatureIndexer[Feature]]
-    println("parser feature templates load done.")
+    System.err.println("parser feature templates load done.")
 
     weights = in.readObject.asInstanceOf[WeightVector]
-    println("parser model weights load done.")
+    System.err.println("parser model weights load done.")
 
     // TODO: branch according to the setting of rule (cfg or not)
     rule = in.readObject.asInstanceOf[parser.CFGRule]
@@ -287,10 +291,10 @@ class JapaneseShiftReduceParsing extends ShiftReduceParsing {
         (corrects + numCorrectHeads, completes + (if (numCorrectHeads == pred.size - 1) 1 else 0))
     }
     val numInstances = preds.map(_.size - 1).sum
-    println("\ndependency accuracies:")
-    println("-----------------------")
-    println("token accuracy: " + numCorrects.toDouble / numInstances.toDouble)
-    println("sentence accuracy: " + numCompletes.toDouble / preds.size.toDouble)
+    System.err.println("\ndependency accuracies:")
+    System.err.println("-----------------------")
+    System.err.println("token accuracy: " + numCorrects.toDouble / numInstances.toDouble)
+    System.err.println("sentence accuracy: " + numCompletes.toDouble / preds.size.toDouble)
 
     val (activeNumCorrect, activeSum) = preds.zip(golds).foldLeft(0, 0) {
       case ((corrects, sum), (pred, gold)) =>
@@ -298,17 +302,17 @@ class JapaneseShiftReduceParsing extends ShiftReduceParsing {
         val numCorrectHeads = activeHeadIdxs.count { i => pred.headSeq(i) == gold.headSeq(i) }
         (corrects + numCorrectHeads, sum + activeHeadIdxs.size)
     }
-    println("active token accuracy: " + activeNumCorrect.toDouble / activeSum.toDouble)
+    System.err.println("active token accuracy: " + activeNumCorrect.toDouble / activeSum.toDouble)
   }
 
   def outputBunsetsuDeps(sentences:Seq[ParsedBunsetsuSentence]) = {
     val depsPath = OutputOptions.outputPath + ".cabocha"
-    println("saving predicted bunsetsu dependencies to " + depsPath)
+    System.err.println("saving predicted bunsetsu dependencies to " + depsPath)
     val fw = new FileWriter(depsPath)
     sentences.foreach { sent => fw.write(sent.renderInCabocha + "\n") }
     fw.flush
     fw.close
-    println("done")
+    System.err.println("done")
   }
 }
 

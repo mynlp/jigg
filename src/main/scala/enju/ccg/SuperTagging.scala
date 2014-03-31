@@ -3,6 +3,7 @@ package enju.ccg
 import lexicon._
 import tagger.{LF => Feature, _}
 
+import scala.io.Source
 import scala.collection.mutable.ArraySeq
 import scala.reflect.ClassTag
 import java.io.{ObjectInputStream, ObjectOutputStream, FileWriter}
@@ -31,13 +32,13 @@ trait SuperTagging extends Problem {
   override def train = {
     dict = newDictionary
 
-    println("Reading CCGBank...")
+    System.err.println("Reading CCGBank...")
     val trainSentences = readSentencesFromCCGBank(trainPath, InputOptions.trainSize, true)
-    println("done; # train sentences: " + trainSentences.size)
+    System.err.println("done; # train sentences: " + trainSentences.size)
 
-    println("Setting word -> category mapping...")
+    System.err.println("Setting word -> category mapping...")
     setCategoryDictionary(trainSentences)
-    println("done.")
+    System.err.println("done.")
 
     val numTrainInstances = trainSentences.foldLeft(0) { _ + _.size }
 
@@ -60,10 +61,10 @@ trait SuperTagging extends Problem {
   override def evaluate = {
     load
 
-    println("Reading CCGBank ...")
+    System.err.println("Reading CCGBank ...")
     val evalSentences = readSentencesFromCCGBank(developPath, InputOptions.testSize, false)
     val numInstances = evalSentences.foldLeft(0) { _ + _.size }
-    println("done; # evaluating sentences: " + evalSentences.size)
+    System.err.println("done; # evaluating sentences: " + evalSentences.size)
 
     val before = System.currentTimeMillis
 
@@ -73,7 +74,7 @@ trait SuperTagging extends Problem {
     val sentencePerSec = (evalSentences.size.toDouble / (taggingTime / 1000)).formatted("%.1f")
     val wordPerSec = (numInstances.toDouble / (taggingTime / 1000)).formatted("%.1f")
 
-    println("tagging time: " + taggingTime + "ms; " + sentencePerSec + "s/sec; " + wordPerSec + "w/sec")
+    System.err.println("tagging time: " + taggingTime + "ms; " + sentencePerSec + "s/sec; " + wordPerSec + "w/sec")
     evaluateTokenSentenceAccuracy(assignedSentences)
     outputPredictions(assignedSentences)
   }
@@ -116,19 +117,19 @@ trait SuperTagging extends Problem {
         (sum + unkIdxes.size, cor + unkCorrects)
     }
     val numInstances = sentences.foldLeft(0) { _ + _.size }
-    println()
-    println("token accuracy: " + numCorrect.toDouble / numInstances.toDouble)
-    println("sentence accuracy: " + numComplete.toDouble / sentences.size.toDouble)
-    println("unknown accuracy: " + numCorrectUnks.toDouble / numUnks.toDouble + " (" + numCorrectUnks + "/" + numUnks + ")")
+    System.err.println()
+    System.err.println("token accuracy: " + numCorrect.toDouble / numInstances.toDouble)
+    System.err.println("sentence accuracy: " + numComplete.toDouble / sentences.size.toDouble)
+    System.err.println("unknown accuracy: " + numCorrectUnks.toDouble / numUnks.toDouble + " (" + numCorrectUnks + "/" + numUnks + ")")
 
     val sumCandidates = sentences.foldLeft(0) { case (sum, s) => sum + s.candSeq.map(_.size).sum }
-    println("# average of candidate labels after super-tagging: " + (sumCandidates.toDouble / numInstances.toDouble).formatted("%.2f"))
-    println()
+    System.err.println("# average of candidate labels after super-tagging: " + (sumCandidates.toDouble / numInstances.toDouble).formatted("%.2f"))
+    System.err.println()
   }
   override def save = {
     import java.io._
     saveFeaturesToText
-    println("saving tagger model to " + OutputOptions.saveModelPath)
+    System.err.println("saving tagger model to " + OutputOptions.saveModelPath)
     val os = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(OutputOptions.saveModelPath)))
     saveModel(os)
     os.close
@@ -139,7 +140,7 @@ trait SuperTagging extends Problem {
     os.writeObject(weights)
   }
   def saveFeaturesToText = if (OutputOptions.taggerFeaturePath != "") {
-    println("saving features in text to " + OutputOptions.taggerFeaturePath)
+    System.err.println("saving features in text to " + OutputOptions.taggerFeaturePath)
     val fw = new FileWriter(OutputOptions.taggerFeaturePath)
     indexer.foreach {
       case (k, v) =>
@@ -153,10 +154,10 @@ trait SuperTagging extends Problem {
     }
     fw.flush
     fw.close
-    println("done.")
+    System.err.println("done.")
   }
   def outputPredictions[S<:CandAssignedSentence](sentences:Array[S]) = if (OutputOptions.outputPath != "") {
-    println("saving tagger prediction results to " + OutputOptions.outputPath)
+    System.err.println("saving tagger prediction results to " + OutputOptions.outputPath)
     val fw = new FileWriter(OutputOptions.outputPath)
     sentences.foreach { sentence =>
       (0 until sentence.size).foreach { i =>
@@ -166,7 +167,7 @@ trait SuperTagging extends Problem {
     }
     fw.flush
     fw.close
-    println("done.")
+    System.err.println("done.")
   }
   def load = {
     import java.io._
@@ -176,13 +177,13 @@ trait SuperTagging extends Problem {
   }
   def loadModel(in: ObjectInputStream) = {
     dict = in.readObject.asInstanceOf[DictionaryType]
-    println("dict load done.")
+    System.err.println("dict load done.")
 
     indexer = in.readObject.asInstanceOf[ml.FeatureIndexer[Feature]]
-    println("tagger feature templates load done.")
+    System.err.println("tagger feature templates load done.")
 
     weights = in.readObject.asInstanceOf[WeightVector]
-    println("tagger model weights load done.\n")
+    System.err.println("tagger model weights load done.\n")
   }
   def setCategoryDictionary(sentences: Seq[GoldSuperTaggedSentence]): Unit =
     dict.categoryDictionary.resetWithSentences(sentences, DictionaryOptions.unkThreathold)
@@ -201,7 +202,7 @@ trait SuperTagging extends Problem {
   def newCCGBankReader: CCGBankReader
   def parseTreeConverter: ParseTreeConverter // language specific tree converter
 
-  def readPoSTaggedSentences(path:String, n:Int): Array[PoSTaggedSentence]
+  def readPoSTaggedSentences(in:Source, n:Int): Array[PoSTaggedSentence]
 }
 
 class JapaneseSuperTagging extends SuperTagging {
@@ -230,9 +231,9 @@ class JapaneseSuperTagging extends SuperTagging {
   override def newCCGBankReader = new CCGBankReader(dict) // default reader
   override def parseTreeConverter = new JapaneseParseTreeConverter(dict)
 
-  override def readPoSTaggedSentences(path:String, n:Int): Array[PoSTaggedSentence] = {
+  override def readPoSTaggedSentences(in:Source, n:Int): Array[PoSTaggedSentence] = {
     val reader = new MecabReader(dict)
-    reader.readSentences(path, n)
+    reader.readSentences(in, n)
   }
 }
 
@@ -255,6 +256,6 @@ class EnglishSuperTagging extends SuperTagging {
   override def newCCGBankReader = new EnglishCCGBankReader(dict)
   override def parseTreeConverter = new EnglishParseTreeConverter(dict)
 
-  override def readPoSTaggedSentences(path:String, n:Int): Array[PoSTaggedSentence] =
+  override def readPoSTaggedSentences(in:Source, n:Int): Array[PoSTaggedSentence] =
     sys.error("not yet implemented.")
 }
