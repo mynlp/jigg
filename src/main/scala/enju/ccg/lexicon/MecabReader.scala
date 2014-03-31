@@ -23,13 +23,12 @@ class MecabReader(dict:Dictionary) {
       terminalSeq.map(_._2),
       terminalSeq.map(_._3))
   }
-
-  def readSentences(path:String, n:Int): Array[PoSTaggedSentence] = {
+  def readSentences(in:Source, n:Int): Array[PoSTaggedSentence] = {
     val sentences = new ArrayBuffer[PoSTaggedSentence]
 
     val sentenceLines = new ArrayBuffer[String]
 
-    takeLines(path, n).foreach { _ match {
+    takeLines(in, n).foreach { _ match {
       case "EOS" =>
         sentences += toPoSTaggedSentence(sentenceLines)
         sentenceLines.clear
@@ -38,8 +37,10 @@ class MecabReader(dict:Dictionary) {
     }}
     sentences.toArray
   }
-  def takeLines(path:String, n:Int): Iterator[String] =
-    for (line <- Source.fromFile(path).getLines.filter(_!="") match {
+  def readSentences(path:String, n:Int): Array[PoSTaggedSentence] =
+    readSentences(Source.fromFile(path), n)
+  def takeLines(in:Source, n:Int): Iterator[String] =
+    for (line <- in.getLines.filter(_!="") match {
       case lines if (n == -1) => lines
       case lines => lines.take(n) }) yield line
 
