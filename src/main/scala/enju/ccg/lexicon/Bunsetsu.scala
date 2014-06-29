@@ -80,6 +80,8 @@ case class ParsedBunsetsuSentence(
 
   def renderInCabocha: String = headSeq.zipWithIndex.zip(bunsetsuSeq).map { case ((h, i), bunsetsu) =>
     val depStr = "* " + i + " " + h + "D"
-    (depStr :: (0 until bunsetsu.size).toList.map { i => bunsetsu.word(i) + "\t" + bunsetsu.pos(i) }).mkString("\n")
+    val bunsetsuStr = (0 until bunsetsu.size).toList.map { i => bunsetsu.word(i) + "\t" + bunsetsu.pos(i) }
+
+    Seq(depStr, bunsetsuStr, "EOS").mkString("\n")
   }.mkString("\n")
 }
