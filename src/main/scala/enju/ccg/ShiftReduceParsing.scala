@@ -75,7 +75,9 @@ trait ShiftReduceParsing extends Problem {
     taggedSentences.map { _.pickUpGoldCategory }.toArray // for training
   }
   override def evaluate = {
+    if (OutputOptions.outputPath != "") prepareDirectoryOutput(OutputOptions.outputPath)
     load
+
     val parseTrees = readParseTreesFromCCGBank(developPath, InputOptions.testSize, false)
 
     val sentences = parseTrees.map { tagging.parseTreeConverter.toSentenceFromLabelTree(_) }
@@ -95,7 +97,7 @@ trait ShiftReduceParsing extends Problem {
     evaluateCategoryAccuracy(sentences, predDerivations)
     outputDerivations(sentences, predDerivations)
 
-    evaluateBunsetsu(sentences, predDerivations)
+    evaluateBunsetsuDeps(sentences, derivations, predDerivations)
   }
   // return prediction time
   def getPredDerivations[S<:TaggedSentence](sentences:Array[S]): Array[Derivation] = {
@@ -127,7 +129,7 @@ trait ShiftReduceParsing extends Problem {
     System.err.println("token accuracy: " + numCorrects.toDouble / numInstances.toDouble)
     System.err.println("sentence accuracy: " + numCompletes.toDouble / sentences.size.toDouble)
   }
-  def evaluateBunsetsu(sentences:Array[GoldSuperTaggedSentence], derivations:Array[Derivation]) = {} // defualt = do nothing
+  def evaluateBunsetsuDeps(sentences:Array[GoldSuperTaggedSentence], golds:Array[Derivation], derivations:Array[Derivation]) = {} // defualt = do nothing
 
   override def predict = {
     load
@@ -177,8 +179,9 @@ trait ShiftReduceParsing extends Problem {
     System.err.println("done.")
   }
   def outputDerivations[S<:TaggedSentence](sentences:Array[S], derivations:Array[Derivation]) = if (OutputOptions.outputPath != "") {
-    System.err.println("saving predicted derivations to " + OutputOptions.outputPath)
-    val fw = new FileWriter(OutputOptions.outputPath)
+    val opath = OutputOptions.outputPath + "/pred"
+    System.err.println("saving predicted derivations to " + opath)
+    val fw = new FileWriter(opath)
     sentences.zip(derivations).map {
       case (sentence, derivation) =>
         fw.write(derivation.render(sentence) + "\n")
@@ -235,18 +238,53 @@ class JapaneseShiftReduceParsing extends ShiftReduceParsing {
   override def instantiateSuperTagging = new JapaneseSuperTagging
   override def getHeadFinder(trees: Seq[ParseTree[NodeLabel]]) = parser.JapaneseHeadFinder
 
-  override def evaluateBunsetsu(sentences:Array[GoldSuperTaggedSentence], derivations:Array[Derivation]) = {
+  override def evaluateBunsetsuDeps(sentences:Array[GoldSuperTaggedSentence], golds:Array[Derivation], derivations:Array[Derivation]) = {
     val goldCabochaSentences = readCabochaSentences(InputOptions.cabochaPath, sentences)
-    val predCabochaSentences = goldCabochaSentences.zip(derivations).map { case (sent, deriv) =>
-      val modifiedDeriv = deriv.toSingleRoot
-      BunsetsuSentence(sent.bunsetsuSeq).parseWithCCGDerivation(modifiedDeriv)
+
+    def cabochaSentencesFromDerives(derives: Seq[Derivation]) = goldCabochaSentences.zip(derives).map {
+      case (sent, deriv) => BunsetsuSentence(sent.bunsetsuSeq).parseWithCCGDerivation(deriv)
     }
-    evaluateBunsetsuDepAccuracy(predCabochaSentences, goldCabochaSentences)
+
+    val goldBankSentences = cabochaSentencesFromDerives(golds)
+
+    val predCabochaSentences = cabochaSentencesFromDerives(derivations)
+    val connectedCabochaSentences = cabochaSentencesFromDerives(derivations.map { _.toSingleRoot })
+
+    def outputDependencyAccuracies(goldSentences: Seq[ParsedBunsetsuSentence]) = {
+      evaluateBunsetsuDepAccuracy(predCabochaSentences, goldSentences)
+
+      System.err.println("\nevaluation with modified derivations:")
+      evaluateBunsetsuDepAccuracy(connectedCabochaSentences, goldSentences)
+    }
+
+    // val (predCabochaSentences, connectedCabochaSentences) = goldCabochaSentences.zip(derivations).map {
+    //   case (sent, deriv) =>
+    //     val modifiedDeriv = deriv.toSingleRoot
+    //     val bsent = BunsetsuSentence(sent.bunsetsuSeq)
+    //     (bsent.parseWithCCGDerivation(deriv), bsent.parseWithCCGDerivation(modifiedDeriv))
+    // }.unzip
+
+    // val goldBankSentences = goldCabochaSentences.zip(golds).map {
+    //   case (sent, deriv) =>
+    //     BunsetsuSentence(sent.bunsetsuSeq).parseWithCCGDerivation(deriv)
+    // }
+
+    System.err.println("\ndependency accuracies against Kyodai dependency:")
+    System.err.println("-----------------------")
+    outputDependencyAccuracies(goldCabochaSentences)
+
+    System.err.println("\ndependency accuracies against CCGBank dependency:")
+    System.err.println("-----------------------")
+    outputDependencyAccuracies(goldBankSentences)
+
+    System.err.println("\nevaluation with modified derivations:")
+    evaluateBunsetsuDepAccuracy(connectedCabochaSentences, goldBankSentences)
+
     outputBunsetsuDeps(predCabochaSentences)
   }
 
   // TODO: segment into a cabocha-specific reader class
-  def readCabochaSentences[S<:TaggedSentence](path: String, ccgSentences: Array[S]): Array[ParsedBunsetsuSentence] = {
+  def readCabochaSentences[S<:TaggedSentence](path: String, ccgSentences: Seq[S]): Seq[ParsedBunsetsuSentence] = {
     val bunsetsuStart = """\* (\d+) (-?\d+)[A-Z]""".r
     def addBunsetsuTo(curSent: List[(String, Int)], curBunsetsu: List[String]) = curBunsetsu.reverse match {
       case Nil => curSent
@@ -284,15 +322,14 @@ class JapaneseShiftReduceParsing extends ShiftReduceParsing {
     }
   }
 
-  def evaluateBunsetsuDepAccuracy(preds: Array[ParsedBunsetsuSentence], golds: Array[ParsedBunsetsuSentence]) = {
+  def evaluateBunsetsuDepAccuracy(preds: Seq[ParsedBunsetsuSentence], golds: Seq[ParsedBunsetsuSentence]) = {
     val (numCorrects, numCompletes) = preds.zip(golds).foldLeft(0, 0) {
       case ((corrects, completes), (pred, gold)) =>
         val numCorrectHeads = gold.headSeq.dropRight(1).zip(pred.headSeq).count { a => a._1 == a._2 }
         (corrects + numCorrectHeads, completes + (if (numCorrectHeads == pred.size - 1) 1 else 0))
     }
     val numInstances = preds.map(_.size - 1).sum
-    System.err.println("\ndependency accuracies:")
-    System.err.println("-----------------------")
+
     System.err.println("token accuracy: " + numCorrects.toDouble / numInstances.toDouble)
     System.err.println("sentence accuracy: " + numCompletes.toDouble / preds.size.toDouble)
 
@@ -305,15 +342,25 @@ class JapaneseShiftReduceParsing extends ShiftReduceParsing {
     System.err.println("active token accuracy: " + activeNumCorrect.toDouble / activeSum.toDouble)
   }
 
-  def outputBunsetsuDeps(sentences:Seq[ParsedBunsetsuSentence]) = {
-    val depsPath = OutputOptions.outputPath + ".cabocha"
-    System.err.println("saving predicted bunsetsu dependencies to " + depsPath)
-    val fw = new FileWriter(depsPath)
-    sentences.foreach { sent => fw.write(sent.renderInCabocha + "\n") }
-    fw.flush
-    fw.close
+  def outputBunsetsuDeps(sentences:Seq[ParsedBunsetsuSentence]) = if (OutputOptions.outputPath != "") {
+    System.err.println("\nsaving predicted bunsetsu dependencies to " + OutputOptions.outputPath)
+
+    outputBunsetsuDepsIn({ sent: ParsedBunsetsuSentence => sent.renderInCabocha },
+      sentences,
+      OutputOptions.outputPath + "/pred.cabocha")
+    outputBunsetsuDepsIn({ sent: ParsedBunsetsuSentence => sent.renderInCoNLL },
+      sentences,
+      OutputOptions.outputPath + "/pred.conll")
+
     System.err.println("done")
   }
+  def outputBunsetsuDepsIn(conv:ParsedBunsetsuSentence=>String, sentences:Seq[ParsedBunsetsuSentence], path: String) = {
+    val fw = new FileWriter(path)
+    sentences.foreach { sent => fw.write(conv(sent) + "\n") }
+    fw.flush
+    fw.close
+  }
+
 }
 
 class EnglishShiftReduceParsing extends ShiftReduceParsing {

@@ -1,5 +1,6 @@
 package enju.ccg
 
+import java.io.File
 import scala.collection.mutable.HashMap
 import ml.{NumericBuffer, FeatureIndexer}
 
@@ -16,6 +17,16 @@ trait Problem {
     }
   protected def trainPath = pathWithBankDirPathAsDefault(InputOptions.trainPath, "train.ccgbank")
   protected def developPath = pathWithBankDirPathAsDefault(InputOptions.developPath, "devel.ccgbank")
+
+  def prepareDirectoryOutput(path: String) = new File(path) match {
+    case d if d.exists && d.isFile =>
+      sys.error("We cannot create a directory " + path + "; there is another file in that path!")
+    case d => d.mkdirs match {
+      case true => // ok, success
+      case false =>
+        System.err.println("Directory " + path + " already exits; we override the contents.")
+    }
+  }
 
   object Problem {
     def removeZeroWeightFeatures[F](indexer: FeatureIndexer[F], weightsList: NumericBuffer[Float]*): Unit = {

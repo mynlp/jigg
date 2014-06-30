@@ -12,6 +12,11 @@ trait BunsetsuBase {
   def word(i: Int): Word = if (i < wordSeq.size) wordSeq(i) else wordSeq.last
   def pos(i: Int): PoS = if (i < posSeq.size) posSeq(i) else posSeq.last
   def size = wordSeq.size
+
+  def cabochaStr = (0 until size).map { i => word(i).v + "\t" + pos(i).v }.mkString("\n")
+
+  def str = wordSeq.map(_.v).mkString
+  def posStr = posSeq.map(_.v).mkString("|")
 }
 
 // TODO: Currently the settings below are hard-coded.
@@ -80,6 +85,10 @@ case class ParsedBunsetsuSentence(
 
   def renderInCabocha: String = headSeq.zipWithIndex.zip(bunsetsuSeq).map { case ((h, i), bunsetsu) =>
     val depStr = "* " + i + " " + h + "D"
-    (depStr :: (0 until bunsetsu.size).toList.map { i => bunsetsu.word(i) + "\t" + bunsetsu.pos(i) }).mkString("\n")
+    depStr + "\n" + bunsetsu.cabochaStr
   }.mkString("\n") + "\nEOS"
+
+  def renderInCoNLL: String = headSeq.zipWithIndex.zip(bunsetsuSeq).map { case ((h, i), bunsetsu) =>
+    "%d\t%s\t_\t%s\t_%d\t_\t_\t_".format(i + 1, bunsetsu.str, bunsetsu.posStr, h + 1)
+  }.mkString("\n") + "\n"
 }
