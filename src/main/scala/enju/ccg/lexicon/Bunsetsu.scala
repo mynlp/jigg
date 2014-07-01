@@ -89,6 +89,6 @@ case class ParsedBunsetsuSentence(
   }.mkString("\n") + "\nEOS"
 
   def renderInCoNLL: String = headSeq.zipWithIndex.zip(bunsetsuSeq).map { case ((h, i), bunsetsu) =>
-    "%d\t%s\t_\t%s\t_%d\t_\t_\t_".format(i + 1, bunsetsu.str, bunsetsu.posStr, h + 1)
+    "%d\t%s\t_\t_\t%s\t_\t%d\t_\t_\t_".format(i + 1, bunsetsu.str, bunsetsu.posStr, h + 1)
   }.mkString("\n") + "\n"
 }
