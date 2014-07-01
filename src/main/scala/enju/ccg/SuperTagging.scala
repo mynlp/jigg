@@ -208,7 +208,7 @@ trait SuperTagging extends Problem {
 class JapaneseSuperTagging extends SuperTagging {
   override type DictionaryType = JapaneseDictionary
 
-  def newDictionary =  new JapaneseDictionary(newCategoryDictionary)
+  def newDictionary = new JapaneseDictionary(newCategoryDictionary)
 
   def newCategoryDictionary = {
     import OptionEnumTypes.CategoryLookUpMethod
