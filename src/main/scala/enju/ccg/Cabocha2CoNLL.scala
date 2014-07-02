@@ -4,22 +4,20 @@ import scala.collection.mutable.ArrayBuffer
 import fig.exec.Execution
 import lexicon._
 
-class CoverageOptions extends Options {
-  @Option(gloss="Path to CCGBank file", required=true) var ccgBankPath = ""
-  @Option(gloss="Path to Cabocha file (same sentences with the CCGBank file)", required=true) var cabochaPath = ""
-  @Option(gloss="Path to output in CoNLL format") var outputPath = ""
-}
-
 object Cabocha2CoNLL {
 
-  object Opt extends CoverageOptions
+  object Opt extends Options {
+    @Option(gloss="Path to CCGBank file", required=true) var ccgBankPath = ""
+    @Option(gloss="Path to Cabocha file (same sentences with the CCGBank file)", required=true) var cabochaPath = ""
+    @Option(gloss="Path to output in CoNLL format") var outputPath = ""
+  }
 
   def main(args:Array[String]) = {
-    val runner = new Cabocha2CoNLLRunner
+    val runner = new Runner
     Execution.run(args, runner, Opt)
   }
 
-  class Cabocha2CoNLLRunner extends Runnable {
+  class Runner extends Runnable {
     def run = {
       val dict = new JapaneseDictionary(new Word2CategoryDictionary)
 
