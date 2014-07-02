@@ -165,9 +165,34 @@ class ZhangExtractor extends FeatureExtractor {
   }
 }
 
+class BasicFinishedExtractor extends FeatureExtractor {
+  import FeatureTypes._
+  import FeatureTypes.{FinishTemplate => TMP}
+  def addFeatures(ctx:Context, features:ArrayBuffer[UF]) = {
+    def p(s: WrappedCategory) = ctx.pos(s.head).toShort
+    def c(s: WrappedCategory) = s.category.id.toShort
+    ctx.s0 match {
+      case Some(s0) =>
+        features += C(c(s0), TMP.cS0)
+        features += PC(p(s0), c(s0), TMP.pS0_cS0)
+      case None =>
+    }
+    ctx.s1 match {
+      case Some(s1) => features += C(c(s1), TMP.cS1)
+      case None => features += Empty(TMP.no_cS1)
+    }
+    ctx.s2 match {
+      case Some(s2) => features += C(c(s2), TMP.cS2)
+      case None => features += Empty(TMP.no_cS2)
+    }
+  }
+}
+
 trait FeatureExtractorsBase {
   def methods: Seq[FeatureExtractor]
   def pos2id: (PoS=>Int) = { pos => pos.id }
+
+  def finishMethods: Seq[FeatureExtractor] = Seq(new BasicFinishedExtractor())
 
   class ContextWithCustomPosLevel(
     override val sentence:CandAssignedSentence,
@@ -179,12 +204,18 @@ trait FeatureExtractorsBase {
 
   var features = new ArrayBuffer[UF]
 
-  def extractUnlabeledFeatures(sentence:CandAssignedSentence, state:State): Seq[UF] = {
+  def extractUnlabeledFeatures(sentence:CandAssignedSentence, state:State) =
+    extractUnlabeledHelper(sentence, state, methods)
+  def extractFeaturesFromFinishedTree(sentence: CandAssignedSentence, state: State) =
+    extractUnlabeledHelper(sentence, state, finishMethods)
+
+  def extractUnlabeledHelper(sentence:CandAssignedSentence, state:State, extractors: Seq[FeatureExtractor]): Seq[UF] = {
+    //val features = new ArrayBuffer[UF]
     features.clear
     features += FeatureTypes.Bias()
 
     val ctx = context(sentence, state)
-    methods.foreach { _.addFeatures(ctx, features) }
+    extractors.foreach { _.addFeatures(ctx, features) }
     features
   }
 }

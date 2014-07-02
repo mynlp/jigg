@@ -4,22 +4,9 @@ import enju.ccg.lexicon.{PoS, Word, Category, CandAssignedSentence, AppliedRule,
 import enju.ccg.ml.{Perceptron, FeatureIndexer, Example}
 import scala.collection.mutable.ArrayBuffer
 
-case class LabeledFeatures(features: Array[LF]) {
+case class LabeledFeatures(features: Array[LF] = Array.empty[LF]) {
   def expand(indexer: FeatureIndexer[LF]) = features.map { indexer.getOrElse(_, -1) }
   def expandForTrain(indexer: FeatureIndexer[LF]) = features.map { indexer.getIndex(_) }
-}
-object LabeledFeatures {
-  def empty = LabeledFeatures(Array.empty[LF])
-}
-
-// these are return types of the parser
-case class WrappedAction(
-  v:Action,
-  isGold:Boolean,
-  partialFeatures:LabeledFeatures = LabeledFeatures.empty)
-
-case class StatePath(state:State, actionPath:List[WrappedAction], score:Double = 0) {
-  //def fullFeatures:Array[Int] = actionPath.flatMap { _.partialFeatures }.toArray
 }
 
 trait TransitionBasedParser {
@@ -52,10 +39,10 @@ trait TransitionBasedParser {
     def possibleShifts:List[Action] = if (state.j < sentence.size) sentence.cand(state.j).map { Shift(_) }.toList else Nil
     def addFinishIfNecessary(actions:List[Action]) =
       // TODO: this procedure might be unappropriate
-      //actions match { case Nil => Finish() :: actions; case _ => actions }
+      if (actions == Nil) Finish() :: Nil else actions
 
       // this latter adds Finish action regardness of whether there are other actions
-      if (state.j >= sentence.size) Finish() :: actions else actions
+      // if (state.j >= sentence.size) Finish() :: actions else actions
     val actions = possibleCombine ::: possibleUnary ::: possibleShifts
     addFinishIfNecessary(actions)
   }

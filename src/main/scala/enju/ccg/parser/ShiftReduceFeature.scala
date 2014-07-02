@@ -6,10 +6,19 @@ import enju.ccg.lexicon.{Dictionary, JapaneseDictionary}
 sealed trait ShiftReduceUnlabeledFeature extends Feature {
   type LabelType = ActionLabel
   override def assignLabel(label:LabelType) = ShiftReduceFeature(this, label)
+  //lazy val hashCode_ = hashCode
 }
 
 case class ShiftReduceFeature(override val unlabeled:ShiftReduceUnlabeledFeature,
-                              override val label:ActionLabel) extends LabeledFeature[ActionLabel]
+                              override val label:ActionLabel) extends LabeledFeature[ActionLabel] {
+  // The below tried to reduce the cost of feature calcuations; but the result was negative
+  //override def hashCode = scala.util.hashing.MurmurHash3.productHash((unlabeled.hashCode_, label))
+}
+
+// {
+// TODO: to implement this to separate concatination of "feature" and "label" from the interface level.
+//   def mkString(dict: Dictionary)
+// }
 
 trait FeatureWithoutDictionary extends ShiftReduceUnlabeledFeature {
   def mkString: String
@@ -28,8 +37,14 @@ object FeatureTypes {
   def p(posId:Int, dict:Dictionary) = dict.getPoS(posId)
   def c(categoryId:Int, dict:Dictionary) = dict.getCategory(categoryId)
 
+  case class Empty[T](tmpl: T) extends FeatureWithoutDictionary {
+    override def mkString = tmpl.toString
+  }
   case class Bias() extends FeatureWithoutDictionary {
     override def mkString = "bias"
+  }
+  case object FinishBias extends FeatureWithoutDictionary {
+    override def mkString = "finishBias"
   }
   case class WP[T](word:Char, pos:Short, tmpl:T) extends FeatureOnDictionary {
     override def mkString(dict:Dictionary) = concat(tmpl, w(word,dict), p(pos,dict))
@@ -106,5 +121,14 @@ object FeatureTypes {
 
     val cS0_cS0H_cS0L, cS0_cS0H_cS0R, cS1_cS1H_cS1R = Value
     val pQ0_cS0_cS0R, wQ0_cS0_cS0R, cS0_cS0L_cS1, wS1_cS0_cS0L, cS0_cS1_cS1R, wS0_cS1_cS1R = Value
+  }
+
+  object FinishTemplate extends Enumeration {
+    type FinishTemplate = Value
+    val cS0 = Value
+    val cS1, no_cS1 = Value
+    val cS2, no_cS2 = Value
+
+    val pS0_cS0 = Value
   }
 }
