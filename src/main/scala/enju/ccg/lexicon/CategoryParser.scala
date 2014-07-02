@@ -19,8 +19,8 @@ object JapaneseCategoryParser extends CategoryParser {
 object EnglishCategoryParser extends CategoryParser {
   class EnglishReader extends Reader {
     override val maxFeatureSize = -1
-    override val slashLeft = '\\'
-    override val slashRight = '/'
+    // override val slashLeft = '\\'
+    // override val slashRight = '/'
 
     override def newCategoryFeature(vals: Seq[String]) = EnCategoryFeature.createFromValues(vals)
   }
@@ -100,8 +100,8 @@ trait CategoryParser {
       target
     }
     def parseSlash = peek match {
-      case `slashLeft` => Slash.Left
-      case `slashRight` => Slash.Right
+      case c if isSlashLeft(c) => Slash.Left
+      case c if isSlashRight(c) => Slash.Right
       case _ => null
     }
     def readAtomicCategory:String = {
@@ -117,10 +117,11 @@ trait CategoryParser {
 
     def peek:Char = if (pos < currentStr.size) currentStr(pos) else 0
 
-    val slashLeft = '＼'
-    val slashRight = '／'
+    // TODO: remove Big charactor version when new corpus is relased
+    def isSlashLeft(c: Char) = c == '＼' || c == '\\'
+    def isSlashRight(c: Char) = c == '／' || c == '/'
 
-    def isSlash(ch:Char) = ch == slashLeft || ch == slashRight
+    def isSlash(c:Char) = isSlashLeft(c) || isSlashRight(c)
     def isLeftParen(ch:Char) = ch == '('
     def isRightParen(ch:Char) = ch == ')'
 

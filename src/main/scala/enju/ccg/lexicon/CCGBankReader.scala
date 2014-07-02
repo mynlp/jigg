@@ -24,6 +24,11 @@ class CCGBankReader(dict:Dictionary) {
     parses(0)
   }
 
+  def readParseFragments(line: String): Seq[Tree] = {
+    val parser = new TreeParser
+    parser.parse(line)
+  }
+
   class TreeParser {
     import java.io._
     def parse(str:String): Array[Tree] = collectTrees(new StringReader(str))

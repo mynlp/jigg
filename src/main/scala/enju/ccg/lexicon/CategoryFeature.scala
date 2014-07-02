@@ -19,6 +19,7 @@ trait CategoryFeature {
   def unify(lhs: CategoryFeature): Boolean = false // TODO: implement
 }
 
+@SerialVersionUID(-8236395926230742650L)
 case class JPCategoryFeature(values: Seq[String]) extends CategoryFeature {
   import JPCategoryFeature._
 
@@ -41,11 +42,14 @@ object JPCategoryFeature {
       vals.map { v => v -> key2idx(key) }
     }
   }
+  val kvpair = """\w+=(\w+)""".r
+
   def createFromValues(values: Seq[String]) = values match {
     case Seq() => emptyFeature
     case _ =>
       val sortedValues = Array.fill(keys.size)("")
-      values.filter(_!="").foreach { v =>
+      values.filter(_!="").foreach { value =>
+        val v = value match { case kvpair(v) => v; case v => v }
         v2keyIdx(v) match { case i => sortedValues(i) = v }
       }
       JPCategoryFeature(sortedValues)
