@@ -8,7 +8,7 @@ HEAP=50g
 
 taggerModel=en.tagger.out
 parserModel=en.parser.beta=$beta.beam=$beam.out
-parseOutput=en.develop.parsed.beta=$beta.beam=$beam.txt
+parseOutput=en.develop.pred.beta=$beta.beam=$beam
 
 java -Xmx${HEAP} -jar ./target/enju-ccg-assembly-0.1.jar -modelType tagger \
     -actionType train -trainPath data/english.train.removed -language english \

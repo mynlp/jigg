@@ -18,7 +18,7 @@ HEAP=50g
 
 taggerModel=ja.tagger.nodict.out
 parserModel=ja.parser.nodict.beta=$beta.beam=$beam.out
-parseOutput=ja.nodict.develop.parsed.beta=$beta.beam=$beam.txt
+parseOutput=ja.nodict.develop.pred.beta=$beta.beam=$beam
 
 java -Xmx${HEAP} -jar ./target/enju-ccg-assembly-0.1.jar -modelType tagger \
     -actionType train -bankDirPath ccgbank-20130828 -saveModelPath $taggerModel \
