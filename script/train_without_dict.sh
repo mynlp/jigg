@@ -12,6 +12,8 @@ beta=$1
 beam=$2
 iters=$3
 
+lookup=$4 # candidate are: surfaceOnly, surfaceAndSecondWithConj, etc
+
 HEAP=50g
 
 taggerModel=ja.tagger.nodict.out
@@ -20,7 +22,7 @@ parseOutput=ja.nodict.develop.parsed.beta=$beta.beam=$beam.txt
 
 java -Xmx${HEAP} -jar ./target/enju-ccg-assembly-0.1.jar -modelType tagger \
     -actionType train -bankDirPath ccgbank-20130828 -saveModelPath $taggerModel \
-    -numIters 15 -lookupMethod surfaceOnly -useLexiconFiles false -unkThreathold 20
+    -numIters 20 -lookupMethod $lookup -useLexiconFiles false -unkThreathold 30
 
 java -Xmx${HEAP} -jar ./target/enju-ccg-assembly-0.1.jar -modelType parser -actionType train \
     -bankDirPath ccgbank-20130828 -saveModelPath $parserModel -numIters $3 \
