@@ -33,7 +33,7 @@ object JPCategoryFeature {
     "mod" -> Array("adv", "adn", "nm"),
     "form" -> Array("attr", "base", "cont", "hyp", "imp",
       "beg", "stem", "ta", "te", "pre", "r", "neg", "s", "da"),
-    "case" -> Array("ga", "o", "ni", "to", "nc"))
+    "case" -> Array("ga", "o", "ni", "to", "nc", "caus"))
 
   private val keys = k2vals.keys.toSeq
   private val v2keyIdx = {
