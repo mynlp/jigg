@@ -1,6 +1,8 @@
 *~
 *.o
 *.pyc
+.lock*
+.waf*
 *.class
 build/
 target/
