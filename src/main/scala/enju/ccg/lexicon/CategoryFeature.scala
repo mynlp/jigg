@@ -32,7 +32,7 @@ object JPCategoryFeature {
   private val k2vals = Map(
     "mod" -> Array("adv", "adn", "nm"),
     "form" -> Array("attr", "base", "cont", "hyp", "imp",
-                          "beg", "stem", "ta", "te", "pre", "r", "neg", "s"),
+      "beg", "stem", "ta", "te", "pre", "r", "neg", "s", "da"),
     "case" -> Array("ga", "o", "ni", "to", "nc"))
 
   private val keys = k2vals.keys.toSeq

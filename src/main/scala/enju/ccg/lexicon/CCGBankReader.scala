@@ -102,12 +102,12 @@ class CCGBankReader(dict:Dictionary) {
       readChildren match {
         case Seq(child) => UnaryTree(child, label) // unary
         case Seq(left, right) => BinaryTree(left, right, label) // binary
-        case _ => sys.error("parse error; more than 2 child nodes are found!")
+        case str => sys.error("parse error; more than 2 child nodes are found!: " + str)
       }
     }
 
     def isIntermediate(a:String): Boolean =
-      a == "<" || a == ">" || a == "Φ" || a == "ADV" || a == "ADN"
+      a == "<" || a == ">" || a == "Φ" || a == "ADV" || a == "ADN" || a == "SSEQ"
 
     def readTree: Option[Tree] = {
       skipSpaces
