@@ -54,6 +54,8 @@ class BeamSearchDecoder(val indexer:FeatureIndexer[LF],
   class Beam(val kbest:List[StatePath]) {
     def generate(kbest:List[StatePath]) = new Beam(kbest)
 
+    def bestScore = kbest match { case t :: _ => t.score; case _ => Double.NegativeInfinity }
+
     def isEmpty:Boolean = kbest.isEmpty
     def reset(candidates:List[Candidate]) = resetQuick(candidates.sortWith(_.score > _.score))
     def resetQuick(sortedCandidates:List[Candidate]) =
@@ -61,18 +63,21 @@ class BeamSearchDecoder(val indexer:FeatureIndexer[LF],
 
     def existsGold = kbest.exists(_.state.isGold)
 
-    def collectCandidatesTrain(sentence:TrainSentence, oracle:Oracle) = kbest.flatMap { path =>
+    def collectCandidatesTrain(sentence:TrainSentence, oracle:Oracle) = kbest.par.flatMap { path =>
       // currently (in deterministic-oracle), oracle actions are only defined to the gold state
       val goldActions:Seq[Action] = if (path.state.isGold) oracle.goldActions(path.state) else Nil
       // partial features (without label)
       val unlabeledFeatures = extractors.extractUnlabeledFeatures(sentence, path.state)
 
-      possibleActions(path.state, sentence).map { action =>
+      possibleActions(path.state, sentence).par.map { action =>
         val isGold = goldActions.contains(action) // support non-deterministic oracle; currently, goldActions only contain one element so this operation is simple equality check
         val features = LabeledFeatures(unlabeledFeatures.map { _.assignLabel(action.toLabel) }.toArray)
-        val sumScore = path.score + classifier.featureScore(features.expand(indexer))
-        Candidate(path, WrappedAction(action, isGold, features), sumScore)
+        (path, action, isGold, features, features.expand(indexer))
       }
+    }.toList.map {
+      case (path, action, isGold, features, featureIdxs) =>
+        val sumScore = path.score + classifier.featureScore(featureIdxs)
+        Candidate(path, WrappedAction(action, isGold, features), sumScore)
     }
     def collectCandidatesTest(sentence:CandAssignedSentence) = kbest.flatMap { path =>
       val unlabeledFeatures = extractors.extractUnlabeledFeatures(sentence, path.state)
@@ -175,42 +180,93 @@ class BeamSearchDecoder(val indexer:FeatureIndexer[LF],
   }
 
   def findMaxViolationPoint(sentence: TrainSentence, gold: Derivation): TrainingInstance = {
-    val argMaxGoldSequence = goldArgMaxStatePath(sentence, gold).get.expand // seq of first state -> goal state
-    val argMaxPredSequence = predArgMaxStatePath(sentence, gold).get.expand
+    val goldStateSeq = goldMaxScoreStateSeq(sentence, gold)
+    val predStateSeq = predMaxScoreStateSeq(sentence, gold)
 
-    val argMin = argMaxGoldSequence.zip(argMaxPredSequence).map {
+    val (min, argMin) = goldStateSeq.zip(predStateSeq).map {
       case (g, p) => g.score - p.score
-    }.zipWithIndex.reverse.minBy(_._1)._2 // We reverse here for doing an update even in the case where all scores are 0 (initial condition)
-    TrainingInstance(Some(argMaxPredSequence(argMin)), Some(argMaxGoldSequence(argMin)))
+    }.zipWithIndex.reverse.minBy(_._1) // We reverse here for doing an update even in the case where all scores are 0 (initial condition)
+    TrainingInstance(Some(predStateSeq(argMin)), Some(goldStateSeq(argMin)))
   }
 
-  def goldArgMaxStatePath(sentence: TrainSentence, gold: Derivation) =
-    argMaxStatePath(sentence, gold, initialGoldBeam)
+  // def findMaxViolationPoint(sentence: TrainSentence, gold: Derivation): TrainingInstance = {
+  //   val argMaxGoldSequence = goldArgMaxStatePath(sentence, gold).get.expand // seq of first state -> goal state
+  //   val argMaxPredSequence = predArgMaxStatePath(sentence, gold).get.expand
 
-  def predArgMaxStatePath(sentence: TrainSentence, gold: Derivation) =
-    argMaxStatePath(sentence, gold, initialBeam)
+  //   val argMin = argMaxGoldSequence.zip(argMaxPredSequence).map {
+  //     case (g, p) => g.score - p.score
+  //   }.zipWithIndex.reverse.minBy(_._1)._2 // We reverse here for doing an update even in the case where all scores are 0 (initial condition)
+  //   TrainingInstance(Some(argMaxPredSequence(argMin)), Some(argMaxGoldSequence(argMin)))
+  // }
 
-  private def argMaxStatePath(sentence: TrainSentence, gold: Derivation, initialBeam: Beam) = {
+  private def maxScoreStateSeq(sentence: TrainSentence, gold: Derivation, beam: Beam): Seq[StatePath] = {
     val oracle = oracleGen.gen(sentence, gold, rule)
 
-    def findPath(oldBeam: Beam, current: Option[StatePath]): Option[StatePath] =
-      if (oldBeam.isEmpty) current
+    def findMaxScoreSeq(oldBeam: Beam, maxScoreSeq: List[StatePath], bestFinished: Option[StatePath]): List[StatePath] =
+      if (oldBeam.isEmpty) { assert(maxScoreSeq(0).score == bestFinished.get.score); maxScoreSeq }
       else {
         val candidates = oldBeam.collectCandidatesTrain(sentence, oracle)
 
         val (finished, unfinished) = candidates.partition { _.isFinished }
-        val sortedFinished = finished.map { _.finalize(sentence) }.sortWith(_.score > _.score)
-        val updatedCurrent = sortedFinished match {
-          case top :: _ if top.score > pathScore(current) => Some(top)
-          case _ => current
-        }
         val sortedUnfinished = unfinished.sortWith(_.score > _.score)
         val newBeam = oldBeam.resetQuick(sortedUnfinished)
 
-        findPath(newBeam, updatedCurrent)
+        val sortedFinished = finished.map { _.finalize(sentence) }.sortWith(_.score > _.score)
+
+        // we record the finished state with max score at each step, as if it were remained at the top of beam.
+        val updatedFinished = sortedFinished match {
+          case top :: _ if top.score > pathScore(bestFinished) => Some(top)
+          case _ => bestFinished
+        }
+        // This operation ensures that the first element of the returned list is a finished state with maximum score, i.e., it is the same as the result of predictStatePath if initialBeam is the normal one (not gold).
+        val best = (newBeam.bestScore, pathScore(updatedFinished)) match {
+          case (u, f) if u > f => newBeam.kbest(0)
+          case _ => updatedFinished.get
+        }
+        findMaxScoreSeq(newBeam, best :: maxScoreSeq, updatedFinished)
       }
-    findPath(initialBeam, None)
+    findMaxScoreSeq(beam, Nil, None).toIndexedSeq.reverse
   }
+
+  def goldMaxScoreStateSeq(sentence: TrainSentence, gold: Derivation) =
+    maxScoreStateSeq(sentence, gold, initialGoldBeam)
+  def predMaxScoreStateSeq(sentence: TrainSentence, gold: Derivation) =
+    maxScoreStateSeq(sentence, gold, initialBeam)
+
+  /** These two methods return a path to a finished state with maximum score.
+    */
+  def goldArgMaxStatePath(sentence: TrainSentence, gold: Derivation) =
+    goldMaxScoreStateSeq(sentence, gold).last
+  def predArgMaxStatePath(sentence: TrainSentence, gold: Derivation) =
+    predMaxScoreStateSeq(sentence, gold).last
+
+  // def goldArgMaxStatePath(sentence: TrainSentence, gold: Derivation) =
+  //   argMaxStatePath(sentence, gold, initialGoldBeam)
+
+  // def predArgMaxStatePath(sentence: TrainSentence, gold: Derivation) =
+  //   argMaxStatePath(sentence, gold, initialBeam)
+
+  // private def argMaxStatePath(sentence: TrainSentence, gold: Derivation, initialBeam: Beam) = {
+  //   val oracle = oracleGen.gen(sentence, gold, rule)
+
+  //   def findPath(oldBeam: Beam, current: Option[StatePath]): Option[StatePath] =
+  //     if (oldBeam.isEmpty) current
+  //     else {
+  //       val candidates = oldBeam.collectCandidatesTrain(sentence, oracle)
+
+  //       val (finished, unfinished) = candidates.partition { _.isFinished }
+  //       val sortedFinished = finished.map { _.finalize(sentence) }.sortWith(_.score > _.score)
+  //       val updatedCurrent = sortedFinished match {
+  //         case top :: _ if top.score > pathScore(current) => Some(top)
+  //         case _ => current
+  //       }
+  //       val sortedUnfinished = unfinished.sortWith(_.score > _.score)
+  //       val newBeam = oldBeam.resetQuick(sortedUnfinished)
+
+  //       findPath(newBeam, updatedCurrent)
+  //     }
+  //   findPath(initialBeam, None)
+  // }
 
   // def getTrainingInstance(sentence:TrainSentence, gold:Derivation): TrainingInstance = {
   //   val oracle = oracleGen.gen(sentence, gold, rule)

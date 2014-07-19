@@ -202,7 +202,7 @@ trait FeatureExtractorsBase {
   def context(sentence:CandAssignedSentence, state:State): Context =
     new ContextWithCustomPosLevel(sentence, state)
 
-  var features = new ArrayBuffer[UF]
+  //var features = new ArrayBuffer[UF]
 
   def extractUnlabeledFeatures(sentence:CandAssignedSentence, state:State) =
     extractUnlabeledHelper(sentence, state, methods)
@@ -210,7 +210,7 @@ trait FeatureExtractorsBase {
     extractUnlabeledHelper(sentence, state, finishMethods)
 
   def extractUnlabeledHelper(sentence:CandAssignedSentence, state:State, extractors: Seq[FeatureExtractor]): Seq[UF] = {
-    //val features = new ArrayBuffer[UF]
+    val features = new ArrayBuffer[UF]
     features.clear
     features += FeatureTypes.Bias()
 
