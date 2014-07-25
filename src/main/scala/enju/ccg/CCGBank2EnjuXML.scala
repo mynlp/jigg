@@ -43,4 +43,5 @@ object CCGBank2EnjuXML {
       fw.flush
       fw.close
     }
+  }
 }
