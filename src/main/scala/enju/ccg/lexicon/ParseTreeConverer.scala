@@ -106,14 +106,26 @@ trait ParseTreeConverter {
     terminalSeq.map(_.pos),
     terminalSeq.map(_.category))
 
-  def toSentenceFromLabelTree(labelTree: ParseTree[NodeLabel]): GoldSuperTaggedSentence = {
-    val terminalSeq = labelTree.getSequence.map { _.label match {
+  def toSentenceFromLabelTree(labelTree: ParseTree[NodeLabel]): GoldSuperTaggedSentence =
+    toSentenceFromLabelTrees(Seq(labelTree))
+  // {
+  //   val terminalSeq = labelTree.getSequence.map { _.label match {
+  //     case terminal: TerminalLabel => terminal
+  //     case _ => sys.error("Labels of leaf nodes of objTree must all be TerminalLabel")
+  //   }}
+  //   terminalSeqToSentence(terminalSeq)
+  // }
+  def toSentenceFromLabelTrees(labelTrees: Seq[ParseTree[NodeLabel]]): GoldSuperTaggedSentence = {
+    val terminalSeq = labelTrees.map { _.getSequence }.reduceLeft(_ ++ _).map { _.label match {
       case terminal: TerminalLabel => terminal
       case _ => sys.error("Labels of leaf nodes of objTree must all be TerminalLabel")
     }}
     terminalSeqToSentence(terminalSeq)
   }
-  def toDerivation(labelTree: ParseTree[NodeLabel]): Derivation = {
+
+  def toDerivation(labelTree: ParseTree[NodeLabel]): Derivation = toFragmentalDerivation(Seq(labelTree))
+
+  def toFragmentalDerivation(labelTrees: Seq[ParseTree[NodeLabel]]): Derivation = {
     def extractSpan(span: Option[Span]): (Int, Int) = span match {
       case Some(Span(b, e)) => (b, e)
       case _ => sys.error("oops. None span is going to be extracted!")
@@ -123,11 +135,8 @@ trait ParseTreeConverter {
       case _ => sys.error("Type error in NodeLabel.")
     }
 
-    labelTree.setSpans(0)
-    val length = labelTree.span match {
-      case Some(Span(0, j)) => j
-      case _ => sys.error("setSpans error.")
-    }
+    val length = labelTrees.foldLeft(0) { case (begin, tree) => tree.setSpans(begin) }
+
     val derivationMap = Array.fill(length + 1)(Array.fill(length + 1)(new ListMap[Category, AppliedRule]))
 
     def setDerivationMap(tree :ParseTree[NodeLabel]): AppliedRule = tree match {
@@ -148,9 +157,17 @@ trait ParseTreeConverter {
             Point(rightBegin, rightEnd, right.label.category)),
           ruleType(label))
     }
+    labelTrees foreach { tree =>
+      tree.span foreach { case Span(i, j) =>
+        derivationMap(i)(j) += tree.label.category -> setDerivationMap(tree)
+      }
+    }
+    val roots = labelTrees.map { tree => tree.span match {
+      case Some(Span(i, j)) => Point(i, j, tree.label.category)
+      case _ => sys.error("Span must be set.")
+    }}.toArray
 
-    derivationMap(0)(length) += labelTree.label.category -> setDerivationMap(labelTree)
-    Derivation(derivationMap, Array(Point(0, length, labelTree.label.category)))
+    Derivation(derivationMap, roots)
   }
 }
 

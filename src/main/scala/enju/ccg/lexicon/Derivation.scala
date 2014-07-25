@@ -61,29 +61,36 @@ case class Derivation(map:Array[Array[ListMap[Category, AppliedRule]]], roots:Ar
   def render(sentence:TaggedSentence): String = { // outputs in CCGBank format
     def tokenStr(i: Int) = s"${sentence.word(i)}/${sentence.base(i)}/${sentence.pos(i)}"
 
-    val leftSides = Array.fill(map.size)("")
-    val rightSides = Array.fill(map.size)("")
-
-    def addLeftTo(i:Int, str:String):Unit = leftSides(i) = leftSides(i) + str
-    def addRightTo(i:Int, str:String):Unit = rightSides(i) = str + rightSides(i)
-    roots.sortWith(_.x < _.x).foreach {
-      r => {
-        foreachPoint( { point:Point =>
-          get(point).map {
-            _ match {
-              case AppliedRule(NoneChildPoint(), ruleSymbol) =>
-                addLeftTo(point.x, s"{${point.category} ${tokenStr(point.x)}")
-                addRightTo(point.x, "}")
-              case AppliedRule(_, ruleSymbol) =>
-                addLeftTo(point.x, s"{${ruleSymbol} ${point.category} ")
-                addRightTo(point.y-1, "}")
-              case _ =>
-            }
-          }
-        }, r)
-      }
+    def renderSubtree(point: Point): String = get(point) match {
+      case Some(AppliedRule(NoneChildPoint(), _)) => // terminal
+        s"{${point.category} ${tokenStr(point.x)}}"
+      case Some(AppliedRule(UnaryChildPoint(c), ruleSymbol)) =>
+        s"{${ruleSymbol} ${point.category} ${renderSubtree(c)}}"
+      case Some(AppliedRule(BinaryChildrenPoints(l, r), ruleSymbol)) =>
+        s"{${ruleSymbol} ${point.category} ${renderSubtree(l)} ${renderSubtree(r)}}"
+      case _ => ""
     }
-    leftSides.zip(rightSides).map { case(a,b)=> a+b }.mkString(" ").trim
+    roots.sortWith(_.x < _.x).map { renderSubtree(_) }.mkString(" ")
+  }
+
+  def renderEnjuXML(sentence:TaggedSentence, id: Int): String = {
+    def removeFeatureKeys(category: Category) = {
+      val r = """([^\[,]\w+)=""".r
+      r.replaceAllIn(category.toString, "")
+    }
+    def consPre(cat: Category) = s"""<cons id="c{cat.id}" cat="${removeFeatureKeys(cat)}">"""
+    def tok(p: Point) = s"""<tok id="t${p.category.id}" surface="${sentence.word(p.x)}" pos="${sentence.pos(p.x)}">${sentence.word(p.x)}</tok>"""
+
+    def renderSubtree(point: Point): String = get(point) match {
+      case Some(AppliedRule(NoneChildPoint(), _)) => // terminal
+        consPre(point.category) + tok(point) + "</cons>"
+      case Some(AppliedRule(UnaryChildPoint(c), ruleSymbol)) =>
+        consPre(point.category) + renderSubtree(c) + "</cons>"
+      case Some(AppliedRule(BinaryChildrenPoints(l, r), ruleSymbol)) =>
+        consPre(point.category) + renderSubtree(l) + renderSubtree(r) + "</cons>"
+      case _ => ""
+    }
+    s"""<sentence id="s$id" parse_status="success">${roots.sortWith(_.x < _.x).map { renderSubtree(_) }.mkString}</sentence>"""
   }
 
   /** This method combines separated subtrees in the derivation into one tree by force.
