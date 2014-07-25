@@ -53,7 +53,11 @@ object CCGBank2EnjuXML {
       case LeafTree(label: TerminalLabel) => cons(label) + tok(label) + "</cons>"
       case _ => sys.error("A leaf node with a non-terminal label found.")
     }
-    def cons(label: NodeLabel) = s"""<cons id="c${label.category.id}" cat="${label.category}">"""
-    def tok(label: TerminalLabel) = s"""<tok id="t${label.category.id}" surface="${label.word}" pos="${label.pos.second}">${label.word}</tok>"""
+    def removeFeatureKeys(category: String) = {
+      val r = """([^\[,]\w+)=""".r
+      r.replaceAllIn(category, "")
+    }
+    def cons(label: NodeLabel) = s"""<cons id="c${label.category.id}" cat="${removeFeatureKeys(label.category.toString)}">"""
+    def tok(label: TerminalLabel) = s"""<tok id="t${label.category.id}" surface="${label.word}" pos="${label.pos}">${label.word}</tok>"""
   }
 }
