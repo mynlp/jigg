@@ -59,6 +59,8 @@ case class Derivation(map:Array[Array[ListMap[Category, AppliedRule]]], roots:Ar
   }.toArray
 
   def render(sentence:TaggedSentence): String = { // outputs in CCGBank format
+    def tokenStr(i: Int) = s"${sentence.word(i)}/${sentence.base(i)}/${sentence.pos(i)}"
+
     val leftSides = Array.fill(map.size)("")
     val rightSides = Array.fill(map.size)("")
 
@@ -70,10 +72,10 @@ case class Derivation(map:Array[Array[ListMap[Category, AppliedRule]]], roots:Ar
           get(point).map {
             _ match {
               case AppliedRule(NoneChildPoint(), ruleSymbol) =>
-                addLeftTo(point.x, "{"+point.category+" "+sentence.word(point.x)+"/"+sentence.pos(point.x))
+                addLeftTo(point.x, s"{${point.category} ${tokenStr(point.x)}")
                 addRightTo(point.x, "}")
               case AppliedRule(_, ruleSymbol) =>
-                addLeftTo(point.x, "{"+ruleSymbol+" "+point.category+" ")
+                addLeftTo(point.x, s"{${ruleSymbol} ${point.category} ")
                 addRightTo(point.y-1, "}")
               case _ =>
             }

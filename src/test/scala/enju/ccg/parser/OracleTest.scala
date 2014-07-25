@@ -73,6 +73,6 @@ class StaticArcStandardOracleTest extends FunSuite {
 
     trainSentence.catSeq.toArray should equal (inducedDerivation.categorySeq map { _.get })
 
-    inducedDerivation.render(trainSentence) should equal ("""{> NP[mod=nm,case=nc] {ADN NP[mod=nm,case=nc]/NP[mod=nm,case=nc] {< S[mod=adn,form=base] {< NP[mod=nm,case=ni] {NP[mod=nm,case=nc] 政権/名詞-一般/_} {NP[mod=nm,case=ni]\NP[mod=nm,case=nc] に/助詞-格助詞-一般/_}} {< S[mod=adn,form=base]\NP[mod=nm,case=ni] {< NP[mod=nm,case=o] {NP[mod=nm,case=nc] 影響/名詞-サ変接続/_} {NP[mod=nm,case=o]\NP[mod=nm,case=nc] を/助詞-格助詞-一般/_}} {(S[mod=adn,form=base]\NP[mod=nm,case=ni])\NP[mod=nm,case=o] 及ぼす/動詞-自立/基本形}}}} {NP[mod=nm,case=nc] こと/名詞-非自立-一般/_}}""")
+    inducedDerivation.render(trainSentence) should equal ("""{> NP[mod=nm,case=nc] {ADN NP[mod=nm,case=nc]/NP[mod=nm,case=nc] {< S[mod=adn,form=base] {< NP[mod=nm,case=ni] {NP[mod=nm,case=nc] 政権/政権/名詞-一般/_} {NP[mod=nm,case=ni]\NP[mod=nm,case=nc] に/に/助詞-格助詞-一般/_}} {< S[mod=adn,form=base]\NP[mod=nm,case=ni] {< NP[mod=nm,case=o] {NP[mod=nm,case=nc] 影響/影響/名詞-サ変接続/_} {NP[mod=nm,case=o]\NP[mod=nm,case=nc] を/を/助詞-格助詞-一般/_}} {(S[mod=adn,form=base]\NP[mod=nm,case=ni])\NP[mod=nm,case=o] 及ぼす/及ぼす/動詞-自立/基本形}}}} {NP[mod=nm,case=nc] こと/こと/名詞-非自立-一般/_}}""")
   }
 }
