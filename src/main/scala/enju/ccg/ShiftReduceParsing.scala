@@ -179,17 +179,19 @@ trait ShiftReduceParsing extends Problem {
     System.err.println("done.")
   }
   def outputDerivations[S<:TaggedSentence](sentences:Array[S], derivations:Array[Derivation]) = if (OutputOptions.outputPath != "") {
-    val opath = OutputOptions.outputPath + "/pred"
-    System.err.println("saving predicted derivations to " + opath)
-    val fw = new FileWriter(opath)
-    sentences.zip(derivations).map {
-      case (sentence, derivation) =>
-        fw.write(derivation.render(sentence) + "\n")
+    def outputInFormat(path: String, conv: (S, Derivation, Int)=>String) = {
+      val fw = new FileWriter(path)
+      sentences.zip(derivations).zipWithIndex.map {
+        case ((s, deriv), i) =>
+          fw.write(conv(s, deriv, i) + "\n")
+      }
+      fw.flush
+      fw.close
     }
-    fw.flush
-    fw.close
-    System.err.println("done")
+    outputInFormat(OutputOptions.outputPath + "/pred", (s, deriv, i) => deriv.render(s))
+    outputInFormat(OutputOptions.outputPath + "/pred.xml", (s, deriv, i) => deriv.renderEnjuXML(s, i))
   }
+
   def load = {
     import java.io._
     val in = new ObjectInputStream(new BufferedInputStream(new FileInputStream(InputOptions.loadModelPath)))
