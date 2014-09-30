@@ -102,7 +102,7 @@ trait ShiftReduceParsing extends Problem {
   // return prediction time
   def getPredDerivations[S<:TaggedSentence](sentences:Array[S]): Array[Derivation] = {
     val tagger = tagging.getTagger
-    val decoder = getDecoder(new ml.Perceptron[parser.ActionLabel](weights), false)
+    val decoder = getPredDecoder
 
     val predDerivations = sentences.zipWithIndex map {
       case (sentence, i) =>
@@ -113,6 +113,7 @@ trait ShiftReduceParsing extends Problem {
     System.err.println()
     predDerivations
   }
+  def getPredDecoder = getDecoder(new ml.Perceptron[parser.ActionLabel](weights), false)
 
   def evaluateCategoryAccuracy(sentences:Array[GoldSuperTaggedSentence], derivations:Array[Derivation]) = {
     val (numCorrects, numCompletes) = sentences.zip(derivations).foldLeft(0, 0) {
