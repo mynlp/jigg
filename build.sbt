@@ -23,3 +23,7 @@ scalacOptions ++= Seq("-deprecation", "-feature")
 libraryDependencies += "com.novocode" % "junit-interface" % "0.10-M4" % "test->default"
 
 libraryDependencies += "org.scalatest" % "scalatest_2.10" % "2.0" % "test"
+
+resolvers += "Atilika Open Source repository" at "http://www.atilika.org/nexus/content/repositories/atilika"
+
+libraryDependencies += "org.atilika.kuromoji" % "kuromoji" % "0.7.7"
