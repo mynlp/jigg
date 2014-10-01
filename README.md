@@ -1,9 +1,93 @@
-Enju/CCG
-========
+# TransCCG
 
-Shift-reduceに基づくCCG Parserです。
+This is a integrated framework of Scala for CCG parser and other natural language processing components. The features include:
 
-プログラムの使用のみであれば、Scalaも含んだjarファイルが、プログラムのルートディレクトリにありますので、以下の `/path/to/jar` を置き換えて使用できます。
+- Accurate CCG parser based on shift-reduce actions for Japanese and English.
+- Extensible pipeline framework similar to Stanford CoreNLP.
+
+The project name (transccg) is temporary and probably changed. I'm looking for other fancy name.
+
+## How to use
+
+The current version is 0.1. You can use `transccg-0.1.jar` in the project root directory, which is a self-contained jar of the current version.
+
+### Praparing pre-trained models
+
+To run a CCG parser for new text, a pre-trained model file is required, which can be downloaded with the script:
+
+```bash
+./script/download_model.sh
+```
+
+This downloads some models in the `model` directory.
+
+### Command line usage
+
+To get CCG parses from raw sentences, a pipeline module `enju.pipeline.Pipeline` is useful. You can use it both from your Java or Scala code or command line. For example, the command below reads sentences from `sample.txt` and output as XML format in `sample.txt.xml`.
+
+```bash
+$ cat sample.txt
+Scalaは良い言語です。
+文法がとても簡潔です。
+$ java -Xmx4g -cp transccg-0.1.jar enju.pipeline.Pipeline -annotators kuromoji,ccg -file sample.txt -ccg.model model/jaccg-0.1-beam64.ser.gz -ccg.beam 64
+```
+
+The syntax is very similar to Stanford CoreNLP. The required arguments are as follows:
+
+  * `-annotators`: The list of annotator names. Currently, only `kuromoji` and `ccg` is supported.
+  * `-file`: Input file, in which each sentence corresponds to one line.
+
+In the above command, `-annotators kuromoji,ccg` means it first tokenizes and assigns part-of-speech tags, then runs the CCG parser on that tokenized sentence. The CCG parser requires the tokenized sentence as input and the pipeline automatically solve these dependencies between annotators.
+
+`-ccg.*` is argument for the CCG parser. `-ccg.model` is necessary. `./model/jaccg-0.1-beam64.ser.gz` is a pre-trained model with beam size of 64. Another model, `./model/jaccg-0.1-beam128.ser.gz`, is trained with beam size of 128. You can change the beam size at run time by `-ccg.beam`. It is *highly recommended* to set the same beam size as training. So if you use `./model/jaccg-0.1-beam128.ser.gz`, please set `-ccg.beam 128`. The accuracy of the model of beam size 128 is slightly high, but is about 2 times slower. In Kyoto-university-corpus experiment, the accuracy of beam size 64 is 0.880, which become 0.884 with beam size 128.
+
+### Output format
+
+The result is written in `sample.txt.xml`, which is like this:
+
+```bash
+$ cat sample.txt.xml
+<?xml version='1.0' encoding='UTF-8'?>
+<sentences>
+  <sentence id="s0">
+    <tokens>
+      <token base="*" pos="名詞-固有名詞-組織" surf="Scala" id="t0_0"/>
+      <token base="は" pos="助詞-係助詞" surf="は" id="t0_1"/>
+      <token base="良い" katsuyou="基本形" pos="形容詞-自立" surf="良い" id="t0_2"/>
+      <token base="言語" pos="名詞-一般" surf="言語" id="t0_3"/>
+      <token base="です" katsuyou="基本形" pos="助動詞" surf="です" id="t0_4"/>
+      <token base="。" pos="記号-句点" surf="。" id="t0_5"/>
+    </tokens>
+    <ccg>
+      <span child="sp0-1,sp0-11" rule="&lt;" category="S[mod=nm,form=base]" end="6" begin="0" id="sp0-0"/>
+      <span child="sp0-2,sp0-5" rule="&gt;" category="S[mod=nm,form=base]" end="5" begin="0" id="sp0-1"/>
+      <span child="sp0-3,sp0-4" rule="&lt;" category="S/S" end="2" begin="0" id="sp0-2"/>
+      <span category="NP[mod=nm,case=nc]" end="1" begin="0" id="sp0-3"/>
+      <span category="(S/S)\NP[mod=nm,case=nc]" end="2" begin="1" id="sp0-4"/>
+      <span child="sp0-6,sp0-10" rule="&lt;" category="S[mod=nm,form=base]" end="5" begin="2" id="sp0-5"/>
+      <span child="sp0-7,sp0-9" rule="&gt;" category="NP[mod=nm,case=nc]" end="4" begin="2" id="sp0-6"/>
+      <span child="sp0-8" rule="ADN" category="NP[case=nc]/NP[case=nc]" end="3" begin="2" id="sp0-7"/>
+      <span category="S[mod=adn,form=base]" end="3" begin="2" id="sp0-8"/>
+      <span category="NP[mod=nm,case=nc]" end="4" begin="3" id="sp0-9"/>
+      <span category="S[mod=nm,form=base]\NP[mod=nm,case=nc]" end="5" begin="4" id="sp0-10"/>
+      <span category="S\S" end="6" begin="5" id="sp0-11"/>
+    </ccg>
+  </sentence>
+  <sentence id="s1">
+  ...
+  </sentence>
+</sentences>
+```
+
+Again, the result looks very similar to the output of Stanford CoreNLP. The CCG parse tree is represented as a set of spans. Each span has following attributes:
+
+  * `begin, end`: The range of the span is `[begin, end)`. `end` is exclusive, e.g., a span of `begin="4" end="5"` is a leaf (pre-terminal) node for the word of index 4 in the sentence.
+  * `rule`: Used rule. For example, `"&lt;"` indicates forward application is used.
+  * `category`: CCG category which corresponds to non-terminal label in each span.
+  * `child`: If a node is non-terminal, `child` lists child nodes' ids. If a rule is binary, two children are concatenated with comma.
+
+
+The below is explanations for program build and training new model, but is out of date. I will revise it soon.
 
 ビルド方法
 -----
@@ -61,11 +145,3 @@ loadModelPathで、先ほど保存したモデルを指定しています。'-be
     > java -Xmx8g -jar /path/to/jar -modelType parser -actionType evaluate -loadModelPath parser.out -beam 8 -beta 0.1 -outputPath develop.parsed.txt -bankDirPath ccgbank-20130828
 
 ここでも 'outputPath' で、最終的な出力のファイルを指定しています。
-
-
-TODO
-----
-
- - 素性の設計
- - 結合するカテゴリ/品詞のペアが与えられたとき、headを決めるルールの実装
- - 未知語処理：現在は、単語の出現回数によらず、全く未知語の処理は行っていない。テスト中に現れた未知の単語は、そのまま辞書に登録され、その単語に関連する素性の値は全て0になる。未知語処理の仕様を決める。
