@@ -1,6 +1,6 @@
 # TransCCG
 
-This is a integrated framework of Scala for CCG parser and other natural language processing components. The features include:
+This is an integrated framework of Scala for CCG parser and other natural language processing components. The features include:
 
 - Accurate CCG parser based on shift-reduce actions for Japanese and English.
 - Extensible pipeline framework similar to Stanford CoreNLP.
