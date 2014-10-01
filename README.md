@@ -35,7 +35,7 @@ $ java -Xmx4g -cp transccg-0.1.jar enju.pipeline.Pipeline -annotators kuromoji,c
 The syntax is very similar to Stanford CoreNLP. The required arguments are as follows:
 
   * `-annotators`: The list of annotator names. Currently, only `kuromoji` and `ccg` is supported.
-  * `-file`: Input file, in which each sentence corresponds to one line.
+  * `-file`: Input file, in which one line corresponds to one sentence.
 
 In the above command, `-annotators kuromoji,ccg` means it first tokenizes and assigns part-of-speech tags, then runs the CCG parser on that tokenized sentence. The CCG parser requires the tokenized sentence as input and the pipeline automatically solve these dependencies between annotators.
 
@@ -82,7 +82,7 @@ $ cat sample.txt.xml
 Again, the result looks very similar to the output of Stanford CoreNLP. The CCG parse tree is represented as a set of spans. Each span has following attributes:
 
   * `begin, end`: The range of the span is `[begin, end)`. `end` is exclusive, e.g., a span of `begin="4" end="5"` is a leaf (pre-terminal) node for the word of index 4 in the sentence.
-  * `rule`: Used rule. For example, `"&lt;"` indicates forward application is used.
+  * `rule`: Used rule. For example, `"&lt;"` (<) indicates forward application is used.
   * `category`: CCG category which corresponds to non-terminal label in each span.
   * `child`: If a node is non-terminal, `child` lists child nodes' ids. If a rule is binary, two children are concatenated with comma.
 
