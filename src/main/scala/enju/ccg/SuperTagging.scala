@@ -171,19 +171,14 @@ trait SuperTagging extends Problem {
   }
   def load = {
     import java.io._
-    val in = new ObjectInputStream(new BufferedInputStream(new FileInputStream(InputOptions.loadModelPath)))
+    val in = enju.util.IOUtil.openBinIn(InputOptions.loadModelPath)
     loadModel(in)
     in.close
   }
-  def loadModel(in: ObjectInputStream) = {
+  def loadModel(in: ObjectInputStream) = enju.util.LogUtil.track("Loading supertagger ...") {
     dict = in.readObject.asInstanceOf[DictionaryType]
-    System.err.println("dict load done.")
-
     indexer = in.readObject.asInstanceOf[ml.FeatureIndexer[Feature]]
-    System.err.println("tagger feature templates load done.")
-
     weights = in.readObject.asInstanceOf[WeightVector]
-    System.err.println("tagger model weights load done.\n")
   }
   def setCategoryDictionary(sentences: Seq[GoldSuperTaggedSentence]): Unit =
     dict.categoryDictionary.resetWithSentences(sentences, DictionaryOptions.unkThreathold)

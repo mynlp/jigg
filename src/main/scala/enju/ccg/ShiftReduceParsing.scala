@@ -195,8 +195,10 @@ trait ShiftReduceParsing extends Problem {
 
   def load = {
     import java.io._
-    val in = new ObjectInputStream(new BufferedInputStream(new FileInputStream(InputOptions.loadModelPath)))
-    System.err.println("load start")
+
+    val begin = System.currentTimeMillis
+
+    val in = enju.util.IOUtil.openBinIn(InputOptions.loadModelPath)
     tagging = instantiateSuperTagging
     tagging.loadModel(in)
     loadModel(in)
@@ -207,11 +209,13 @@ trait ShiftReduceParsing extends Problem {
     tagging.load
   }
   def loadModel(in:ObjectInputStream) = {
-    indexer = in.readObject.asInstanceOf[ml.FeatureIndexer[Feature]]
-    System.err.println("parser feature templates load done.")
-
-    weights = in.readObject.asInstanceOf[WeightVector]
-    System.err.println("parser model weights load done.")
+    import enju.util.LogUtil._
+    track("Loading feature templates of CCG parser ...") {
+      indexer = in.readObject.asInstanceOf[ml.FeatureIndexer[Feature]]
+    }
+    track("Loading feature weights of CCG parser ...") {
+      weights = in.readObject.asInstanceOf[WeightVector]
+    }
 
     // TODO: branch according to the setting of rule (cfg or not)
     rule = in.readObject.asInstanceOf[parser.CFGRule]
