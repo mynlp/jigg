@@ -23,7 +23,7 @@ This downloads some models in the `model` directory.
 
 ### Command line usage
 
-To get CCG parses from raw sentences, a pipeline module `enju.pipeline.Pipeline` is useful. You can use it both from your Java or Scala code or command line. For example, the command below reads sentences from `sample.txt` and output as XML format in `sample.txt.xml`.
+To get CCG parses from raw sentences, a pipeline module `enju.pipeline.Pipeline` is useful. You can use it both from your Java or Scala code or command line. For example, the command below reads sentences from `sample.txt` and output to `sample.txt.xml` in XML format.
 
 ```bash
 $ cat sample.txt
@@ -34,16 +34,16 @@ $ java -Xmx4g -cp transccg-0.1.jar enju.pipeline.Pipeline -annotators kuromoji,c
 
 The syntax is very similar to Stanford CoreNLP. The required arguments are as follows:
 
-  * `-annotators`: The list of annotator names. Currently, only `kuromoji` and `ccg` is supported.
+  * `-annotators`: A list of annotator names. Currently only `kuromoji` and `ccg` are supported.
   * `-file`: Input file, in which one line corresponds to one sentence.
 
-In the above command, `-annotators kuromoji,ccg` means it first tokenizes and assigns part-of-speech tags, then runs the CCG parser on that tokenized sentence. The CCG parser requires the tokenized sentence as input and the pipeline automatically solve these dependencies between annotators.
+In the above command, `-annotators kuromoji,ccg` means it first tokenizes and assigns part-of-speech tags, then runs the CCG parser on that tokenized sentence. The CCG parser requires the tokenized sentence as input. The pipeline automatically solves these dependencies between annotators.
 
-`-ccg.*` is argument for the CCG parser. `-ccg.model` is necessary. `./model/jaccg-0.1-beam64.ser.gz` is a pre-trained model with beam size of 64. Another model, `./model/jaccg-0.1-beam128.ser.gz`, is trained with beam size of 128. You can change the beam size at run time by `-ccg.beam`. It is *highly recommended* to set the same beam size as training. So if you use `./model/jaccg-0.1-beam128.ser.gz`, please set `-ccg.beam 128`. The accuracy of the model of beam size 128 is slightly high, but is about 2 times slower. In Kyoto-university-corpus experiment, the accuracy of beam size 64 is 0.880, which become 0.884 with beam size 128.
+`-ccg.*` is argument for the CCG parser. `-ccg.model` is necessary. `model/jaccg-0.1-beam64.ser.gz` is a pre-trained model with beam size of 64. Another model, `model/jaccg-0.1-beam128.ser.gz`, is trained with beam size of 128. You can change the beam size at run time by setting `-ccg.beam`. It is *highly recommended* to set the same beam size as training. So if you use `model/jaccg-0.1-beam128.ser.gz`, please set `-ccg.beam 128`. The accuracy of the model of beam size 128 is slightly high, but is about 2 times slower. In Kyoto-university-corpus experiment, the accuracy of beam size 64 is 0.880, which become 0.884 with beam size 128.
 
 ### Output format
 
-The result is written in `sample.txt.xml`, which is like this:
+The result is written in `sample.txt.xml`, which looks like this:
 
 ```bash
 $ cat sample.txt.xml
