@@ -50,12 +50,16 @@ class CCGParseAnnotator(val name: String, val props: Properties) extends Sentenc
           case "" => None
           case symbol => Some(Text(symbol))
         }
-        val child_ids = rule.childPoint.points map { p => id(point2id(p)) } match {
+        val childIds = rule.childPoint.points map { p => id(point2id(p)) } match {
           case Seq() => None
           case ids => Some(Text(ids.mkString(",")))
         }
+        val terminalId = childIds match {
+          case None => tokenSeq(point.x).attribute("id")
+          case _ => None
+        }
 
-        spans += <span id={ id(pid) } begin={ point.x.toString } end={ point.y.toString } category={ point.category.toString } rule={ ruleSymbol } child={ child_ids } />
+        spans += <span id={ id(pid) } begin={ point.x.toString } end={ point.y.toString } category={ point.category.toString } rule={ ruleSymbol } child={ childIds } terminal={ terminalId } />
       }, root)
     }
     val ccg = <ccg>{ spans }</ccg>

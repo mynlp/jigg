@@ -62,15 +62,15 @@ $ cat sample.txt.xml
       <span child="sp0-1,sp0-11" rule="&lt;" category="S[mod=nm,form=base]" end="6" begin="0" id="sp0-0"/>
       <span child="sp0-2,sp0-5" rule="&gt;" category="S[mod=nm,form=base]" end="5" begin="0" id="sp0-1"/>
       <span child="sp0-3,sp0-4" rule="&lt;" category="S/S" end="2" begin="0" id="sp0-2"/>
-      <span category="NP[mod=nm,case=nc]" end="1" begin="0" id="sp0-3"/>
-      <span category="(S/S)\NP[mod=nm,case=nc]" end="2" begin="1" id="sp0-4"/>
+      <span terminal="t0_0" category="NP[mod=nm,case=nc]" end="1" begin="0" id="sp0-3"/>
+      <span terminal="t0_1" category="(S/S)\NP[mod=nm,case=nc]" end="2" begin="1" id="sp0-4"/>
       <span child="sp0-6,sp0-10" rule="&lt;" category="S[mod=nm,form=base]" end="5" begin="2" id="sp0-5"/>
       <span child="sp0-7,sp0-9" rule="&gt;" category="NP[mod=nm,case=nc]" end="4" begin="2" id="sp0-6"/>
       <span child="sp0-8" rule="ADN" category="NP[case=nc]/NP[case=nc]" end="3" begin="2" id="sp0-7"/>
-      <span category="S[mod=adn,form=base]" end="3" begin="2" id="sp0-8"/>
-      <span category="NP[mod=nm,case=nc]" end="4" begin="3" id="sp0-9"/>
-      <span category="S[mod=nm,form=base]\NP[mod=nm,case=nc]" end="5" begin="4" id="sp0-10"/>
-      <span category="S\S" end="6" begin="5" id="sp0-11"/>
+      <span terminal="t0_2" category="S[mod=adn,form=base]" end="3" begin="2" id="sp0-8"/>
+      <span terminal="t0_3" category="NP[mod=nm,case=nc]" end="4" begin="3" id="sp0-9"/>
+      <span terminal="t0_4" category="S[mod=nm,form=base]\NP[mod=nm,case=nc]" end="5" begin="4" id="sp0-10"/>
+      <span terminal="t0_5" category="S\S" end="6" begin="5" id="sp0-11"/>
     </ccg>
   </sentence>
   <sentence id="s1">
@@ -85,6 +85,7 @@ Again, the result looks very similar to the output of Stanford CoreNLP. The CCG 
   * `rule`: Used rule. For example, `"&lt;"` (<) indicates forward application is used.
   * `category`: CCG category which corresponds to non-terminal label in each span.
   * `child`: If a node is non-terminal, `child` lists child nodes' ids. If a rule is binary, two children are concatenated with comma.
+  * `terminal`: If a node is pre-terminal (leaf in the derivation tree), `terminal` points to the id of corresponding token in the sentence.
 
 
 The below is explanations for program build and training new model, but is out of date. I will revise it soon.
