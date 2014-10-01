@@ -9,7 +9,7 @@ import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashMap}
 trait NumberedManager[T<:Numbered[_]] extends Serializable {
   val canonicalMap = new LinkedHashMap[T, T] // non-id object -> with-id object mapping
   protected val objects = new ArrayBuffer[T]   // id -> object mapping
-  
+
   protected def newId = objects.size
   protected def addEntry(original:T, withId:T): Unit = {
     canonicalMap += original -> withId
@@ -27,17 +27,17 @@ trait NumberedManager[T<:Numbered[_]] extends Serializable {
     }
   }
   protected def createWithId(original:T): T // this is a helper called from assignID; please implement this to receive non registered original object and then return the object with id assigned
-  
+
   type Input
   type GetType
 
   def getOrCreate(input:Input): T // how to convert input -> object (with id assigned)
   def get(input:Input): GetType    // get without create. If not found, return special object for unknown object, which type can be defined in sub-classes (GetType); user may return Option[T] if not found, but in some cases (such as Word), one may want predefined unknown token.
 
-  protected def getOrNone(input:Input): Option[T] // this defines what input is the un-registered object. 
-  
+  protected def getOrNone(input:Input): Option[T] // this defines what input is the un-registered object.
+
   def unknown: GetType // this return the value of get() when it failed.
-  
+
   // def transformValues(f:T => T) = {
   //   canonicalMap.zipWithIndex.foreach {
   //     case ((k, v), i) => {
@@ -78,7 +78,7 @@ trait UnkObjectReturner[T<:Numbered[_]] {
 }
 // TODO: this is experimental; may be used when one want to treat rare-words with converted surface forms
 trait UnkWithTemplateReturner[T<:Numbered[_]] extends UnkObjectReturner[T] {
-  
+
   override def get(str:String): GetType = getOrNone(str) match {
     case Some(obj) => obj
     case None => {
