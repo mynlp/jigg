@@ -52,7 +52,7 @@ class CCGParseAnnotator(val name: String, val props: Properties) extends Sentenc
         }
         val childIds = rule.childPoint.points map { p => id(point2id(p)) } match {
           case Seq() => None
-          case ids => Some(Text(ids.mkString(",")))
+          case ids => Some(Text(ids.mkString(" ")))
         }
         val terminalId = childIds match {
           case None => tokenSeq(point.x).attribute("id")
