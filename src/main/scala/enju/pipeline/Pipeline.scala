@@ -19,16 +19,6 @@ class Pipeline(val props: Properties) {
     satisfiedSofar | annotator.requirementsSatisfied
   }
 
-  def ensureRequirements: Boolean = {
-    val satisfiedSets = annotators.scanLeft(Set[Annotator.Requirement]()) { (satisfied, annotator) =>
-      satisfied | annotator.requirementsSatisfied
-    }
-    annotators.zip(satisfiedSets).forall { case (a, s) =>
-      val reqs = a.requires
-      (reqs & s) == reqs
-    }
-  }
-
   /** User may override this method in a subclass to add more own annotators?
     */
   def getAnnotator(name: String): Annotator[_, _] = name match {
