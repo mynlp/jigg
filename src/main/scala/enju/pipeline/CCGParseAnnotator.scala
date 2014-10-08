@@ -39,10 +39,10 @@ class CCGParseAnnotator(val name: String, val props: Properties) extends Sentenc
 
     val spans = new ArrayBuffer[Node]
 
+    def spanid(pointid: Int) ="sp" + sid + "-" + pointid
+
     deriv.roots foreach { root =>
       deriv foreachPoint({ point =>
-        def id(pid: Int) ="sp" + sid + "-" + pid
-
         val pid = point2id(point)
 
         val rule = deriv.get(point).get
@@ -50,7 +50,7 @@ class CCGParseAnnotator(val name: String, val props: Properties) extends Sentenc
           case "" => None
           case symbol => Some(Text(symbol))
         }
-        val childIds = rule.childPoint.points map { p => id(point2id(p)) } match {
+        val childIds = rule.childPoint.points map { p => spanid(point2id(p)) } match {
           case Seq() => None
           case ids => Some(Text(ids.mkString(" ")))
         }
@@ -59,10 +59,13 @@ class CCGParseAnnotator(val name: String, val props: Properties) extends Sentenc
           case _ => None
         }
 
-        spans += <span id={ id(pid) } begin={ point.x.toString } end={ point.y.toString } category={ point.category.toString } rule={ ruleSymbol } child={ childIds } terminal={ terminalId } />
+        spans += <span id={ spanid(pid) } begin={ point.x.toString } end={ point.y.toString } category={ point.category.toString } rule={ ruleSymbol } child={ childIds } terminal={ terminalId } />
       }, root)
     }
-    val ccg = <ccg>{ spans }</ccg>
+
+    val rootids = deriv.roots.map { p => spanid(point2id(p)) }.mkString(" ")
+
+    val ccg = <ccg root={ rootids }>{ spans }</ccg>
     enju.util.XMLUtil.addChild(sentence, ccg)
   }
 

@@ -58,7 +58,7 @@ $ cat sample.txt.xml
       <token base="です" katsuyou="基本形" pos="助動詞" surf="です" id="t0_4"/>
       <token base="。" pos="記号-句点" surf="。" id="t0_5"/>
     </tokens>
-    <ccg>
+    <ccg root="sp0-0">
       <span child="sp0-1 sp0-11" rule="&lt;" category="S[mod=nm,form=base]" end="6" begin="0" id="sp0-0"/>
       <span child="sp0-2 sp0-5" rule="&gt;" category="S[mod=nm,form=base]" end="5" begin="0" id="sp0-1"/>
       <span child="sp0-3 sp0-4" rule="&lt;" category="S/S" end="2" begin="0" id="sp0-2"/>
