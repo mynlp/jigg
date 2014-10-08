@@ -87,6 +87,7 @@ Again, the result looks very similar to the output of Stanford CoreNLP. The CCG 
   * `child`: If a node is non-terminal, `child` lists child nodes' ids. Two children are separated with a space if the rule is binary.
   * `terminal`: If a node is pre-terminal (leaf in the derivation tree), `terminal` points to the id of corresponding token in the sentence.
 
+Each ccg tree has a `root` attribute, which points to the span id of the root node. Sometimes the parser returns a parse forest, i.e., fragmental trees, in which case, `root` is a list of root nodes of all fragments.
 
 The below is explanations for program build and training new model, but is out of date. I will revise it soon.
 
