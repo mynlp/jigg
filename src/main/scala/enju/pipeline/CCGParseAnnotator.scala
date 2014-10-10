@@ -75,8 +75,15 @@ class CCGParseAnnotator(val name: String, val props: Properties) extends Sentenc
       val terminalSeq = tokenSeq map { token =>
         val surf = dict.getWordOrCreate(token \ "@surf" toString())
         val base = dict.getWordOrCreate(token \ "@base" toString())
-        val katsuyou = token.attribute("katsuyou") getOrElse { "_" }
-        val pos = token \ "@pos" toString()
+        val katsuyou = token \ "@inflectionForm" toString() match {
+          case "*" => "_"; case x => x
+        }
+        val posSeq = Seq("@pos", "@pos1", "@pos2", "@pos3") map { token \ _ toString() }
+        val pos = posSeq.indexOf("*") match {
+          case -1 => posSeq.mkString("-")
+          case idx => posSeq.take(idx).mkString("-")
+        }
+
         val combinedPoS = dict.getPoSOrCreate(pos + "/" + katsuyou)
 
         (surf, base, combinedPoS)
