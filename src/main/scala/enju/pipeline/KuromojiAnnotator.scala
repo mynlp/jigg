@@ -20,7 +20,7 @@ class KuromojiAnnotator(val name: String, val props: Properties) extends Sentenc
     val tokenizedSentence = tokenizer.tokenize(sentence.text)
     var tokenIndex = 0
 
-    val tokenNodes = tokenizedSentence.map { case token: Token =>
+    val tokenNodes = tokenizedSentence.map { case token =>
       val surf = token.getSurfaceForm
 
       // array of 品詞,品詞細分類1,品詞細分類2,品詞細分類3,活用形,活用型,原形,読み,発音
