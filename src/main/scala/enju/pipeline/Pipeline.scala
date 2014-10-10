@@ -36,7 +36,8 @@ class Pipeline(val props: Properties) {
     import enju.util.LogUtil._
 
     //val in = props.getProperty("file")
-    val in = Source.fromFile(props.getProperty("file")).getLines().toStream  // TODO: consider re-design of input of StringAnnotator
+    val fn = props.getProperty("file")
+    val in = Source.fromFile(fn).getLines().toStream  // TODO: consider re-design of input of StringAnnotator
 
     // Currently following things are supposed, which should be relaxed:
     //  - The first annotator is a kind of tokenizer (StringAnnotator) which reads input files and converts it into an XML node
@@ -56,7 +57,7 @@ class Pipeline(val props: Properties) {
       case Nil => input
     }
 
-    val xml = multipleTrack("Annotating %s with %s".format(in, annotatorNames.mkString(", "))) {
+    val xml = multipleTrack("Annotating %s with %s".format(fn, annotatorNames.mkString(", "))) {
       annotateRecur(<Root />, annotators)
     }
     // The output of basic XML.save method is not formatted, so we instead use PrettyPrinter.
@@ -64,8 +65,8 @@ class Pipeline(val props: Properties) {
     // XML.save(in + ".xml", xml, "UTF-8")
     val printer = new scala.xml.PrettyPrinter(500, 2)
 
-    track("Writing to %s".format(in + ".xml... ")) {
-      XML.save(in + ".xml", XML.loadString(printer.format(xml)), "UTF-8", true, null)
+    track("Writing to %s".format(fn + ".xml... ")) {
+      XML.save(fn + ".xml", XML.loadString(printer.format(xml)), "UTF-8", true, null)
     }
     //println(printer.format(xml))
   }
