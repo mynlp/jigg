@@ -2,7 +2,8 @@ package enju.pipeline
 
 import java.util.Properties
 import scala.annotation.tailrec
-import scala.xml._
+import scala.io.Source
+import scala.xml.{XML, Node}
 
 class Pipeline(val props: Properties) {
 
@@ -22,6 +23,7 @@ class Pipeline(val props: Properties) {
   /** User may override this method in a subclass to add more own annotators?
     */
   def getAnnotator(name: String): Annotator[_, _] = name match {
+    case "ssplit" => new RegexSentenceAnnotator(name, props)
     case "kuromoji" => new KuromojiAnnotator(name, props)
     case "ccg" => new CCGParseAnnotator(name, props)
     case other =>
@@ -33,7 +35,8 @@ class Pipeline(val props: Properties) {
   def run = {
     import enju.util.LogUtil._
 
-    val in = props.getProperty("file")
+    //val in = props.getProperty("file")
+    val in = Source.fromFile(props.getProperty("file")).getLines().toStream  // TODO: consider re-design of input of StringAnnotator
 
     // Currently following things are supposed, which should be relaxed:
     //  - The first annotator is a kind of tokenizer (StringAnnotator) which reads input files and converts it into an XML node

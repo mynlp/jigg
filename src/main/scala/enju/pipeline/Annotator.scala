@@ -18,12 +18,13 @@ object Annotator {
     */
   trait Requirement
 
+  case object JaSentence extends Requirement
   case object JaTokenize extends Requirement
   case object JaDependency extends Requirement
   case object JaCCG extends Requirement
 }
 
-trait StringAnnotator extends Annotator[String, Node]
+trait StringAnnotator extends Annotator[Stream[String], Node]
 
 trait XMLAnnotator extends Annotator[Node, Node]
 
