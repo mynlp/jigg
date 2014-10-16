@@ -10,7 +10,7 @@ sys.setdefaultencoding('utf-8')
 
 class PipelineClient:
     def __init__(self):
-        self.server = xmlrpclib.ServerProxy('http://localhost:8081')
+        self.server = xmlrpclib.ServerProxy('http://127.0.0.1:8080')
     
     def parse(self, text):
         return fromstring(self.server.parse(text))
@@ -18,4 +18,4 @@ class PipelineClient:
 pipeline = PipelineClient()
 result = pipeline.parse("今日はいい天気ですね。")
 
-print result
+print tostring(result, encoding='utf-8')
