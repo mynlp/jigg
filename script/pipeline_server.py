@@ -72,7 +72,7 @@ if __name__ == '__main__':
     """
     Example usage:
 
-    ./script/pipeline_server.py  -P "-Xmx4g -cp transccg.jar enju.pipeline.Pipeline -annotators ssplit,kuromoji -ccg.model ./model/jaccg-0.1-beam64.ser.gz"
+    ./script/pipeline_server.py  -P "-Xmx4g -cp transccg-0.1.jar enju.pipeline.Pipeline -annotators ssplit,kuromoji -ccg.model ./model/jaccg-0.1-beam64.ser.gz"
     
     """
     
