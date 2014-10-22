@@ -6,7 +6,7 @@ class CategoryManagerTest extends FunSuite {
   test("the same child node should be assiged the same id") {
     val manager = new CategoryManager // Constructor automatically creates unknown category which is assigned id 0
 
-    val cat = JapaneseCategoryParser.parse("NP[o,nm]／NP[o,nm]")
+    val cat = JapaneseCategoryParser.parse("NP[case=o,mod=nm]/NP[case=o,mod=nm]")
     manager.assignID(cat) match {
       case ComplexCategory(id, left, right, _) => {
         left.id should equal (1)

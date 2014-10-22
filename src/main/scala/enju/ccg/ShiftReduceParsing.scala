@@ -264,9 +264,9 @@ class JapaneseShiftReduceParsing extends ShiftReduceParsing {
       evaluateBunsetsuDepAccuracy(connectedCabochaSentences, goldSentences)
     }
 
-    System.err.println("\ndependency accuracies against Kyodai dependency:")
-    System.err.println("-----------------------")
-    outputDependencyAccuracies(goldCabochaSentences)
+    // System.err.println("\ndependency accuracies against Kyodai dependency:")
+    // System.err.println("-----------------------")
+    // outputDependencyAccuracies(goldCabochaSentences)
 
     System.err.println("\ndependency accuracies against CCGBank dependency:")
     System.err.println("-----------------------")

@@ -18,10 +18,6 @@ object JapaneseCategoryParser extends CategoryParser {
 
 object EnglishCategoryParser extends CategoryParser {
   class EnglishReader extends Reader {
-    override val maxFeatureSize = -1
-    // override val slashLeft = '\\'
-    // override val slashRight = '/'
-
     override def newCategoryFeature(vals: Seq[String]) = EnCategoryFeature.createFromValues(vals)
   }
   override def newReader = new EnglishReader
@@ -29,8 +25,6 @@ object EnglishCategoryParser extends CategoryParser {
 
 trait CategoryParser {
   trait Reader {
-    val maxFeatureSize = 2
-
     var pos = 0
     var currentStr = ""
     def strToCategoryTree(catStr:String) = getSimplifiedCategoryTree(catStr)
@@ -39,30 +33,25 @@ trait CategoryParser {
       else ComplexCategory(
         0, categoryTreeToCategory(catTree.left), categoryTreeToCategory(catTree.right), catTree.slash)
     }
+    // (NP[case=X1,mod=X2]{I1}/NP[case=X1,mod=X2]{I1}){I2}_none -> NP[case=X1,mod=X2]/NP[case=X1,mod=X2]
     def getSimplifiedCategoryTree(catStr:String) = {
       def simplify(surface:String) = {
-        var simplified = removeRedundantFeatures(surface)
-        simplified = removeInfoFollowsFeature(simplified)
-        removeNumbers(simplified)
+        removeSemanticInfo(surface)
+        // simplified = removeInfoFollowsFeature(simplified)
+        // removeNumbers(simplified)
       }
-      def removeRedundantFeatures(surface:String) = {
-        if (maxFeatureSize < 0) surface
-        else {
-          val commaIndices = surface.zipWithIndex.withFilter {
-            case (c, i) => c == ',' }.map { case (c, i) => i }
-          if (commaIndices.size > maxFeatureSize)
-            surface.substring(0, commaIndices(maxFeatureSize)) + surface.substring(surface.indexOf(']'))
-          else surface
-        }
-      }
-      def removeInfoFollowsFeature(surface:String) = surface.indexOf(']') match {
+      def removeSemanticInfo(surface: String) = surface.indexOf('{') match {
         case -1 => surface
-        case featureEnd => surface.substring(0, featureEnd + 1)}
-      def removeNumbers(surface:String) =
-        if (surface.size > 0 && surface.last.isDigit) {
-          surface.substring(0, surface.size - 1)
-        } else surface
+        case begin => surface.substring(0, begin)
+      }
+      // def removeInfoFollowsFeature(surface:String) = surface.indexOf(']') match {
+      //   case -1 => surface
+      //   case featureEnd => surface.substring(0, featureEnd + 1)}
 
+      // def removeNumbers(surface:String) =
+      //   if (surface.size > 0 && surface.last.isDigit) {
+      //     surface.substring(0, surface.size - 1)
+      //   } else surface
 
       val catTree = parseToCategoryTree(catStr)
       catTree.setSurface
@@ -96,7 +85,19 @@ trait CategoryParser {
       // WARNING: currently, the number after the parenthesis is removed
       // in this point. This might cause a bug if future version require
       // these number in the parser.
-      if (peek.toChar.isDigit) pos += 1
+      // if (peek.toChar.isDigit) pos += 1
+
+      // 2014/10/22: This is new mechanism to skip the semantic info
+      // Currently the below is rather ad-hoc.
+      // TODO: refactor this class to fully interpret with the current category definition
+      if (peek.toChar == '{') {
+        while (peek.toChar != '}') pos += 1
+        pos += 1
+      }
+      // if (peek.toChar == ')') {
+      //   while (peek.toChar == ')') pos += 1
+      // }
+
       target
     }
     def parseSlash = peek match {
@@ -117,9 +118,8 @@ trait CategoryParser {
 
     def peek:Char = if (pos < currentStr.size) currentStr(pos) else 0
 
-    // TODO: remove Big charactor version when new corpus is relased
-    def isSlashLeft(c: Char) = c == '＼' || c == '\\'
-    def isSlashRight(c: Char) = c == '／' || c == '/'
+    def isSlashLeft(c: Char) = c == '\\'
+    def isSlashRight(c: Char) = c == '/'
 
     def isSlash(c:Char) = isSlashLeft(c) || isSlashRight(c)
     def isLeftParen(ch:Char) = ch == '('

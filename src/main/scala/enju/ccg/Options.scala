@@ -1,6 +1,6 @@
 package enju.ccg
 
-import annotation.target.getter
+import annotation.meta.getter
 
 trait Options {
   type Option = fig.basic.Option @getter

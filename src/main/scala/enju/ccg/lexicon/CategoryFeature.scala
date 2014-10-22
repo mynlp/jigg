@@ -50,11 +50,13 @@ object JPCategoryFeature {
       val sortedValues = Array.fill(keys.size)("")
       values.filter(_!="").foreach { value =>
         val v = value match { case kvpair(v) => v; case v => v }
-        v2keyIdx(v) match { case i => sortedValues(i) = v }
+
+        if (v(0) != 'X')
+          v2keyIdx(v) match { case i => sortedValues(i) = v }
       }
       JPCategoryFeature(sortedValues)
   }
-  // We cache this because mostly categories don't have a feature
+  // We cache this because most categories don't have a feature
   private val emptyFeature = JPCategoryFeature(Array.fill(keys.size)(""))
 }
 

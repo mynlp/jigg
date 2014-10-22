@@ -72,16 +72,27 @@ class CCGBankReader(dict:Dictionary) {
   }
 
   class ATreeReader(override val in: java.io.Reader) extends TreeReader {
-    def readString: String = {
+    def readWhile(hit: Int=>Boolean): String = {
       val sb = new StringBuilder
       var c = peekChar
-      while (c != -1 && !Character.isWhitespace(c) && c != '{' && c != '}') {
+      // while (c != -1 && !Character.isWhitespace(c) && c != '{' && c != '}') {
+      while (!hit(c)) {
         sb.append(c.toChar)
         readChar
         c = peekChar
       }
       sb.toString
     }
+
+    def readString: String = readWhile { c =>
+      c == -1 | Character.isWhitespace(c) | c == '{' | c == '}'
+    }
+
+    def readNonterminal: String = readWhile { c =>
+      c == -1 | Character.isWhitespace(c)
+    }
+
+    def readTerminal: String = readString
 
     def readChildren: Seq[Tree] = {
       skipSpaces
@@ -98,7 +109,7 @@ class CCGBankReader(dict:Dictionary) {
     }
     def readIntermediateNode(ruleSymbol:String): Tree = {
       skipSpaces
-      val label = ruleSymbol + ' ' + readString
+      val label = ruleSymbol + ' ' + readNonterminal
       readChildren match {
         case Seq(child) => UnaryTree(child, label) // unary
         case Seq(left, right) => BinaryTree(left, right, label) // binary
@@ -106,18 +117,21 @@ class CCGBankReader(dict:Dictionary) {
       }
     }
 
-    def isIntermediate(a:String): Boolean =
-      a == "<" || a == ">" || a == "Φ" || a == "ADV" || a == "ADN" || a == "SSEQ"
+    def isIntermediate(a:String): Boolean = a match {
+      case "<" | ">" | ">Bn" | ">Bx" | "<Bn" | "Φ" | "ADV" | "ADN" | "SSEQ" => true
+      case "<Bx" => sys.error("backward crossed detected?")
+      case _ => false
+    }
 
     def readTree: Option[Tree] = {
       skipSpaces
       peekChar match {
         case '{' => // new tree
           readChar // '{'
-          val ruleSymbol = readString // {< , {AVD, etc
+          val ruleSymbol = readNonterminal // {< , {AVD, etc
           val tree = if (isIntermediate(ruleSymbol)) readIntermediateNode(ruleSymbol) else {
             skipSpaces
-            LeafTree(ruleSymbol + ' ' + readString)
+            LeafTree(ruleSymbol + ' ' + readTerminal)
           }
           readChar // '}'
 
