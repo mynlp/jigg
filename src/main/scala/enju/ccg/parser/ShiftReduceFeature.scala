@@ -9,6 +9,7 @@ sealed trait ShiftReduceUnlabeledFeature extends Feature {
   //lazy val hashCode_ = hashCode
 }
 
+@SerialVersionUID(6076803500331881365L)
 case class ShiftReduceFeature(override val unlabeled:ShiftReduceUnlabeledFeature,
                               override val label:ActionLabel) extends LabeledFeature[ActionLabel] {
   // The below tried to reduce the cost of feature calcuations; but the result was negative
