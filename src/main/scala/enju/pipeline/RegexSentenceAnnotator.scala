@@ -7,9 +7,10 @@ import scala.xml.Node
 
 class RegexSentenceAnnotator(val name: String, val props: Properties) extends StringAnnotator {
 
-  override def annotate(input: Stream[String]): Node = {
+  // TODO: Reconsider how to manage this id; this is temporarily moved here to share orders across multiple calls in shell mode.
+  var sentenceID = 0
 
-    var sentenceID = 0
+  override def annotate(input: Stream[String]): Node = {
     def newSentenceID(): String = {
       val new_id = "s" + sentenceID
       sentenceID += 1
@@ -57,4 +58,3 @@ object RegexSentenceAnnotator {
 
   val defaultMethod = pointAndNewLine
 }
-

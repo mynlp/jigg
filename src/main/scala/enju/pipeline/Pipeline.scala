@@ -4,6 +4,7 @@ import java.util.Properties
 import scala.annotation.tailrec
 import scala.io.Source
 import scala.xml.{XML, Node}
+import enju.util.LogUtil.{ track, multipleTrack }
 
 class Pipeline(val props: Properties) {
 
@@ -33,32 +34,11 @@ class Pipeline(val props: Properties) {
   }
 
   def run = {
-    import enju.util.LogUtil._
-
     //val in = props.getProperty("file")
     val fn = props.getProperty("file")
     val in = Source.fromFile(fn).getLines().toStream  // TODO: consider re-design of input of StringAnnotator
-
-    // Currently following things are supposed, which should be relaxed:
-    //  - The first annotator is a kind of tokenizer (StringAnnotator) which reads input files and converts it into an XML node
-    //  - It means that we cannot start with existing partially annotated file as input
-    def annotateRecur(input: Node, unprocessed: List[Annotator[_, _]]): Node = unprocessed match {
-      case annotator :: tail =>
-        val newNode = track(s"${annotator.name}: ", "", 2) {
-          annotator match {
-            case annotator: StringAnnotator =>
-              assert(input.label == "Root")
-              annotator.annotate(in)
-            case annotator: XMLAnnotator =>
-              annotator.annotate(input)
-          }
-        }
-        annotateRecur(newNode, tail)
-      case Nil => input
-    }
-
     val xml = multipleTrack("Annotating %s with %s".format(fn, annotatorNames.mkString(", "))) {
-      annotateRecur(<Root />, annotators)
+      annotate(in, true)
     }
     // The output of basic XML.save method is not formatted, so we instead use PrettyPrinter.
     // However, this method have to convert an entire XML into a String object, which would be problematic for huge dataset.
@@ -70,11 +50,60 @@ class Pipeline(val props: Properties) {
     }
     //println(printer.format(xml))
   }
+
+  def shell = {
+    val inputReader = enju.util.IOUtil.openStandardIn
+    def readLine: Stream[String] = {
+      System.err.print("> ")
+      inputReader.readLine match {
+        case null => Stream()
+        case l if l.size == 0 => readLine
+        case l => Stream(l)
+      }
+    }
+    var in = readLine
+    while (in != Stream()) {
+      val xml = annotate(in)
+      val printer = new scala.xml.PrettyPrinter(500, 2)
+      println(printer.format(xml))
+      in = readLine
+    }
+  }
+
+  def annotate(in: Stream[String], verbose: Boolean = false): Node = {
+    // Currently following things are supposed, which should be relaxed:
+    //  - The first annotator is a kind of tokenizer (StringAnnotator) which reads input files and converts it into an XML node
+    //  - It means that we cannot start with existing partially annotated file as input
+    def annotateRecur(input: Node, unprocessed: List[Annotator[_, _]]): Node = unprocessed match {
+      case annotator :: tail =>
+        val newNode = verbose match {
+          case true => track(s"${annotator.name}: ", "", 2) { annotateWith(annotator, input) }
+          case false => annotateWith(annotator, input)
+        }
+        annotateRecur(newNode, tail)
+      case Nil => input
+    }
+
+    def annotateWith(annotator: Annotator[_, _], input: Node): Node = annotator match {
+      case annotator: StringAnnotator =>
+        assert(input.label == "Root")
+        annotator.annotate(in)
+      case annotator: XMLAnnotator =>
+        annotator.annotate(input)
+    }
+
+    annotateRecur(<Root />, annotators)
+  }
 }
 
 object Pipeline {
   def main(args: Array[String]): Unit = {
     val props = enju.util.ArgumentsParser.parse(args.toList)
-    new Pipeline(props).run
+
+    val pipeline = new Pipeline(props)
+    props.getProperty("file") match {
+      case null => pipeline.shell
+      case _ => pipeline.run
+    }
   }
 }
