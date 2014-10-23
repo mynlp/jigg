@@ -1,11 +1,10 @@
 package enju.pipeline
 
 import scala.xml.{Node, Elem}
-import scala.xml.transform.{RewriteRule, RuleTransformer}
 
-sealed trait Annotator[Input, Output] {
+trait Annotator {
   def name: String
-  def annotate(annotation: Input): Output
+  def annotate(annotation: Node): Node
 
   import Annotator.Requirement
   def requires: Set[Requirement]
@@ -24,42 +23,40 @@ object Annotator {
   case object JaCCG extends Requirement
 }
 
-trait StringAnnotator extends Annotator[Stream[String], Node]
-
-trait XMLAnnotator extends Annotator[Node, Node]
-
 /** A trait for an annotator which modifies a sentence node. If an annotator is sentence-level
   * annotator such as a parser or pos tagger, it should extend this trait and usually what you
   * should do is only to implement newSentenceAnnotation method, which rewrites a sentence
   * node and returns new one.
   */
-trait SentencesAnnotator extends XMLAnnotator {
+trait SentencesAnnotator extends Annotator {
   override def annotate(annotation: Node): Node = {
 
-    /** The idiom below is from:
-      * https://gist.github.com/zentrope/728034
-      * http://stackoverflow.com/questions/2199040/scala-xml-building-adding-children-to-existing-nodes
-      *
-      * TODO: sentence level parallelization should be handled here?
-      */
-    object replaceSentences extends RewriteRule {
-      override def transform(n: Node): Seq[Node] = n match {
-        case e: Elem if e.label == "sentences" =>
-          val newChild = e.child map { c =>
-            assert(c.label == "sentence") // assuming sentences node has only sentence nodes as children
-            val a = newSentenceAnnotation(c)
-            a
-          }
-          e.copy(child = newChild)
-        case other => other
+    // /** TODO: sentence level parallelization should be handled here?
+    //   */
+    // object replaceSentences extends RewriteRule {
+    //   override def transform(n: Node): Seq[Node] = n match {
+    //     case e: Elem if e.label == "sentences" =>
+    //       val newChild = e.child map { c =>
+    //         assert(c.label == "sentence") // assuming sentences node has only sentence nodes as children
+    //         val a = newSentenceAnnotation(c)
+    //         a
+    //       }
+    //       e.copy(child = newChild)
+    //     case other => other
+    //   }
+    // }
+    // new RuleTransformer(replaceSentences).transform(annotation).head
+
+    enju.util.XMLUtil.replaceAll(annotation, "sentences") { e =>
+      // TODO: sentence level parallelization should be handled here?
+      val newChild = e.child map { c =>
+        assert(c.label == "sentence") // assuming sentences node has only sentence nodes as children
+        val a = newSentenceAnnotation(c)
+        a
       }
+      e.copy(child = newChild)
     }
-    new RuleTransformer(replaceSentences).transform(annotation).head
   }
 
   def newSentenceAnnotation(sentence: Node): Node
 }
-
-// class Kuromoji extends StringToXMLAnnotator {
-//   override def annotate(rawInput: String): Node = rawInput.split("\n")
-// }

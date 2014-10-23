@@ -3,14 +3,16 @@ package enju.pipeline
 import java.util.Properties
 
 import scala.io.Source
-import scala.xml.Node
+import scala.xml.{Node, Elem, Text, Atom}
+import enju.util.XMLUtil
 
-class RegexSentenceAnnotator(val name: String, val props: Properties) extends StringAnnotator {
+class RegexSentenceAnnotator(val name: String, val props: Properties) extends Annotator {
 
   // TODO: Reconsider how to manage this id; this is temporarily moved here to share orders across multiple calls in shell mode.
   var sentenceID = 0
 
-  override def annotate(input: Stream[String]): Node = {
+  override def annotate(annotation: Node): Node = {
+
     def newSentenceID(): String = {
       val new_id = "s" + sentenceID
       sentenceID += 1
@@ -29,21 +31,19 @@ class RegexSentenceAnnotator(val name: String, val props: Properties) extends St
         pattern.r
     }
 
-    val sentences =
-      for (line <- input) yield {
-        val sentenceBoundaries = splitRegex.findAllMatchIn(line).map(_.end).toList
-        (0 +: sentenceBoundaries :+ line.length).sliding(2) flatMap {
-          case Seq(begin, end) =>
-            val sentence = line.substring(begin, end).trim()
-            if (sentence.isEmpty)
-              None
-            else
-              Option(<sentence id={ newSentenceID() }>{ sentence }</sentence>)
-        }
+    XMLUtil.replaceAll(annotation, "document") { e =>
+      val line = e.text
+      val sentenceBoundaries = splitRegex.findAllMatchIn(line).map(_.end).toList :+ line.length
+      val sentences = (0 :: sentenceBoundaries).sliding(2) flatMap { case Seq(begin, end) =>
+        val sentence = line.substring(begin, end).trim()
+        if (sentence.isEmpty)
+          None
+        else
+          Option(<sentence id={ newSentenceID() }>{ sentence }</sentence>)
       }
-    //val sentences = Array(<sentence id="s0">今日は晴れです。</sentence>)
-
-    <sentences>{ sentences.flatten }</sentences>
+      val textRemoved = XMLUtil.removeText(e)
+      XMLUtil.addChild(textRemoved, <sentences>{ sentences }</sentences>)
+    }
  }
 
   override def requires = Set()
