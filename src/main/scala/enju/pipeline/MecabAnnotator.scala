@@ -1,7 +1,6 @@
 package enju.pipeline
 
 import java.util.Properties
-import scala.io.Source
 import scala.xml._
 import collection.JavaConversions._
 import scala.sys.process.Process
