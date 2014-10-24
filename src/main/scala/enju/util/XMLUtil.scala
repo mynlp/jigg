@@ -4,7 +4,7 @@ import scala.xml._
 import scala.xml.transform.{RewriteRule, RuleTransformer}
 
 object XMLUtil {
-  def addChild(n: Node, newChild: Node): Node = n match {
+  def addChild(n: Node, newChild: NodeSeq): Node = n match {
     case e: Elem =>
       e.copy(child = e.child ++ newChild)
     case _ => sys.error("Can only add children to elements!")

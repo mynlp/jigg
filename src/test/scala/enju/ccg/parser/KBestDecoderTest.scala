@@ -44,7 +44,7 @@ class KBestDecoderTest extends FunSuite {
 
     val decoder = new DecoderForTest(candidates)
 
-    val deriv = decoder.predictConnected(emptySentence)
+    val (deriv, score) = decoder.predictConnected(emptySentence)
     deriv.roots.size should be (1)
     deriv.roots(0).category.toString should be ("g")
   }

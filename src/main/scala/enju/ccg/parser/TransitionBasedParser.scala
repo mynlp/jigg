@@ -56,7 +56,7 @@ trait TransitionBasedParser {
     correct
   }
   def trainSentence(sentence: TrainSentence, gold:Derivation): Boolean
-  def predict(sentence: CandAssignedSentence): Derivation
+  def predict(sentence: CandAssignedSentence): (Derivation, Double)
   // def kbest(sentence: CandAssignedSentence, preferConnected: Boolean = false): Seq[Derivation] =
   //   Seq(predict(sentence, preferConnected)) // default: 1-best
 }
@@ -101,6 +101,6 @@ class DeterministicDecoder(
     classifier.c += 1.0F // only update c when one sentence is processed
     allCorrect
   }
-  def predict(sentence: CandAssignedSentence): Derivation = sys.error("Please use BeamSearchDecoder with k=1 when predict!")
+  def predict(sentence: CandAssignedSentence) = sys.error("Please use BeamSearchDecoder with k=1 when predict!")
 
 }

@@ -30,13 +30,17 @@ trait KBestDecoder {
 
   def search(sentence: CandAssignedSentence): Seq[ACandidate]
 
-  def predict(sentence: CandAssignedSentence): Derivation =
-    search(sentence).sortWith(_.score > _.score)(0).path.state.toDerivation
+  def predict(sentence: CandAssignedSentence): (Derivation, Double) = {
+    val c = search(sentence).sortWith(_.score > _.score)(0)
+    (c.path.state.toDerivation, c.score)
+  }
 
   /** If a fully connected tree is found, return the one with the maximum score; else return the maximum score unconnected tree
     */
-  def predictConnected(sentence: CandAssignedSentence): Derivation =
-    search(sentence).sortWith(comparePreferringConnected)(0).path.state.toDerivation
+  def predictConnected(sentence: CandAssignedSentence): (Derivation, Double) = {
+    val c = search(sentence).sortWith(comparePreferringConnected)(0)
+    (c.path.state.toDerivation, c.score)
+  }
 
   /** Return k-best trees according to the final state score.
     *

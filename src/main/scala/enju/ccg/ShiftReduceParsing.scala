@@ -1,7 +1,7 @@
 package enju.ccg
 
 import lexicon._
-import parser.{LF => Feature}
+import parser.{LF => Feature, KBestDecoder}
 import scala.io.Source
 import scala.collection.mutable.HashMap
 import java.io.{ObjectInputStream, ObjectOutputStream, FileWriter}
@@ -104,11 +104,20 @@ trait ShiftReduceParsing extends Problem {
     val tagger = tagging.getTagger
     val decoder = getPredDecoder
 
+    val preferConnected = ParserOptions.preferConnected
+
     val predDerivations = sentences.zipWithIndex map {
       case (sentence, i) =>
         if (i % 100 == 0) System.err.print(i + "\t/" + sentences.size + " have been processed.\r")
         val superTaggedSentence = sentence.assignCands(tagger.candSeq(sentence, TaggerOptions.beta, TaggerOptions.maxK))
-        decoder.predict(superTaggedSentence)
+
+        val derivation = decoder match {
+          case decoder: KBestDecoder =>
+            if (preferConnected) decoder.predictConnected(superTaggedSentence)
+            else decoder.predict(superTaggedSentence)
+          case decoder => decoder.predict(superTaggedSentence)
+        }
+        derivation._1
     }
     System.err.println()
     predDerivations
