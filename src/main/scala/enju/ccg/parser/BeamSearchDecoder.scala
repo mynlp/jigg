@@ -10,29 +10,18 @@ object UpdateMethod extends Enumeration {
   val max_vio = Value
 }
 
-case class WrappedAction(v: Action, isGold:Boolean, partialFeatures:LabeledFeatures = LabeledFeatures())
-case class StatePath(state:State, waction: WrappedAction, prev: Option[StatePath] = None, score:Double = 0) {
-  def actionPath = expand.map(_.waction)
-  def expand = expandRecur(Nil)
-  private def expandRecur(seq: List[StatePath]): List[StatePath] = prev match {
-    case None => seq // always ignoring the initial state
-    case Some(prev) => prev.expandRecur(this :: seq)
-  }
-  def lighten = this.copy(waction = waction.copy(partialFeatures = LabeledFeatures()))
-}
-
 class BeamSearchDecoder(val indexer:FeatureIndexer[LF],
                         val extractors:FeatureExtractors,
                         val classifier:Perceptron[ActionLabel],
                         val oracleGen:OracleGenerator,
                         override val rule:Rule,
                         val beamSize:Int,
-                        val initialState:State) extends TransitionBasedParser {
+                        val initialState:State) extends TransitionBasedParser with KBestDecoder {
   import UpdateMethod.UpdateMethod
 
   val updateMethod = UpdateMethod.max_vio
 
-  case class Candidate(path:StatePath, waction:WrappedAction, score:Double) {
+  case class Candidate(path:StatePath, waction:WrappedAction, score:Double) extends ACandidate {
     def isFinished = waction.v == Finish()
     def toProceededPath: StatePath = {
       val newState = path.state.proceed(waction.v, waction.isGold)
@@ -230,7 +219,7 @@ class BeamSearchDecoder(val indexer:FeatureIndexer[LF],
   def predArgMaxStatePath(sentence: TrainSentence, gold: Derivation) =
     predMaxScoreStateSeq(sentence, gold).last
 
-  override def predict(sentence: CandAssignedSentence): Derivation = {
+  def search(sentence: CandAssignedSentence): Seq[Candidate] = {
     def beamSearch(oldBeam:Beam, finishedCandidates: List[Candidate]): List[Candidate] = {
       if (oldBeam.isEmpty) return finishedCandidates
       else {
@@ -239,7 +228,22 @@ class BeamSearchDecoder(val indexer:FeatureIndexer[LF],
         beamSearch(oldBeam.reset(unfinished), finished ::: finishedCandidates)
       }
     }
-    val allCandidates = beamSearch(initialBeam, Nil)
-    allCandidates.sortWith(_.score > _.score)(0).path.state.toDerivation
+    beamSearch(initialBeam, Nil)
   }
+
+  // predict is inhereted from KBestDecoder
+
+  // override def predict(sentence: CandAssignedSentence): Derivation =
+  //   search(sentence).sortWith(_.score > _.score)(0).path.state.toDerivation
+
+  // override def predictConnected(sentence: CandAssignedSentence): Derivation =
+  //   search(sentence).sortWith(comparePreferringConnected)(0).path.state.toDerivation
+
+  // override def predictKbest(k: Int, sentence: CandAssignedSentence, preferConnected: Boolean): Seq[(Derivation, Double)] = {
+  //   val sorted = preferConnected match {
+  //     case true => search(sentence).sortWith(comparePreferringConnected)
+  //     case false => search(sentence).sortWith(_.score > _.score)
+  //   }
+  //   sorted.take(k) map { c => (c.path.state.toDerivation, c.score) }
+  // }
 }
