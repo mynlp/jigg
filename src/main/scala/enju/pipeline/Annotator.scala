@@ -31,22 +31,6 @@ object Annotator {
 trait SentencesAnnotator extends Annotator {
   override def annotate(annotation: Node): Node = {
 
-    // /** TODO: sentence level parallelization should be handled here?
-    //   */
-    // object replaceSentences extends RewriteRule {
-    //   override def transform(n: Node): Seq[Node] = n match {
-    //     case e: Elem if e.label == "sentences" =>
-    //       val newChild = e.child map { c =>
-    //         assert(c.label == "sentence") // assuming sentences node has only sentence nodes as children
-    //         val a = newSentenceAnnotation(c)
-    //         a
-    //       }
-    //       e.copy(child = newChild)
-    //     case other => other
-    //   }
-    // }
-    // new RuleTransformer(replaceSentences).transform(annotation).head
-
     enju.util.XMLUtil.replaceAll(annotation, "sentences") { e =>
       // TODO: sentence level parallelization should be handled here?
       val newChild = e.child map { c =>
