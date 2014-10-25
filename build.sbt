@@ -6,11 +6,11 @@ name := "enju-ccg"
 
 scalaVersion := "2.10.2"
 
-version := "0.1"
+version := "0.2"
 
 fork in run := true
 
-// parallelExecution in Test := false
+parallelExecution in Test := false
 
 crossPaths := false
 

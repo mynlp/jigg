@@ -28,6 +28,8 @@ class CCGParseAnnotator(val name: String, val props: Properties) extends Sentenc
     findProperty(name + ".beta", props) foreach { x => enju.ccg.TaggerOptions.beta = x.toDouble }
     findProperty(name + ".maxK", props) foreach { x => enju.ccg.TaggerOptions.maxK = x.toInt }
     findProperty(name + ".beam", props) foreach { x => enju.ccg.ParserOptions.beam = x.toInt }
+
+    System.err.println("The path of CCG parser model: " + enju.ccg.InputOptions.loadModelPath)
     parsing.load
   }
 

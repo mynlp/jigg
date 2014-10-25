@@ -9,11 +9,11 @@ The project name (transccg) is temporary and probably changed. I'm looking for o
 
 ## How to use
 
-The current version is 0.1. You can use `transccg-0.1.jar` in the project root directory, which is a self-contained jar of the current version.
+The current version is 0.2. You can use `transccg-0.2.jar` in the project root directory, which is a self-contained jar of the current version.
 
-### Praparing pre-trained models
+### Preparing a pre-trained model
 
-To run a CCG parser for new text, a pre-trained model file is required, which can be downloaded with the script:
+To run a CCG parser for a raw text, a pre-trained model file is required, which can be downloaded with the script:
 
 ```bash
 ./script/download_model.sh
@@ -29,17 +29,31 @@ To get CCG parses from raw sentences, a pipeline module `enju.pipeline.Pipeline`
 $ cat sample.txt
 Scalaは良い言語です。
 文法がとても簡潔です。
-$ java -Xmx4g -cp transccg-0.1.jar enju.pipeline.Pipeline -annotators kuromoji,ccg -file sample.txt -ccg.model model/jaccg-0.1-beam64.ser.gz -ccg.beam 64
+$ java -Xmx4g -cp transccg-0.2.jar enju.pipeline.Pipeline -annotators ssplit,kuromoji,ccg -file sample.txt -ccg.numKbest 3
 ```
 
 The syntax is very similar to Stanford CoreNLP. The required arguments are as follows:
 
-  * `-annotators`: A list of annotator names. Currently only `kuromoji` and `ccg` are supported.
-  * `-file`: Input file, in which one line corresponds to one sentence.
+  * `-annotators`: A list of annotator names. See below for the currently supported annotators.
+  * `-file`: Input file. If you omit this, it runs as an interactive shell mode.
 
-In the above command, `-annotators kuromoji,ccg` means it first tokenizes and assigns part-of-speech tags, then runs the CCG parser on that tokenized sentence. The CCG parser requires the tokenized sentence as input. The pipeline automatically solves these dependencies between annotators.
+In the above command, `-annotators ssplit,kuromoji,ccg` means it first splits input string into sentences, tokenizes, assigns part-of-speech tags, and then runs the CCG parser on that tokenized sentences. The CCG parser requires the tokenized sentence as input. The pipeline automatically solves these dependencies between annotators.
 
-`-ccg.*` is argument for the CCG parser. `-ccg.model` is necessary. `model/jaccg-0.1-beam64.ser.gz` is a pre-trained model with beam size of 64. Another model, `model/jaccg-0.1-beam128.ser.gz`, is trained with beam size of 128. You can change the beam size at run time by setting `-ccg.beam`. It is *highly recommended* to set the same beam size as training. So if you use `model/jaccg-0.1-beam128.ser.gz`, please set `-ccg.beam 128`. The accuracy of the model of beam size 128 is slightly high, but is about 2 times slower. In Kyoto-university-corpus experiment, the accuracy of beam size 64 is 0.880, which become 0.884 with beam size 128.
+#### Annotator list
+
+  * `ssplit`: This is always the first annotator. It segments a give text with some rule. You can customize the behavior by giving a regex with an argument `-ssplit.pattern`. See Argument list for more details.
+  * `kuromoji`: This annotator requires the input has been segmented with `ssplit`. It is morphological analyzer, which tokenizes each sentence and assign a PoS to each token.
+  * `ccg`: This annotator requires the input has been tokenized. It gives CCG derivation for each sentence.
+
+#### Argument list
+
+Some annotator's behavior can be customized by giving some arguments. These arguments are prefixed with each annotator name. For example, an argument for the CCG parser starts with `-ccg.`. The below are examples of arguments.
+
+  * `-ssplit.pattern`: You can write some regular expression here for a rule of sentence segmentation. The default value is `"\n+|。\n*"` that means it segments by each new line or a period (。).
+  * `-ssplit.method`: When `-split.pattern` is ommited, you can pick up some pre-defined pattern by setting this value. Currently `newLine`, `point`, and `pointAndNewLine` are supported. For example, when `-spplit.method newLine` is given, it segments sentences by each new line. `point` only segments by each period. The default value is `pointAndNewLine`, which is explained in `-ssplit.pattern` above.
+  * `-ccg.model`: Please set this if you want to use your own trained model for the CCG parser. If not set, a default model of `model/jaccg-0.2-beam64.ser.gz` is selected, which is a pre-trained model with beam size of 64. Its accuracy is 88% on Kyoto-university corpus and the speed is 2~3 sentences per second.
+  * `-ccg.beam`: If you use the default model, you don't have to change this value. It is the beam size of the parser. The default value is 64 and is compatible with the default model of the above.
+  * `-ccg.numKbest`: If you set this value > 1, k-best derivations of the CCG parser are annotated with those scores.
 
 ### Output format
 
@@ -48,38 +62,48 @@ The result is written in `sample.txt.xml`, which looks like this:
 ```bash
 $ cat sample.txt.xml
 <?xml version='1.0' encoding='UTF-8'?>
-<sentences>
-  <sentence id="s0">
-    <tokens>
-      <token base="*" pos="名詞-固有名詞-組織" surf="Scala" id="t0_0"/>
-      <token base="は" pos="助詞-係助詞" surf="は" id="t0_1"/>
-      <token base="良い" katsuyou="基本形" pos="形容詞-自立" surf="良い" id="t0_2"/>
-      <token base="言語" pos="名詞-一般" surf="言語" id="t0_3"/>
-      <token base="です" katsuyou="基本形" pos="助動詞" surf="です" id="t0_4"/>
-      <token base="。" pos="記号-句点" surf="。" id="t0_5"/>
-    </tokens>
-    <ccg root="sp0-0">
-      <span child="sp0-1 sp0-11" rule="&lt;" category="S[mod=nm,form=base]" end="6" begin="0" id="sp0-0"/>
-      <span child="sp0-2 sp0-5" rule="&gt;" category="S[mod=nm,form=base]" end="5" begin="0" id="sp0-1"/>
-      <span child="sp0-3 sp0-4" rule="&lt;" category="S/S" end="2" begin="0" id="sp0-2"/>
-      <span terminal="t0_0" category="NP[mod=nm,case=nc]" end="1" begin="0" id="sp0-3"/>
-      <span terminal="t0_1" category="(S/S)\NP[mod=nm,case=nc]" end="2" begin="1" id="sp0-4"/>
-      <span child="sp0-6 sp0-10" rule="&lt;" category="S[mod=nm,form=base]" end="5" begin="2" id="sp0-5"/>
-      <span child="sp0-7 sp0-9" rule="&gt;" category="NP[mod=nm,case=nc]" end="4" begin="2" id="sp0-6"/>
-      <span child="sp0-8" rule="ADN" category="NP[case=nc]/NP[case=nc]" end="3" begin="2" id="sp0-7"/>
-      <span terminal="t0_2" category="S[mod=adn,form=base]" end="3" begin="2" id="sp0-8"/>
-      <span terminal="t0_3" category="NP[mod=nm,case=nc]" end="4" begin="3" id="sp0-9"/>
-      <span terminal="t0_4" category="S[mod=nm,form=base]\NP[mod=nm,case=nc]" end="5" begin="4" id="sp0-10"/>
-      <span terminal="t0_5" category="S\S" end="6" begin="5" id="sp0-11"/>
-    </ccg>
-  </sentence>
-  <sentence id="s1">
-  ...
-  </sentence>
-</sentences>
+<root>
+  <document>
+    <sentences>
+      <sentence id="s0">
+        Scalaは良い言語です。
+        <tokens>
+          <token base="*" inflectionForm="*" inflectionType="*" pos3="*" pos2="組織" pos1="固有名詞" pos="名詞" surf="Scala" id="s0_0"/>
+          <token reading="ワ" base="は" inflectionForm="*" inflectionType="*" pos3="*" pos2="*" pos1="係助詞" pos="助詞" surf="は" id="s0_1"/>
+          <token reading="ヨイ" base="良い" inflectionForm="基本形" inflectionType="形容詞・アウオ段" pos3="*" pos2="*" pos1="自立" pos="形容詞" surf="良い" id="s0_2"/>
+          <token reading="ゲンゴ" base="言語" inflectionForm="*" inflectionType="*" pos3="*" pos2="*" pos1="一般" pos="名詞" surf="言語" id="s0_3"/>
+          <token reading="デス" base="です" inflectionForm="基本形" inflectionType="特殊・デス" pos3="*" pos2="*" pos1="*" pos="助動詞" surf="です" id="s0_4"/>
+          <token reading="。" base="。" inflectionForm="*" inflectionType="*" pos3="*" pos2="*" pos1="句点" pos="記号" surf="。" id="s0_5"/>
+        </tokens>
+        <ccg score="617.4788799285889" id="s0_ccg0" root="s0_sp0">
+          <span child="s0_sp1 s0_sp11" rule="&lt;" category="S[mod=nm,form=base]" end="6" begin="0" id="s0_sp0"/>
+          <span child="s0_sp2 s0_sp10" rule="&lt;" category="S[mod=nm,form=base]" end="5" begin="0" id="s0_sp1"/>
+          <span child="s0_sp3 s0_sp9" rule="&gt;" category="NP[mod=nm,case=nc]" end="4" begin="0" id="s0_sp2"/>
+          <span child="s0_sp4" rule="ADN" category="NP[case=nc]/NP[case=nc]" end="3" begin="0" id="s0_sp3"/>
+          <span child="s0_sp5 s0_sp8" rule="&lt;" category="S[mod=adn,form=base]" end="3" begin="0" id="s0_sp4"/>
+          <span child="s0_sp6 s0_sp7" rule="&lt;" category="NP[mod=nm,case=ga]" end="2" begin="0" id="s0_sp5"/>
+          <span terminal="s0_0" category="NP[mod=nm,case=nc]" end="1" begin="0" id="s0_sp6"/>
+          <span terminal="s0_1" category="NP[mod=nm,case=ga]\NP[mod=nm,case=nc]" end="2" begin="1" id="s0_sp7"/>
+          <span terminal="s0_2" category="S[mod=adn,form=base]\NP[mod=nm,case=ga]" end="3" begin="2" id="s0_sp8"/>
+          <span terminal="s0_3" category="NP[mod=nm,case=nc]" end="4" begin="3" id="s0_sp9"/>
+          <span terminal="s0_4" category="S[mod=nm,form=base]\NP[mod=nm,case=nc]" end="5" begin="4" id="s0_sp10"/>
+          <span terminal="s0_5" category="S\S" end="6" begin="5" id="s0_sp11"/>
+        </ccg>
+        <ccg score="615.8624420166016" id="s0_ccg1" root="s0_sp12">
+          ...
+        </ccg>
+      </sentence>
+      <sentence id="s1">
+      ...
+      </sentence>
+    </sentences>
+  </document>
+</root>
 ```
 
-Again, the result looks very similar to the output of Stanford CoreNLP. The CCG parse tree is represented as a set of spans. Each span has following attributes:
+Again, the result looks very similar to the output of Stanford CoreNLP. Version 0.2 supports k-best output. Each `ccg` element has `score` attribute. Higher value is better for the model. Each ccg tree has a `root` attribute, which points to the span id of the root node. Sometimes the parser returns a parse forest, i.e., fragmental trees, in which case, `root` is a list of root nodes of all fragments.
+
+The CCG parse tree is represented as a set of spans. Each span has following attributes:
 
   * `begin, end`: The range of the span is `[begin, end)`. `end` is exclusive, e.g., a span of `begin="4" end="5"` is a leaf (pre-terminal) node for the word of index 4 in the sentence.
   * `rule`: Used rule. For example, `"&lt;"` (<) indicates forward application is used.
@@ -87,9 +111,14 @@ Again, the result looks very similar to the output of Stanford CoreNLP. The CCG 
   * `child`: If a node is non-terminal, `child` lists child nodes' ids. Two children are separated with a space if the rule is binary.
   * `terminal`: If a node is pre-terminal (leaf in the derivation tree), `terminal` points to the id of corresponding token in the sentence.
 
-Each ccg tree has a `root` attribute, which points to the span id of the root node. Sometimes the parser returns a parse forest, i.e., fragmental trees, in which case, `root` is a list of root nodes of all fragments.
+### Server mode
+
+See `script/pipeline_server.py` for running a server. An example of client is found in `script/client.py`.
+
 
 The below is explanations for program build and training new model, but is out of date. I will revise it soon.
+
+
 
 ビルド方法
 -----
