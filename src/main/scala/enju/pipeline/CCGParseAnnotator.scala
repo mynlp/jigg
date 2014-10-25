@@ -35,48 +35,47 @@ class CCGParseAnnotator(val name: String, val props: Properties) extends Sentenc
   val preferConnected: Boolean = PropertiesUtil.getBoolean(name + ".preferConnected", props) getOrElse(false)
 
   override def newSentenceAnnotation(sentence: Node) = {
-    val sentenceId = (sentence \ "@id").toString // s12
-    val sid = sentenceId.substring(1) // s12 -> 12
+    val sentenceID = (sentence \ "@id").toString // s12
     val tokens = sentence \ "tokens"
     val tokenSeq = tokens \ "token"
 
     val posTaggedSentence = SentenceConverter.toTaggedSentence(tokenSeq)
     val derivs: Seq[(Derivation, Double)] = getDerivations(posTaggedSentence)
 
-    def ccgAnnotation(derivId: Int, deriv: Derivation, score: Double): Node = {
-      val ccgId = sentenceId + "_" + "ccg" + derivId // e.g., s12_ccg0
+    val point2id = getPoint2id(derivs.unzip._1)
 
-      val point2id = getPoint2id(deriv)
+    def ccgAnnotation(derivID: Int, deriv: Derivation, score: Double): Node = {
+      val ccgID = sentenceID + "_ccg" + derivID // e.g., s12_ccg0
 
       val spans = new ArrayBuffer[Node]
 
-      def spanid(pointid: Int) ="sp" + sid + "-" + pointid
+      def spanID(pointid: Int) = sentenceID + "_sp" + pointid
 
       deriv.roots foreach { root =>
         deriv foreachPoint({ point =>
-          val pid = point2id(point)
+          val pid = point2id(derivID, point)
 
           val rule = deriv.get(point).get
           val ruleSymbol = rule.ruleSymbol match {
             case "" => None
             case symbol => Some(Text(symbol))
           }
-          val childIds = rule.childPoint.points map { p => spanid(point2id(p)) } match {
+          val childIDs = rule.childPoint.points map { p => spanID(point2id(derivID, p)) } match {
             case Seq() => None
             case ids => Some(Text(ids.mkString(" ")))
           }
-          val terminalId = childIds match {
+          val terminalID = childIDs match {
             case None => tokenSeq(point.x).attribute("id")
             case _ => None
           }
 
-          spans += <span id={ spanid(pid) } begin={ point.x.toString } end={ point.y.toString } category={ point.category.toString } rule={ ruleSymbol } child={ childIds } terminal={ terminalId } />
+          spans += <span id={ spanID(pid) } begin={ point.x.toString } end={ point.y.toString } category={ point.category.toString } rule={ ruleSymbol } child={ childIDs } terminal={ terminalID } />
         }, root)
       }
 
-      val rootids = deriv.roots.map { p => spanid(point2id(p)) }.mkString(" ")
+      val rootIDs = deriv.roots.map { p => spanID(point2id(derivID, p)) }.mkString(" ")
 
-      <ccg root={ rootids } id={ ccgId } score={ score.toString }>{ spans }</ccg>
+      <ccg root={ rootIDs } id={ ccgID } score={ score.toString }>{ spans }</ccg>
     }
 
     val ccgs = derivs.zipWithIndex map { case ((deriv, score), i) => ccgAnnotation(i, deriv, score) }
@@ -124,14 +123,16 @@ class CCGParseAnnotator(val name: String, val props: Properties) extends Sentenc
     }
   }
 
-  def getPoint2id(deriv: Derivation): Map[Point, Int] = {
-    val map = new HashMap[Point, Int]
+  def getPoint2id(derivs: Seq[Derivation]): Map[(Int, Point), Int] = {
+    val map = new HashMap[(Int, Point), Int]
     var i = 0
-    deriv.roots foreach { root =>
-      deriv foreachPoint({ point =>
-        map += point -> i
-        i += 1
-      }, root)
+    derivs.zipWithIndex foreach { case (deriv, derivID) =>
+      deriv.roots foreach { root =>
+        deriv foreachPoint({ point =>
+          map += (derivID, point) -> i
+          i += 1
+        }, root)
+      }
     }
     map.toMap
   }

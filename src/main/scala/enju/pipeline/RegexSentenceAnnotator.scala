@@ -9,7 +9,7 @@ import enju.util.XMLUtil
 class RegexSentenceAnnotator(val name: String, val props: Properties) extends Annotator {
 
   // TODO: Reconsider how to manage this id; this is temporarily moved here to share orders across multiple calls in shell mode.
-  var sentenceID = 0
+  private[this] var sentenceID: Int = 0
 
   override def annotate(annotation: Node): Node = {
 
@@ -35,11 +35,12 @@ class RegexSentenceAnnotator(val name: String, val props: Properties) extends An
       val line = e.text
       val sentenceBoundaries = splitRegex.findAllMatchIn(line).map(_.end).toList :+ line.length
       val sentences = (0 :: sentenceBoundaries).sliding(2) flatMap { case Seq(begin, end) =>
-        val sentence = line.substring(begin, end).trim()
+        val sentence: String = line.substring(begin, end).trim()
         if (sentence.isEmpty)
           None
-        else
+        else {
           Option(<sentence id={ newSentenceID() }>{ sentence }</sentence>)
+        }
       }
       val textRemoved = XMLUtil.removeText(e)
       XMLUtil.addChild(textRemoved, <sentences>{ sentences }</sentences>)

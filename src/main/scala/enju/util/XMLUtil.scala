@@ -11,19 +11,17 @@ object XMLUtil {
   }
 
   /** The idiom below is borrowed from:
-      * https://gist.github.com/zentrope/728034
-      * http://stackoverflow.com/questions/2199040/scala-xml-building-adding-children-to-existing-nodes
+    * http://stackoverflow.com/questions/21391942/eliminate-duplicates-change-label-with-scala-xml-transform-ruletransformer
+    * The previous version used `RuleTransformer` and `RewriteRule` but I found it has some problem.
     */
-  def replaceAll(node: Node, label: String)(body: Elem => Node) = {
-    object replaceRule extends RewriteRule {
-      override def transform(n: Node): Seq[Node] = n match {
-        case e: Elem if e.label == label =>
-          body(e)
-        case other =>
-          other
-      }
+  def replaceAll(root: Node, label: String)(body: Elem => Node) = {
+    def recurse(node: Node): Seq[Node] = node match {
+      case e: Elem if (e.label == label) =>
+        body(e)
+      case e: Elem => e.copy(child = e.nonEmptyChildren.map(recurse(_).headOption).flatten)
+      case _ => node
     }
-    new RuleTransformer(replaceRule).transform(node).head
+    recurse(root).head
   }
 
   def removeText(node: Elem) = node.copy(child = (node.child map {
