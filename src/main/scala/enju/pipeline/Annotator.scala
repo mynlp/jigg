@@ -6,6 +6,8 @@ trait Annotator {
   def name: String
   def annotate(annotation: Node): Node
 
+  def close = {} // Resource release etc; detault: do nothing
+
   import Annotator.Requirement
   def requires: Set[Requirement]
   def requirementsSatisfied: Set[Requirement]

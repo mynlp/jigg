@@ -10,15 +10,23 @@ class Pipeline(val props: Properties) {
 
   // TODO: sort by resolving dependencies
   val annotatorNames = props.getProperty("annotators").split("""[,\s]+""")
-  val annotators = annotatorNames.map { getAnnotator(_) }.toList
 
-  annotators.foldLeft(Set[Annotator.Requirement]()) { (satisfiedSofar, annotator) =>
-    val requires = annotator.requires
+  def createAnnotators: List[Annotator] = {
+    val annotators = annotatorNames.map { getAnnotator(_) }.toList
 
-    val lacked = requires &~ (requires & satisfiedSofar)
-    if (!lacked.isEmpty) sys.error("annotator %s requires annotators %s" format(annotator.name, lacked.mkString(", ")))
+    annotators.foldLeft(Set[Annotator.Requirement]()) { (satisfiedSofar, annotator) =>
+      val requires = annotator.requires
 
-    satisfiedSofar | annotator.requirementsSatisfied
+      val lacked = requires &~ (requires & satisfiedSofar)
+      if (!lacked.isEmpty) sys.error("annotator %s requires annotators %s" format(annotator.name, lacked.mkString(", ")))
+
+      satisfiedSofar | annotator.requirementsSatisfied
+    }
+    annotators
+  }
+
+  def close(annotators: Seq[Annotator]) = {
+    annotators foreach (_.close)
   }
 
   /** User may override this method in a subclass to add more own annotators?
@@ -41,7 +49,9 @@ class Pipeline(val props: Properties) {
     }
 
     val xml = multipleTrack("Annotating %s with %s".format(fn, annotatorNames.mkString(", "))) {
-      annotate(root, true)
+      val annotators = createAnnotators
+      try annotate(root, annotators, true)
+      finally close(annotators)
     }
     // The output of basic XML.save method is not formatted, so we instead use PrettyPrinter.
     // However, this method have to convert an entire XML into a String object, which would be problematic for huge dataset.
@@ -54,6 +64,8 @@ class Pipeline(val props: Properties) {
   }
 
   def shell = {
+    val annotators = createAnnotators
+
     val inputReader = enju.util.IOUtil.openStandardIn
     def readLine: String = {
       System.err.print("> ")
@@ -64,17 +76,17 @@ class Pipeline(val props: Properties) {
       }
     }
     var in = readLine
-    while (in != "") {
-      val xml = annotate(initializeXML(in))
+    try while (in != "") {
+      val xml = annotate(initializeXML(in), annotators)
       val printer = new scala.xml.PrettyPrinter(500, 2)
       println(printer.format(xml))
       in = readLine
-    }
+    } finally close(annotators)
   }
 
   def initializeXML(raw: String) = <root><document>{ raw }</document></root>
 
-  def annotate(root: Node, verbose: Boolean = false): Node = {
+  def annotate(root: Node, annotators: List[Annotator], verbose: Boolean = false): Node = {
     def annotateRecur(input: Node, unprocessed: List[Annotator]): Node = unprocessed match {
       case annotator :: tail =>
         val newNode = verbose match {
