@@ -10,33 +10,31 @@ import java.io.OutputStreamWriter
 
 class MecabAnnotator(val name: String, val props: Properties) extends SentencesAnnotator {
 
+  val mecab_command: String = props.getProperty("mecab.command", "mecab")
+
+  //TODO option
+  // val mecab_options: Seq[String] = props.getProperty("mecab.options", "").split("[\t ]+").filter(_.nonEmpty)
+
+  lazy private[this] val mecab_process = new java.lang.ProcessBuilder((mecab_command)).start
+  lazy private[this] val mecab_in = new BufferedReader(new InputStreamReader(mecab_process.getInputStream, "UTF-8"))
+  lazy private[this] val mecab_out = new BufferedWriter(new OutputStreamWriter(mecab_process.getOutputStream, "UTF-8"))
+
+
+  /**
+   * Close the external process and the interface
+   */
+  override def close() {
+    mecab_out.close()
+    mecab_in.close()
+    mecab_process.destroy()
+  }
+
   override def newSentenceAnnotation(sentence: Node): Node = {
-
-    val mecab_command: String = props.getProperty("mecab.command", "mecab")
-
-    //TODO option
-    // val mecab_options: Seq[String] = props.getProperty("mecab.options", "").split("[\t ]+").filter(_.nonEmpty)
-
-    lazy val mecab_process = new java.lang.ProcessBuilder((mecab_command)).start
-    lazy val mecab_in = new BufferedReader(new InputStreamReader(mecab_process.getInputStream, "UTF-8"))
-    lazy val mecab_out = new BufferedWriter(new OutputStreamWriter(mecab_process.getOutputStream, "UTF-8"))
-
-
     /**
-    * Close the external process and the interface
-    */
-    def close() {
-      mecab_out.close()
-      mecab_in.close()
-      mecab_process.destroy()
-    }
-
-
-    /**
-    * Input a text into the mecab process and obtain output
-    * @param text text to tokenize
-    * @return output of Mecab
-    */
+     * Input a text into the mecab process and obtain output
+     * @param text text to tokenize
+     * @return output of Mecab
+     */
     def runMecab(text: String): Seq[String] = {
       mecab_out.write(text)
       mecab_out.newLine()
