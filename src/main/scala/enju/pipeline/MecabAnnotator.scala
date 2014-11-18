@@ -66,17 +66,18 @@ class MecabAnnotator(val name: String, val props: Properties) extends SentencesA
     val tokenNodes =
       tokens.filter(s => s != "EOS").map{
         tokenized =>
-        val result         = tokenized.split(",")
-        val surf           = result(0)
-        val pos            = result(1)
-        val pos1           = result(2)
-        val pos2           = result(3)
-        val pos3           = result(4)
-        val inflectionType = result(5)
-        val inflectionForm = result(6)
-        val base           = result(7)
-        val reading        = result(8)
-        val pronounce      = result(9)
+        val features         = tokenized.split(",")
+        val surf           = features(0)
+        val pos            = features(1)
+        val pos1           = features(2)
+        val pos2           = features(3)
+        val pos3           = features(4)
+        val inflectionType = features(5)
+        val inflectionForm = features(6)
+        val base           = features(7)
+
+        val reading   = if (features.size > 8) Some(Text(features(8))) else None
+        val pronounce = if (features.size > 9) Some(Text(features(9))) else None
 
         //TODO ordering attribute
         val nodes = <token
