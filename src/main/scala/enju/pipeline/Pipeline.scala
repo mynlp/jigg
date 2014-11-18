@@ -34,6 +34,7 @@ class Pipeline(val props: Properties) {
   def getAnnotator(name: String): Annotator = name match {
     case "ssplit" => new RegexSentenceAnnotator(name, props)
     case "kuromoji" => new KuromojiAnnotator(name, props)
+    case "mecab" => new MecabAnnotator(name, props)
     case "ccg" => new CCGParseAnnotator(name, props)
     case other =>
       // assuming other is class name?
