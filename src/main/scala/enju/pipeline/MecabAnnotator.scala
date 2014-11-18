@@ -39,16 +39,8 @@ class MecabAnnotator(val name: String, val props: Properties) extends SentencesA
       mecab_out.write(text)
       mecab_out.newLine()
       mecab_out.flush()
-      var lines = Seq[String]()
-      def loop() {
-        val line = mecab_in.readLine()
-        if (line != null && line != "EOS") {
-          lines = lines :+ line
-          loop()
-        }
-      }
-      loop()
-      lines
+
+      Iterator.continually(mecab_in.readLine()).takeWhile {line => line != null && line != "EOS"}.toSeq
     }
 
 
