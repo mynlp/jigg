@@ -21,6 +21,7 @@ class CabochaAnnotator(val name: String, val props: Properties) extends Sentence
       val t_feature = (tok \ "@feature").toString
       <tok id={ t_id } feature={ t_feature }>{ tok.text }</tok>
     }
+
     <tokens>{ nodeSeq }</tokens>
   }
 
@@ -56,13 +57,18 @@ class CabochaAnnotator(val name: String, val props: Properties) extends Sentence
   // input: parsed sentence (XML) by cabocha
   // <sentence>から始まるcabochaのXML出力を受けとり、我々が欲しいXMLを返す
   def transXml(xml:Node, sid:String) : Node = {
-    val tokens = getTokens(xml, sid)
-    val chunks = getChunks(xml, sid)
-    val dependencies = getDependencies(xml, sid)
+    if (xml == <sentence/>){
+      return xml
+    }
+    else{
+      val tokens = getTokens(xml, sid)
+      val chunks = getChunks(xml, sid)
+      val dependencies = getDependencies(xml, sid)
 
-    dependencies match {
-      case Some(depend) => <sentence id={ sid }>{ tokens }{ chunks }{ depend }</sentence>
-      case None         => <sentence id={ sid }>{ tokens }{ chunks }</sentence>
+      return dependencies match {
+        case Some(depend) => <sentence id={ sid }>{ tokens }{ chunks }{ depend }</sentence>
+        case None         => <sentence id={ sid }>{ tokens }{ chunks }</sentence>
+      }
     }
   }
 

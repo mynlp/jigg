@@ -93,4 +93,12 @@ class CabochaAnnotatorTest extends FunSuite {
     cabocha.getDependencies(input, "s0") should be(expected)
   }
 
+  test("empty sentence") {
+    val input = <sentence></sentence>
+    val expected = <sentence></sentence>
+
+    val cabocha = new CabochaAnnotator("cabocha", new Properties)
+    cabocha.transXml(input, "s0") should be(expected)
+  }
+
 }
