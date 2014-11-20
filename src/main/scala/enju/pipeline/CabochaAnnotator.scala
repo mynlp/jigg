@@ -38,27 +38,32 @@ class CabochaAnnotator(val name: String, val props: Properties) extends Sentence
     <chunks>{ nodeSeq }</chunks>
   }
 
-  // def getDependencies(xml:Node, sid:String) : NodeSeq = {
-  //   val nodeSeq = (xml \\ "chunk").filter(chunk => (chunk \ "@id").toString != "-1").map{
-  //     chunk =>
-  //      val d_id =did(sid, (chunk \ "@id").toString)
-  //      val d_head = cid(sid, (chunk \ "@link").toString)
-  //      val d_dependent = cid(sid, (chunk \ "@id").toString)
-  //      val d_label = (chunk \ "@rel").toString
+  def getDependencies(xml:Node, sid:String) : Option[NodeSeq] = {
+    val nodeSeq = (xml \\ "chunk").filter(chunk => (chunk \ "@link").toString != "-1").map{
+      chunk =>
+      val d_id =did(sid, (chunk \ "@id").toString)
+      val d_head = cid(sid, (chunk \ "@link").toString)
+      val d_dependent = cid(sid, (chunk \ "@id").toString)
+      val d_label = (chunk \ "@rel").toString
 
-  //      <dependency id={ d_id } head={ d_head } dependent={ d_dependent } label={ d_label } />
-  //   }
+      <dependency id={ d_id } head={ d_head } dependent={ d_dependent } label={ d_label } />
+    }
 
-  //    <dependencies>{ nodeSeq }</dependencies>
-  // }
+    if(! nodeSeq.isEmpty) Some(<dependencies>{ nodeSeq }</dependencies>) else None
+  }
 
 
   // input: parsed sentence (XML) by cabocha
   // <sentence>から始まるcabochaのXML出力を受けとり、我々が欲しいXMLを返す
   def transXml(xml:Node, sid:String) : Node = {
     val tokens = getTokens(xml, sid)
+    val chunks = getChunks(xml, sid)
+    val dependencies = getDependencies(xml, sid)
 
-    return <sentence id="s0">{ tokens }<chunks><chunk id="s0_c0" tokens="s0_t0" head="s0_t0" func="s0_t0"/></chunks></sentence>
+    dependencies match {
+      case Some(depend) => <sentence id={ sid }>{ tokens }{ chunks }{ depend }</sentence>
+      case None         => <sentence id={ sid }>{ tokens }{ chunks }</sentence>
+    }
   }
 
   val cabocha_command: String = props.getProperty("cabocha.command", "cabocha") + " -f3"

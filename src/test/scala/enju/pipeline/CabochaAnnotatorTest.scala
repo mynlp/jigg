@@ -73,24 +73,24 @@ class CabochaAnnotatorTest extends FunSuite {
   }
 
 
-  //   test("extract dependencies") {
-  // val input = <sentence><chunk id="0" link="1" rel="D" score="0.000000" head="0" func="1"><tok id="0" feature="名詞,固有名詞,人名,名,*,*,太郎,タロウ,タロー">太郎</tok><tok id="1" feature="助詞,係助詞,*,*,*,*,は,ハ,ワ">は</tok></chunk><chunk id="1" link="-1" rel="D" score="0.000000" head="2" func="2"><tok id="2" feature="動詞,自立,*,*,五段・カ行イ音便,基本形,歩く,アルク,アルク">歩く</tok></chunk></sentence>
+  test("extract dependencies") {
+    val input = <sentence><chunk id="0" link="1" rel="D" score="0.000000" head="0" func="1"><tok id="0" feature="名詞,固有名詞,人名,名,*,*,太郎,タロウ,タロー">太郎</tok><tok id="1" feature="助詞,係助詞,*,*,*,*,は,ハ,ワ">は</tok></chunk><chunk id="1" link="-1" rel="D" score="0.000000" head="2" func="2"><tok id="2" feature="動詞,自立,*,*,五段・カ行イ音便,基本形,歩く,アルク,アルク">歩く</tok></chunk></sentence>
 
-  // // <sentence>
-  // //  <chunk id="0" link="1" rel="D" score="0.000000" head="0" func="1">
-  // //   <tok id="0" feature="名詞,固有名詞,人名,名,*,*,太郎,タロウ,タロー">太郎</tok>
-  // //   <tok id="1" feature="助詞,係助詞,*,*,*,*,は,ハ,ワ">は</tok>
-  // //  </chunk>
-  // //  <chunk id="1" link="-1" rel="D" score="0.000000" head="2" func="2">
-  // //   <tok id="2" feature="動詞,自立,*,*,五段・カ行イ音便,基本形,歩く,アルク,アルク">歩く</tok>
-  // //  </chunk>
-  // // </sentence>
+    //<sentence>
+    //  <chunk id="0" link="1" rel="D" score="0.000000" head="0" func="1">
+    //    <tok id="0" feature="名詞,固有名詞,人名,名,*,*,太郎,タロウ,タロー">太郎</tok>
+    //    <tok id="1" feature="助詞,係助詞,*,*,*,*,は,ハ,ワ">は</tok>
+    //  </chunk>
+    //  <chunk id="1" link="-1" rel="D" score="0.000000" head="2" func="2">
+    //    <tok id="2" feature="動詞,自立,*,*,五段・カ行イ音便,基本形,歩く,アルク,アルク">歩く</tok>
+    //  </chunk>
+    //</sentence>
 
 
-  //     val expected = <dependencies><dependency id="s0_d0" head="s0_c1" dependent="s0_c0" label="D"/></dependencies>
+    val expected = Some(<dependencies><dependency id="s0_d0" head="s0_c1" dependent="s0_c0" label="D"/></dependencies>)
 
-  //     val cabocha = new CabochaAnnotator("cabocha", new Properties)
-  //     cabocha.getDependencies(input, "s0") should be(expected)
-  //   }
+    val cabocha = new CabochaAnnotator("cabocha", new Properties)
+    cabocha.getDependencies(input, "s0") should be(expected)
+  }
 
 }
