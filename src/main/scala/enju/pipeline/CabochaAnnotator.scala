@@ -9,7 +9,9 @@ import java.io.OutputStreamWriter
 
 
 class CabochaAnnotator(val name: String, val props: Properties) extends SentencesAnnotator {
-  def tid(sindex: String, tindex: String) = sindex + "_t" + tindex
+  private def tid(sindex: String, tindex: String) = sindex + "_t" + tindex
+  private def cid(sindex: String, cindex: String) = sindex + "_c" + cindex
+  private def did(sindex: String, dindex: String) = sindex + "_d" + dindex
 
 
   def getTokens(xml:Node, sid:String) : NodeSeq = {
@@ -21,6 +23,35 @@ class CabochaAnnotator(val name: String, val props: Properties) extends Sentence
     }
     <tokens>{ nodeSeq }</tokens>
   }
+
+
+  def getChunks(xml:Node, sid:String) : NodeSeq = {
+    val nodeSeq = (xml \\ "chunk").map{
+      chunk =>
+      val c_id = cid(sid, (chunk \ "@id").toString)
+      val c_tokens = (chunk \ "tok").map(tok => tid(sid, (tok \ "@id").toString)).mkString(",")
+      val c_head = tid(sid, (chunk \ "@head").toString)
+      val c_func = tid(sid, (chunk \ "@func").toString)
+      <chunk id={ c_id } tokens={ c_tokens } head={ c_head } func = {c_func} />
+    }
+
+    <chunks>{ nodeSeq }</chunks>
+  }
+
+  // def getDependencies(xml:Node, sid:String) : NodeSeq = {
+  //   val nodeSeq = (xml \\ "chunk").filter(chunk => (chunk \ "@id").toString != "-1").map{
+  //     chunk =>
+  //      val d_id =did(sid, (chunk \ "@id").toString)
+  //      val d_head = cid(sid, (chunk \ "@link").toString)
+  //      val d_dependent = cid(sid, (chunk \ "@id").toString)
+  //      val d_label = (chunk \ "@rel").toString
+
+  //      <dependency id={ d_id } head={ d_head } dependent={ d_dependent } label={ d_label } />
+  //   }
+
+  //    <dependencies>{ nodeSeq }</dependencies>
+  // }
+
 
   // input: parsed sentence (XML) by cabocha
   // <sentence>から始まるcabochaのXML出力を受けとり、我々が欲しいXMLを返す
@@ -55,8 +86,6 @@ class CabochaAnnotator(val name: String, val props: Properties) extends Sentence
       xml.XML.loadString(Iterator.continually(cabocha_in.readLine()).toSeq.foldLeft("")(_ + _))
       // Iterator.continually(cabocha_in.readLine()).takeWhile {line => line != null && line != "EOS"}.toSeq
     }
-
-    def cid(sindex: String, cindex: Int) = sindex + "_c" + cindex
 
     val sindex = (sentence \ "@id").toString
     val text = sentence.text
