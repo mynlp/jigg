@@ -9,10 +9,25 @@ import java.io.OutputStreamWriter
 
 
 class CabochaAnnotator(val name: String, val props: Properties) extends SentencesAnnotator {
+  // -f3 : output result as XML
+  val cabocha_command: String = props.getProperty("cabocha.command", "cabocha") + " -f3"
+
+  lazy private[this] val cabocha_process = new java.lang.ProcessBuilder((cabocha_command)).start
+  lazy private[this] val cabocha_in = new BufferedReader(new InputStreamReader(cabocha_process.getInputStream, "UTF-8"))
+  lazy private[this] val cabocha_out = new BufferedWriter(new OutputStreamWriter(cabocha_process.getOutputStream, "UTF-8"))
+
+  /**
+   * Close the external process and the interface
+   */
+  override def close() {
+    cabocha_out.close()
+    cabocha_in.close()
+    cabocha_process.destroy()
+  }
+
   private def tid(sindex: String, tindex: String) = sindex + "_t" + tindex
   private def cid(sindex: String, cindex: String) = sindex + "_c" + cindex
   private def did(sindex: String, dindex: String) = sindex + "_d" + dindex
-
 
   def getTokens(xml:Node, sid:String) : NodeSeq = {
     val nodeSeq = (xml \\ "tok").map{
@@ -53,10 +68,9 @@ class CabochaAnnotator(val name: String, val props: Properties) extends Sentence
     if(! nodeSeq.isEmpty) Some(<dependencies>{ nodeSeq }</dependencies>) else None
   }
 
-
-  // input: parsed sentence (XML) by cabocha
-  // <sentence>から始まるcabochaのXML出力を受けとり、我々が欲しいXMLを返す
-  def transXml(xml:Node, sid:String) : Node = {
+  // input: parsed sentence by cabocha as XML
+  // output: XML tree what as the specification
+  def convertXml(xml:Node, sid:String) : Node = {
     if (xml == <sentence/>){
       return xml
     }
@@ -72,47 +86,19 @@ class CabochaAnnotator(val name: String, val props: Properties) extends Sentence
     }
   }
 
-  val cabocha_command: String = props.getProperty("cabocha.command", "cabocha") + " -f3"
-
-  lazy private[this] val cabocha_process = new java.lang.ProcessBuilder((cabocha_command)).start
-  lazy private[this] val cabocha_in = new BufferedReader(new InputStreamReader(cabocha_process.getInputStream, "UTF-8"))
-  lazy private[this] val cabocha_out = new BufferedWriter(new OutputStreamWriter(cabocha_process.getOutputStream, "UTF-8"))
-
-
-  /**
-   * Close the external process and the interface
-   */
-  override def close() {
-    cabocha_out.close()
-    cabocha_in.close()
-    cabocha_process.destroy()
-  }
 
   override def newSentenceAnnotation(sentence: Node): Node = {
-    def runCabocha(text: String): Node = {
+    def runCabocha(text: String, sindex:String): Node = {
       cabocha_out.write(text)
       cabocha_out.newLine()
       cabocha_out.flush()
 
-      xml.XML.loadString(Iterator.continually(cabocha_in.readLine()).toSeq.foldLeft("")(_ + _))
-      // Iterator.continually(cabocha_in.readLine()).takeWhile {line => line != null && line != "EOS"}.toSeq
+      val cabocha_result = xml.XML.loadString(Iterator.continually(cabocha_in.readLine()).toSeq.foldLeft("")(_ + _))
+      convertXml(cabocha_result, sindex)
     }
-
-    val sindex = (sentence \ "@id").toString
     val text = sentence.text
-
-    val parsedXml = runCabocha(text)
-
-    var tokenIndex = 0
-
-    //ここまで
-    //XMLをパーズして取りたいものをとって返すことが必要
-
-
-    // val tokensAnnotation = <tokens>{ tokenNodes }</tokens>
-
-    // enju.util.XMLUtil.addChild(sentence, tokensAnnotation)
-    sentence
+    val sindex = (sentence \ "@id").toString
+    runCabocha(text, sindex)
   }
 
 
