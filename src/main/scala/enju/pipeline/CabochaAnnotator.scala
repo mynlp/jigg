@@ -10,9 +10,9 @@ import java.io.OutputStreamWriter
 
 class CabochaAnnotator(val name: String, val props: Properties) extends SentencesAnnotator {
   // -f3 : output result as XML
-  val cabocha_command: String = props.getProperty("cabocha.command", "cabocha") + " -f3"
+  val cabocha_command: String = props.getProperty("cabocha.command", "cabocha")
 
-  lazy private[this] val cabocha_process = new java.lang.ProcessBuilder((cabocha_command)).start
+  lazy private[this] val cabocha_process = new java.lang.ProcessBuilder(cabocha_command, "-f3").start
   lazy private[this] val cabocha_in = new BufferedReader(new InputStreamReader(cabocha_process.getInputStream, "UTF-8"))
   lazy private[this] val cabocha_out = new BufferedWriter(new OutputStreamWriter(cabocha_process.getOutputStream, "UTF-8"))
 
@@ -70,35 +70,41 @@ class CabochaAnnotator(val name: String, val props: Properties) extends Sentence
 
   // input: parsed sentence by cabocha as XML
   // output: XML tree what as the specification
-  def convertXml(xml:Node, sid:String) : Node = {
-    if (xml == <sentence/>){
-      return xml
+  def convertXml(sentence:Node, cabocha_xml:Node, sid:String) : Node = {
+    if (cabocha_xml == <sentence/>){
+      return cabocha_xml
     }
     else{
-      val tokens = getTokens(xml, sid)
-      val chunks = getChunks(xml, sid)
-      val dependencies = getDependencies(xml, sid)
+      val tokens = getTokens(cabocha_xml, sid)
+      val chunks = getChunks(cabocha_xml, sid)
+      val dependencies = getDependencies(cabocha_xml, sid)
 
-      return dependencies match {
-        case Some(depend) => <sentence id={ sid }>{ tokens }{ chunks }{ depend }</sentence>
-        case None         => <sentence id={ sid }>{ tokens }{ chunks }</sentence>
+      var ans = enju.util.XMLUtil.addChild(sentence, tokens)
+      ans = enju.util.XMLUtil.addChild(ans, chunks)
+
+      ans = dependencies match {
+        case Some(depend) => enju.util.XMLUtil.addChild(ans, depend)
+        case None         => ans
       }
+
+      return ans
     }
   }
 
-
   override def newSentenceAnnotation(sentence: Node): Node = {
-    def runCabocha(text: String, sindex:String): Node = {
+    def runCabocha(text: String, sindex:String): Seq[String] = {
       cabocha_out.write(text)
       cabocha_out.newLine()
       cabocha_out.flush()
 
-      val cabocha_result = xml.XML.loadString(Iterator.continually(cabocha_in.readLine()).toSeq.foldLeft("")(_ + _))
-      convertXml(cabocha_result, sindex)
+      Iterator.continually(cabocha_in.readLine()).toSeq
     }
+
     val text = sentence.text
     val sindex = (sentence \ "@id").toString
-    runCabocha(text, sindex)
+    val cabocha_result = xml.XML.loadString(runCabocha(text, sindex).mkString)
+
+    convertXml(sentence, cabocha_result, sindex)
   }
 
 
