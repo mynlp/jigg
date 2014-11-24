@@ -9,9 +9,8 @@ import java.io.OutputStreamWriter
 
 
 class CabochaAnnotator(val name: String, val props: Properties) extends SentencesAnnotator {
-  // -f3 : output result as XML
   val cabocha_command: String = props.getProperty("cabocha.command", "cabocha")
-
+  // option -f3 : output result as XML
   lazy private[this] val cabocha_process = new java.lang.ProcessBuilder(cabocha_command, "-f3").start
   lazy private[this] val cabocha_in = new BufferedReader(new InputStreamReader(cabocha_process.getInputStream, "UTF-8"))
   lazy private[this] val cabocha_out = new BufferedWriter(new OutputStreamWriter(cabocha_process.getOutputStream, "UTF-8"))
@@ -39,7 +38,6 @@ class CabochaAnnotator(val name: String, val props: Properties) extends Sentence
 
     <tokens>{ nodeSeq }</tokens>
   }
-
 
   def getChunks(xml:Node, sid:String) : NodeSeq = {
     val nodeSeq = (xml \\ "chunk").map{
@@ -97,7 +95,7 @@ class CabochaAnnotator(val name: String, val props: Properties) extends Sentence
       cabocha_out.newLine()
       cabocha_out.flush()
 
-      Iterator.continually(cabocha_in.readLine()).toSeq
+      Iterator.continually(cabocha_in.readLine()).takeWhile(_ != "</sentence>").toSeq :+ "</sentence>"
     }
 
     val text = sentence.text
