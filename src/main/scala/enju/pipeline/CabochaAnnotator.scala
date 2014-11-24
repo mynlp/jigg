@@ -70,7 +70,7 @@ class CabochaAnnotator(val name: String, val props: Properties) extends Sentence
   // output: XML tree what as the specification
   def convertXml(sentence:Node, cabocha_xml:Node, sid:String) : Node = {
     if (cabocha_xml == <sentence/>){
-      return cabocha_xml
+      return sentence
     }
     else{
       val tokens = getTokens(cabocha_xml, sid)
