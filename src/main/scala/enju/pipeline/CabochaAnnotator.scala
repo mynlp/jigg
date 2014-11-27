@@ -69,10 +69,7 @@ class CabochaAnnotator(val name: String, val props: Properties) extends Sentence
   // input: parsed sentence by cabocha as XML
   // output: XML tree what as the specification
   def convertXml(sentence:Node, cabocha_xml:Node, sid:String) : Node = {
-    if (cabocha_xml == <sentence/>){
-      return sentence
-    }
-    else{
+    if (cabocha_xml == <sentence/>) sentence else{
       val tokens = getTokens(cabocha_xml, sid)
       val chunks = getChunks(cabocha_xml, sid)
       val dependencies = getDependencies(cabocha_xml, sid)
@@ -85,7 +82,7 @@ class CabochaAnnotator(val name: String, val props: Properties) extends Sentence
         case None         => ans
       }
 
-      return ans
+      ans
     }
   }
 
@@ -100,7 +97,7 @@ class CabochaAnnotator(val name: String, val props: Properties) extends Sentence
 
     val text = sentence.text
     val sindex = (sentence \ "@id").toString
-    val cabocha_result = xml.XML.loadString(runCabocha(text, sindex).mkString)
+    val cabocha_result = XML.loadString(runCabocha(text, sindex).mkString)
 
     convertXml(sentence, cabocha_result, sindex)
   }
