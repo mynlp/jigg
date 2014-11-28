@@ -10,8 +10,9 @@ import java.io.OutputStreamWriter
 
 class CabochaAnnotator(val name: String, val props: Properties) extends SentencesAnnotator {
   val cabocha_command: String = props.getProperty("cabocha.command", "cabocha")
+  // option -I1 : input tokenized file
   // option -f3 : output result as XML
-  lazy private[this] val cabocha_process = new java.lang.ProcessBuilder(cabocha_command, "-f3").start
+  lazy private[this] val cabocha_process = new java.lang.ProcessBuilder(cabocha_command, "-f3", "-I1").start
   lazy private[this] val cabocha_in = new BufferedReader(new InputStreamReader(cabocha_process.getInputStream, "UTF-8"))
   lazy private[this] val cabocha_out = new BufferedWriter(new OutputStreamWriter(cabocha_process.getOutputStream, "UTF-8"))
 
@@ -28,6 +29,8 @@ class CabochaAnnotator(val name: String, val props: Properties) extends Sentence
   private def cid(sindex: String, cindex: String) = sindex + "_c" + cindex
   private def did(sindex: String, dindex: String) = sindex + "_d" + dindex
 
+
+  //ununsed
   def getTokens(xml:Node, sid:String) : NodeSeq = {
     val nodeSeq = (xml \\ "tok").map{
       tok =>
@@ -70,25 +73,40 @@ class CabochaAnnotator(val name: String, val props: Properties) extends Sentence
   // output: XML tree what as the specification
   def convertXml(sentence:Node, cabocha_xml:Node, sid:String) : Node = {
     if (cabocha_xml == <sentence/>) sentence else{
-      val tokens = getTokens(cabocha_xml, sid)
+      //tokens have been annotated by another annotator
+      // val tokens = getTokens(cabocha_xml, sid)
       val chunks = getChunks(cabocha_xml, sid)
       val dependencies = getDependencies(cabocha_xml, sid)
 
-      var ans = enju.util.XMLUtil.addChild(sentence, tokens)
-      ans = enju.util.XMLUtil.addChild(ans, chunks)
 
-      ans = dependencies match {
-        case Some(depend) => enju.util.XMLUtil.addChild(ans, depend)
-        case None         => ans
+      val sentence_with_chunks = enju.util.XMLUtil.addChild(sentence, chunks)
+
+      dependencies match {
+        case Some(depend) => enju.util.XMLUtil.addChild(sentence_with_chunks, depend)
+        case None         => sentence_with_chunks
       }
-
-      ans
     }
   }
 
   override def newSentenceAnnotation(sentence: Node): Node = {
-    def runCabocha(text: String, sindex:String): Seq[String] = {
-      cabocha_out.write(text)
+    def runCabocha(tokens:Node, sindex:String): Seq[String] = {
+      //surf\tpos,pos1,pos2,pos3,inflectionType,inflectionForm,base,reading,pronounce
+      val toks = (tokens \\ "token").map{
+        tok =>
+        var ans = (tok \ "@surf").toString + "\t" + (tok \ "@pos").toString + "," + (tok \ "@pos1").toString + "," + (tok \ "@pos2").toString + "," + (tok \ "@pos3").toString + "," + (tok \ "@inflectionType").toString + "," + (tok \ "@inflectionForm").toString + "," + (tok \ "@base").toString
+
+        if (! (tok \ "@reading").isEmpty){
+          ans += "," + (tok \ "@reading").toString
+        }
+
+        if (! (tok \ "@pronounce").isEmpty){
+          ans += "," + (tok \ "@pronounce").toString
+        }
+
+        ans + "\n"
+      } :+ "EOS\n"
+
+      cabocha_out.write(toks.mkString)
       cabocha_out.newLine()
       cabocha_out.flush()
 
@@ -97,7 +115,8 @@ class CabochaAnnotator(val name: String, val props: Properties) extends Sentence
 
     val text = sentence.text
     val sindex = (sentence \ "@id").toString
-    val cabocha_result = XML.loadString(runCabocha(text, sindex).mkString)
+    val tokens = (sentence \\ "tokens").head
+    val cabocha_result = XML.loadString(runCabocha(tokens, sindex).mkString)
 
     convertXml(sentence, cabocha_result, sindex)
   }
