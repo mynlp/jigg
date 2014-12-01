@@ -52,7 +52,7 @@ class MecabAnnotator(val name: String, val props: Properties) extends SentencesA
     var tokenIndex = 0
 
     //output form of Mecab
-    //表層形\t品詞,品詞細分類1,品詞細分類2,品詞細分類3,活用形,活用型,原形,読み,発音
+    //表層形\t品詞,品詞細分類1,品詞細分類2,品詞細分類3,活用型,活用形,原形,読み,発音
     //surf\tpos,pos1,pos2,pos3,inflectionType,inflectionForm,base,reading,pronounce
     val tokenNodes =
       tokens.filter(s => s != "EOS").map{
