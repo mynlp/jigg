@@ -123,5 +123,5 @@ class CabochaAnnotator(val name: String, val props: Properties) extends Sentence
 
 
   override def requires = Set(Annotator.JaTokenize)
-  override def requirementsSatisfied = Set(Annotator.JaTokenize, Annotator.JaChunk, Annotator.JaDependency)
+  override def requirementsSatisfied = Set(Annotator.JaChunk, Annotator.JaDependency)
 }
