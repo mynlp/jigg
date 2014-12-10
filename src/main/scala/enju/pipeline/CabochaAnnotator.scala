@@ -93,17 +93,7 @@ class CabochaAnnotator(val name: String, val props: Properties) extends Sentence
       //surf\tpos,pos1,pos2,pos3,inflectionType,inflectionForm,base,reading,pronounce
       val toks = (tokens \\ "token").map{
         tok =>
-        var ans = (tok \ "@surf").toString + "\t" + (tok \ "@pos").toString + "," + (tok \ "@pos1").toString + "," + (tok \ "@pos2").toString + "," + (tok \ "@pos3").toString + "," + (tok \ "@inflectionType").toString + "," + (tok \ "@inflectionForm").toString + "," + (tok \ "@base").toString
-
-        if (! (tok \ "@reading").isEmpty){
-          ans += "," + (tok \ "@reading").toString
-        }
-
-        if (! (tok \ "@pronounce").isEmpty){
-          ans += "," + (tok \ "@pronounce").toString
-        }
-
-        ans + "\n"
+        (tok \ "@surf").toString + "\t" + (tok \ "@pos").toString + "," + (tok \ "@pos1").toString + "," + (tok \ "@pos2").toString + "," + (tok \ "@pos3").toString + "," + (tok \ "@inflectionType").toString + "," + (tok \ "@inflectionForm").toString + "," + (tok \ "@base").toString + (if (! (tok \ "@reading").isEmpty) ("," + (tok \ "@reading").toString) else "") + (if (! (tok \ "@pronounce").isEmpty) ("," + (tok \ "@pronounce").toString) else "") + "\n"
       } :+ "EOS\n"
 
       cabocha_out.write(toks.mkString)
