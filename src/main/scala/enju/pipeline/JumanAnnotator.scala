@@ -58,7 +58,7 @@ class JumanAnnotator(val name: String, val props: Properties) extends SentencesA
         val pos1           = tokenized_features(5)
         val inflectionType = tokenized_features(7)
         val inflectionForm = tokenized_features(9)
-        val features       = tokenized_features(11)
+        val features       = tokenized_features.drop(11).mkString(" ") // avoid splitting features with " "
 
 
         val pos2           = None
