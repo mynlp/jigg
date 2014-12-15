@@ -43,23 +43,23 @@ class JumanAnnotator(val name: String, val props: Properties) extends SentencesA
 
     var tokenIndex = 0
     //output form of Juman
-    //僕 ぼく 僕 名詞 6 普通名詞 1 * 0 * 0 "代表表記:僕/ぼく 漢字読み:音 カテゴリ:人"
-    //表層形 読み 原形 品詞 n 品詞細分類1 n 活用型 n 活用形 n feature
+    //surf reading base pos n pos1 n inflectionType n inflectionForm meaningInformation
+    //表層形 読み 原形 品詞 n 品詞細分類1 n 活用型 n 活用形 n 意味情報
 
-    //MeCab
-    //表層形\t品詞,品詞細分類1,品詞細分類2,品詞細分類3,活用型,活用形,原形,読み,発音
-    //surf\tpos,pos1,pos2,pos3,inflectionType,inflectionForm,base,reading,pronounce
     val tokenNodes =
-      tokens.filter(s => s != "EOS").map{
+      tokens.filter(s => s != "EOS" && s(0) != '@').map{
         tokenized =>
-        val features       = tokenized.split(" ")
-        val surf           = features(0)
-        val reading        = features(1)
-        val base           = features(2)
-        val pos            = features(3)
-        val pos1           = features(5)
-        val inflectionType = features(7)
-        val inflectionForm = features(9)
+        val tokenized_features = tokenized.split(" ")
+
+        val surf           = tokenized_features(0)
+        val reading        = tokenized_features(1)
+        val base           = tokenized_features(2)
+        val pos            = tokenized_features(3)
+        val pos1           = tokenized_features(5)
+        val inflectionType = tokenized_features(7)
+        val inflectionForm = tokenized_features(9)
+        val features       = tokenized_features(11)
+
 
         val pos2           = None
         val pos3           = None
@@ -76,7 +76,8 @@ class JumanAnnotator(val name: String, val props: Properties) extends SentencesA
         inflectionForm={ inflectionForm }
         base={ base }
         reading={ reading }
-        pronounce={ pronounce }/>
+        pronounce={ pronounce }
+        features={ if (features == "NIL") features else features.init.tail }/> // remove quotation marks
 
         tokenIndex += 1
         nodes
