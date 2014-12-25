@@ -6,7 +6,7 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.io.BufferedWriter
 import java.io.OutputStreamWriter
-
+import scala.collection.mutable.ArrayBuffer
 
 class JumanAnnotator(val name: String, val props: Properties) extends SentencesAnnotator {
   val juman_command: String = props.getProperty("juman.command", "juman")
@@ -25,6 +25,33 @@ class JumanAnnotator(val name: String, val props: Properties) extends SentencesA
     juman_process.destroy()
   }
 
+  def makeTokenAltChild(nodes: NodeSeq) : NodeSeq = {
+    if (nodes.length >= 1 && nodes.head.label == "token"){
+      val ans: ArrayBuffer[Node] = new ArrayBuffer()
+      var tmp = nodes.head
+
+      for (node <- nodes.tail){
+        if (node.label == "token"){
+          ans += tmp
+          tmp = node
+        }
+        else if(node.label == "token_alt"){
+          tmp = enju.util.XMLUtil.addChild(tmp, node)
+        }
+        else{
+          //Do nothing
+          //Is this OK?
+        }
+      }
+      ans += tmp
+      return NodeSeq.fromSeq(ans.toSeq)
+    }
+    else{
+      return nodes
+    }
+  }
+
+
   override def newSentenceAnnotation(sentence: Node): Node = {
     def runJuman(text: String): Seq[String] = {
       juman_out.write(text)
@@ -35,21 +62,28 @@ class JumanAnnotator(val name: String, val props: Properties) extends SentencesA
     }
 
 
+
+
     def id(sindex: String, tindex: Int) = sindex + "_" + tindex
+    def id_alt(sindex: String, tindex: Int, aindex: Int) = sindex + "_" + tindex + "_" + aindex
 
     val sindex = (sentence \ "@id").toString
     val text = sentence.text
     val tokens = runJuman(text).map{str => str.replace("\t", ",")}
 
-    var tokenIndex = 0
+    //Before tokenIndex is substituted, it will be added 1. So, the first tokenIndex is 0.
+    var tokenIndex = -1
+    var tokenaltIndex = 0
+
     //output form of Juman
     //surf reading base pos n pos1 n inflectionType n inflectionForm meaningInformation
     //表層形 読み 原形 品詞 n 品詞細分類1 n 活用型 n 活用形 n 意味情報
 
     val tokenNodes =
-      tokens.filter(s => s != "EOS" && s(0) != '@').map{
+      tokens.filter(s => s != "EOS").map{
         tokenized =>
-        val tokenized_features = tokenized.split(" ")
+        val is_ambiguty_token = (tokenized.head == '@')
+          val tokenized_features = if (is_ambiguty_token) tokenized.drop(2).split(" ") else tokenized.split(" ") //drop "@ "
 
         val surf           = tokenized_features(0)
         val reading        = tokenized_features(1)
@@ -65,25 +99,52 @@ class JumanAnnotator(val name: String, val props: Properties) extends SentencesA
         val pos3           = None
         val pronounce      = None
 
-        val nodes = <token
-        id={ id(sindex, tokenIndex) }
-        surf={ surf }
-        pos={ pos }
-        pos1={ pos1 }
-        pos2={ pos2 }
-        pos3={ pos3 }
-        inflectionType={ inflectionType }
-        inflectionForm={ inflectionForm }
-        base={ base }
-        reading={ reading }
-        pronounce={ pronounce }
-        features={ if (features == "NIL") features else features.init.tail }/> // remove quotation marks
+        if (is_ambiguty_token){
+          tokenaltIndex += 1
+        }
+        else{
+          tokenIndex += 1
 
-        tokenIndex += 1
+          //Before tokenaltIndex is substituted, it will be added 1. So, the first tokenIndex is 0.
+          tokenaltIndex = -1
+        }
+
+
+        val nodes = if (is_ambiguty_token){
+          <token_alt
+          id={ id_alt(sindex, tokenIndex, tokenaltIndex) }
+          surf={ surf }
+          pos={ pos }
+          pos1={ pos1 }
+          pos2={ pos2 }
+          pos3={ pos3 }
+          inflectionType={ inflectionType }
+          inflectionForm={ inflectionForm }
+          base={ base }
+          reading={ reading }
+          pronounce={ pronounce }
+          features={ if (features == "NIL") features else features.init.tail }/> // remove quotation marks
+        }
+        else{
+          <token
+          id={ id(sindex, tokenIndex) }
+          surf={ surf }
+          pos={ pos }
+          pos1={ pos1 }
+          pos2={ pos2 }
+          pos3={ pos3 }
+          inflectionType={ inflectionType }
+          inflectionForm={ inflectionForm }
+          base={ base }
+          reading={ reading }
+          pronounce={ pronounce }
+          features={ if (features == "NIL") features else features.init.tail }/> // remove quotation marks
+        }
+
         nodes
       }
 
-    val tokensAnnotation = <tokens>{ tokenNodes }</tokens>
+    val tokensAnnotation = <tokens>{ makeTokenAltChild(tokenNodes) }</tokens>
 
     enju.util.XMLUtil.addChild(sentence, tokensAnnotation)
   }
