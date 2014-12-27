@@ -81,10 +81,7 @@ class CabochaAnnotator(val name: String, val props: Properties) extends Sentence
 
       val sentence_with_chunks = enju.util.XMLUtil.addChild(sentence, chunks)
 
-      dependencies match {
-        case Some(depend) => enju.util.XMLUtil.addChild(sentence_with_chunks, depend)
-        case None         => sentence_with_chunks
-      }
+      dependencies.map(enju.util.XMLUtil.addChild(sentence_with_chunks, _)).getOrElse(sentence_with_chunks)
     }
   }
 
