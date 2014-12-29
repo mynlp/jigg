@@ -21,6 +21,7 @@ object Annotator {
 
   case object JaSentence extends Requirement
   case object JaTokenize extends Requirement
+  case object JaChunk extends Requirement
   case object JaDependency extends Requirement
   case object JaCCG extends Requirement
 }
