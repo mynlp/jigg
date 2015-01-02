@@ -27,22 +27,4 @@ trait Problem {
         System.err.println("Directory " + path + " already exits; we override the contents.")
     }
   }
-
-  object Problem {
-    def removeZeroWeightFeatures[F](indexer: FeatureIndexer[F], weightsList: NumericBuffer[Float]*): Unit = {
-      val baseWeights = weightsList(0)
-      if (indexer.size > baseWeights.size) {
-        indexer.removeElemsOver(baseWeights.size)
-      }
-      val oldSize = indexer.size
-      val removingIdxs = baseWeights.zipWithIndex.filter(_._1 == 0).map(_._2)
-      indexer.removeIndexes(removingIdxs)
-
-      weightsList.foreach { weights =>
-        weights.removeIndexes(removingIdxs)
-        assert(weights.size == indexer.size)
-      }
-      println("feature size is reduced from " + oldSize + " -> " + indexer.size)
-    }
-  }
 }

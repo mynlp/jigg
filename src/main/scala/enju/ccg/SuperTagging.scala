@@ -42,7 +42,7 @@ trait SuperTagging extends Problem {
 
     val numTrainInstances = trainSentences.foldLeft(0) { _ + _.size }
 
-    indexer = new ml.FeatureIndexer[Feature]
+    indexer = new ml.ExactFeatureIndexer[Feature]
     weights = new WeightVector
     val trainer = getClassifierTrainer(numTrainInstances)
     val tagger = new MaxEntMultiTaggerTrainer(indexer, featureExtractors, trainer, dict)
@@ -50,7 +50,7 @@ trait SuperTagging extends Problem {
     tagger.trainWithCache(trainSentences, TrainingOptions.numIters)
 
     trainer.postProcess // including lazy-updates of all weights
-    Problem.removeZeroWeightFeatures(indexer, weights)
+    indexer.removeZeroWeightFeatures(weights)
     weights.foreach { w => assert(w != 0) }
 
     save
@@ -128,7 +128,7 @@ trait SuperTagging extends Problem {
   }
   override def save = {
     import java.io._
-    saveFeaturesToText
+    // saveFeaturesToText
     System.err.println("saving tagger model to " + OutputOptions.saveModelPath)
     val os = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(OutputOptions.saveModelPath)))
     saveModel(os)
@@ -139,23 +139,23 @@ trait SuperTagging extends Problem {
     os.writeObject(indexer)
     os.writeObject(weights)
   }
-  def saveFeaturesToText = if (OutputOptions.taggerFeaturePath != "") {
-    System.err.println("saving features in text to " + OutputOptions.taggerFeaturePath)
-    val fw = new FileWriter(OutputOptions.taggerFeaturePath)
-    indexer.foreach {
-      case (k, v) =>
-        val featureString = k match {
-          case SuperTaggingFeature(unlabeled, label) => (unlabeled match {
-            case unlabeled: FeatureWithoutDictionary => unlabeled.mkString
-            case unlabeled: FeatureOnDictionary => unlabeled.mkString(dict)
-          }) + "_=>_" + dict.getCategory(label)
-        }
-        fw.write(featureString + " " + weights(v) + "\n")
-    }
-    fw.flush
-    fw.close
-    System.err.println("done.")
-  }
+  // def saveFeaturesToText = if (OutputOptions.taggerFeaturePath != "") {
+  //   System.err.println("saving features in text to " + OutputOptions.taggerFeaturePath)
+  //   val fw = new FileWriter(OutputOptions.taggerFeaturePath)
+  //   indexer.foreach {
+  //     case (k, v) =>
+  //       val featureString = k match {
+  //         case SuperTaggingFeature(unlabeled, label) => (unlabeled match {
+  //           case unlabeled: FeatureWithoutDictionary => unlabeled.mkString
+  //           case unlabeled: FeatureOnDictionary => unlabeled.mkString(dict)
+  //         }) + "_=>_" + dict.getCategory(label)
+  //       }
+  //       fw.write(featureString + " " + weights(v) + "\n")
+  //   }
+  //   fw.flush
+  //   fw.close
+  //   System.err.println("done.")
+  // }
   def outputPredictions[S<:CandAssignedSentence](sentences:Array[S]) = if (OutputOptions.outputPath != "") {
     System.err.println("saving tagger prediction results to " + OutputOptions.outputPath)
     val fw = new FileWriter(OutputOptions.outputPath)

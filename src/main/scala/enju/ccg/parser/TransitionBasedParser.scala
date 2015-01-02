@@ -5,7 +5,7 @@ import enju.ccg.ml.{Perceptron, FeatureIndexer, Example}
 import scala.collection.mutable.ArrayBuffer
 
 case class LabeledFeatures(features: Array[LF] = Array.empty[LF]) {
-  def expand(indexer: FeatureIndexer[LF]) = features.map { indexer.getOrElse(_, -1) }
+  def expand(indexer: FeatureIndexer[LF]) = features.map { indexer.get(_) }
   def expandForTrain(indexer: FeatureIndexer[LF]) = features.map { indexer.getIndex(_) }
 }
 

@@ -28,7 +28,7 @@ class MaxEntMultiTagger(
   }
 
   def unlabeledToTestInstance(features:Array[UF], candidateLabels:Array[Int]) =
-    TestInstance(getItems(features, candidateLabels, { f => indexer.getOrElse(f, -1) }))
+    TestInstance(getItems(features, candidateLabels, { f => indexer.get(f) }))
 
   def getItems(features:Array[UF], candidateLabels:Array[Int], f2index:(LF => Int)): Array[Example[Int]] = candidateLabels map { label =>
     //val indexes = new Array[Int](features.size)
