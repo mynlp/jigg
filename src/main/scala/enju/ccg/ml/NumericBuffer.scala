@@ -3,7 +3,7 @@ package enju.ccg.ml
 import scala.collection.mutable.ArrayBuffer
 import gnu.trove.TFloatArrayList
 
-class NumericBuffer[A](initSize:Int)(implicit numeric: Numeric[A]) extends ArrayBuffer[A](initSize) {
+class NumericBuffer[@specialized(Int,Short,Float,Double)A](initSize:Int)(implicit numeric: Numeric[A]) extends ArrayBuffer[A](initSize) {
   def this()(implicit numeric: Numeric[A]) = this(16)(numeric)
   override def apply(idx: Int): A = if (idx >= size || idx < 0) numeric.zero else super.apply(idx)
   override def update(idx: Int, elem: A): Unit = {
