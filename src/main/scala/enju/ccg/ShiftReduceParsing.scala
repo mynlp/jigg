@@ -34,7 +34,9 @@ trait ShiftReduceParsing extends Problem {
     rule = parser.CFGRule.extractRulesFromDerivations(derivations, getHeadFinder(parseTrees))
     System.err.println("done.")
 
-    indexer = new ml.FeatureIndexer[Feature]
+    //indexer = new ml.ExactFeatureIndexer[Feature]
+    indexer = ml.HashedFeatureIndexer[Feature]()
+
     weights = new WeightVector
 
     val perceptron = new ml.Perceptron[parser.ActionLabel](weights)
@@ -49,12 +51,12 @@ trait ShiftReduceParsing extends Problem {
       if (TrainingOptions.removeZero) {
         System.err.println(weights.size + " " + perceptron.averageWeights.size)
         assert(weights.size == perceptron.averageWeights.size)
-        Problem.removeZeroWeightFeatures(indexer, weights, perceptron.averageWeights)
+        indexer.removeZeroWeightFeatures(weights, perceptron.averageWeights)
       }
     }
     // decoder.trainSentences(trainingSentences, derivations, TrainingOptions.numIters)
     perceptron.takeAverage // averaging weight
-    Problem.removeZeroWeightFeatures(indexer, weights)
+    indexer.removeZeroWeightFeatures(weights)
     save
   }
   def readParseTreesFromCCGBank(path: String, n:Int, train:Boolean) = {
@@ -157,7 +159,7 @@ trait ShiftReduceParsing extends Problem {
   }
   override def save = {
     import java.io._
-    saveFeaturesToText
+    //saveFeaturesToText
 
     System.err.println("saving tagger+parser model to " + OutputOptions.saveModelPath)
     val os = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(OutputOptions.saveModelPath)))
@@ -170,24 +172,24 @@ trait ShiftReduceParsing extends Problem {
     os.writeObject(weights)
     os.writeObject(rule)
   }
-  def saveFeaturesToText = if (OutputOptions.parserFeaturePath != "") {
-    System.err.println("saving features in text to " + OutputOptions.parserFeaturePath)
-    val dict = tagging.dict
-    val fw = new FileWriter(OutputOptions.parserFeaturePath)
-    indexer.foreach {
-      case (k, v) =>
-        val featureString = k match {
-          case parser.ShiftReduceFeature(unlabeled, label) => (unlabeled match {
-            case unlabeled: parser.FeatureWithoutDictionary => unlabeled.mkString
-            case unlabeled: parser.FeatureOnDictionary => unlabeled.mkString(dict)
-          }) + "_=>_" + label.mkString(dict)
-        }
-        fw.write(featureString + " " + weights(v) + "\n")
-    }
-    fw.flush
-    fw.close
-    System.err.println("done.")
-  }
+  // def saveFeaturesToText = if (OutputOptions.parserFeaturePath != "") {
+  //   System.err.println("saving features in text to " + OutputOptions.parserFeaturePath)
+  //   val dict = tagging.dict
+  //   val fw = new FileWriter(OutputOptions.parserFeaturePath)
+  //   indexer.foreach {
+  //     case (k, v) =>
+  //       val featureString = k match {
+  //         case parser.ShiftReduceFeature(unlabeled, label) => (unlabeled match {
+  //           case unlabeled: parser.FeatureWithoutDictionary => unlabeled.mkString
+  //           case unlabeled: parser.FeatureOnDictionary => unlabeled.mkString(dict)
+  //         }) + "_=>_" + label.mkString(dict)
+  //       }
+  //       fw.write(featureString + " " + weights(v) + "\n")
+  //   }
+  //   fw.flush
+  //   fw.close
+  //   System.err.println("done.")
+  // }
   def outputDerivations[S<:TaggedSentence](sentences:Array[S], derivations:Array[Derivation]) = if (OutputOptions.outputPath != "") {
     def outputInFormat(path: String, conv: (S, Derivation, Int)=>String) = {
       val fw = new FileWriter(path)
