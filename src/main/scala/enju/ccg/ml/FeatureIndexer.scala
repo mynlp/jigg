@@ -1,6 +1,6 @@
 package enju.ccg.ml
 
-import scala.collection.mutable.HashMap
+import scala.collection.mutable.{HashMap, ArrayBuffer}
 
 @SerialVersionUID(1L)
 trait FeatureIndexer[Feature] extends Serializable {
@@ -13,49 +13,16 @@ trait FeatureIndexer[Feature] extends Serializable {
   /** Immutable indexing, -1 for unknown entry.
     */
   def get(key: Feature) = getIndex(key)
-
-  def removeZeroWeightFeatures(weightsList: NumericBuffer[Float]*): Unit = {}
 }
 
 @SerialVersionUID(-3058955006170004987L)
-class ExactFeatureIndexer[Feature] extends FeatureIndexer[Feature] {
-  val map = new HashMap[Feature, Int]
+class ExactFeatureIndexer[Feature](val map: HashMap[Feature, Int]) extends FeatureIndexer[Feature] {
 
   def size: Int = map.size
 
   def getIndex(key: Feature) = map.getOrElseUpdate(key, map.size)
 
   override def get(key: Feature) = map.getOrElse(key, -1)
-
-  override def removeZeroWeightFeatures(weightsList: NumericBuffer[Float]*): Unit = {
-    val baseWeights = weightsList(0)
-    if (size > baseWeights.size) {
-      removeElemsOver(baseWeights.size)
-    }
-    val oldSize = size
-    val removingIdxs = baseWeights.zipWithIndex.filter(_._1 == 0).map(_._2)
-    removeIndexes(removingIdxs)
-
-    weightsList.foreach { weights =>
-      weights.removeIndexes(removingIdxs)
-      assert(weights.size == size)
-    }
-    println("feature size is reduced from " + oldSize + " -> " + size)
-  }
-
-  private def removeIndexes(idxs: Seq[Int]): Unit = {
-    val features = map.toSeq.sortWith(_._2 < _._2).map(_._1)
-    val originalSize = size
-    (0 to idxs.size) foreach { i =>
-      val idx = if (i == idxs.size) originalSize else idxs(i)
-      val lastIdx = if (i == 0) -1 else idxs(i - 1)
-      (lastIdx + 1 until idx).foreach { f => map(features(f)) -= i }
-      if (i != idxs.size) map -= features(idx)
-    }
-  }
-  private def removeElemsOver(lastIdx: Int): Unit = map.toSeq.foreach { case (feature, idx) =>
-    if (idx >= lastIdx) map -= feature
-  }
 }
 
 /** FeatureIndexer with hash trick. Hash value is calculated with MurmurHash3.

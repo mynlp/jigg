@@ -1,19 +1,20 @@
 package enju.ccg.ml
 
 trait Classifier[L] {
-  def weights: NumericBuffer[Float]
+
+  protected val weights: WeightVector[Float]
+
   def predict(examples: Seq[Example[L]]): (L, Float)
 }
 
 trait LinearClassifier[L] extends Classifier[L] {
+
   override def predict(examples: Seq[Example[L]]): (L, Float) =
-    examples.foldLeft[(L, Float)]((null.asInstanceOf[L], Float.NegativeInfinity)) {
-      case ((argMax, max), e) =>
-        val eScore = featureScore(e.featVec)
-        if (eScore > max) (e.label, eScore) else (argMax, max)
-    }
+    if (examples.isEmpty) (null.asInstanceOf[L], 0F)
+    else examples.map { e => (e.label, featureScore(e.featVec)) }.maxBy(_._2)
+
   def featureScore(feature: Array[Int]): Float = {
-    var a = 0.0F
+    var a = 0F
     var i = 0
     while (i < feature.size) {
       a += weight(feature(i))
@@ -21,7 +22,7 @@ trait LinearClassifier[L] extends Classifier[L] {
     }
     a
   }
-  /** Controll the behavior of the access to weight.
+  /** Control the behavior of the access to weight.
     * You *MUST* use this method to access weight inside the classifier, and *NEVER* call like weights(i) directly (except updating the value)
     * This is because in some classifiers, such as AdaGradL1, the values must be preprocessed (e.g., lazy update) before used.
     * You can add such a preprocessing by overriding this method in a subclass.
@@ -29,4 +30,8 @@ trait LinearClassifier[L] extends Classifier[L] {
   protected def weight(idx: Int): Float = weights(idx)
 }
 
-class ALinearClassifier[L](override val weights: NumericBuffer[Float]) extends LinearClassifier[L]
+/** A classifier in which weight vector backbone is implemented by array, hopefully faster than growable counterpart.
+  */
+class FixedClassifier[L](val array: Array[Float]) extends LinearClassifier[L] {
+  override val weights = new FixedWeightVector(array)
+}

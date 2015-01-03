@@ -2,7 +2,6 @@ package enju.ccg
 
 import java.io.File
 import scala.collection.mutable.HashMap
-import ml.{NumericBuffer, FeatureIndexer}
 
 trait Problem {
   def train: Unit

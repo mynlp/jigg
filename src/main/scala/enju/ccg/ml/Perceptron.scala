@@ -1,7 +1,11 @@
 package enju.ccg.ml
 
-class Perceptron[L](override val weights: NumericBuffer[Float]) extends LinearClassifier[L] with OnlineTrainer[L] {
-  val averageWeights = new NumericBuffer[Float](weights.size)
+import scala.collection.mutable.ArrayBuffer
+
+trait Perceptron[L] extends LinearClassifier[L] with OnlineTrainer[L] {
+
+  def averageWeights: WeightVector[Float]
+
   var c = 1.0F
 
   override def update(examples: Seq[Example[L]], gold: L): Unit = {
@@ -29,4 +33,16 @@ class Perceptron[L](override val weights: NumericBuffer[Float]) extends LinearCl
   def takeAverage: Unit = (0 until weights.size) foreach { i =>
     weights(i) -= averageWeights(i) / c
   }
+}
+
+class FixedPerceptron[L](val weightArray: Array[Float]) extends Perceptron[L] {
+
+  override val weights = new FixedWeightVector(weightArray)
+  override val averageWeights = new FixedWeightVector(new Array[Float](weights.size))
+}
+
+class GrowablePerceptron[L](val weightArray: ArrayBuffer[Float]) extends Perceptron[L] {
+
+  override val weights = new GrowableWeightVector(weightArray)
+  override val averageWeights = WeightVector.growable[Float](weights.size)
 }

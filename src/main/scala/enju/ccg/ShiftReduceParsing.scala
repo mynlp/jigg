@@ -7,11 +7,9 @@ import scala.collection.mutable.HashMap
 import java.io.{ObjectInputStream, ObjectOutputStream, FileWriter}
 
 trait ShiftReduceParsing extends Problem {
-  type WeightVector = ml.NumericBuffer[Float]
 
   var tagging: SuperTagging = _
-  var indexer: ml.FeatureIndexer[Feature] = _
-  var weights: WeightVector = _
+  var weights: Array[Float] = _
   var rule: parser.Rule = _
 
   def featureExtractors = {
@@ -20,6 +18,8 @@ trait ShiftReduceParsing extends Problem {
   }
   def instantiateSuperTagging: SuperTagging
   def getHeadFinder(trees: Seq[ParseTree[NodeLabel]]): parser.HeadFinder
+
+  def createIndexer(featureSize: Int = 2 << 23) = ml.HashedFeatureIndexer[Feature](featureSize)
 
   override def train = { // asuming the model of SuperTagging is saved
     loadSuperTagging
@@ -34,29 +34,24 @@ trait ShiftReduceParsing extends Problem {
     rule = parser.CFGRule.extractRulesFromDerivations(derivations, getHeadFinder(parseTrees))
     System.err.println("done.")
 
-    //indexer = new ml.ExactFeatureIndexer[Feature]
-    indexer = ml.HashedFeatureIndexer[Feature]()
+    val indexer = createIndexer()
+    weights = new Array[Float](indexer.size)
+    val perceptron = new ml.FixedPerceptron[parser.ActionLabel](weights)
 
-    weights = new WeightVector
-
-    val perceptron = new ml.Perceptron[parser.ActionLabel](weights)
-    val decoder = getDecoder(perceptron)
+    val decoder = getDecoder(indexer, perceptron)
 
     System.err.println("training start!")
 
     (0 until TrainingOptions.numIters) foreach { i =>
       val correct = decoder.trainSentences(trainingSentences, derivations)
       System.err.println("accuracy (" + i + "): " + correct.toDouble / sentences.size.toDouble + " [" + correct + "]")
-      System.err.println("# features: " + indexer.size)
+      //System.err.println("# features: " + indexer.size)
       if (TrainingOptions.removeZero) {
         System.err.println(weights.size + " " + perceptron.averageWeights.size)
         assert(weights.size == perceptron.averageWeights.size)
-        indexer.removeZeroWeightFeatures(weights, perceptron.averageWeights)
       }
     }
-    // decoder.trainSentences(trainingSentences, derivations, TrainingOptions.numIters)
     perceptron.takeAverage // averaging weight
-    indexer.removeZeroWeightFeatures(weights)
     save
   }
   def readParseTreesFromCCGBank(path: String, n:Int, train:Boolean) = {
@@ -124,7 +119,7 @@ trait ShiftReduceParsing extends Problem {
     System.err.println()
     predDerivations
   }
-  def getPredDecoder = getDecoder(new ml.Perceptron[parser.ActionLabel](weights), false)
+  def getPredDecoder = getDecoder(createIndexer(), new ml.FixedPerceptron[parser.ActionLabel](weights), false)
 
   def evaluateCategoryAccuracy(sentences:Array[GoldSuperTaggedSentence], derivations:Array[Derivation]) = {
     val (numCorrects, numCompletes) = sentences.zip(derivations).foldLeft(0, 0) {
@@ -168,7 +163,6 @@ trait ShiftReduceParsing extends Problem {
     os.close
   }
   def saveModel(os:ObjectOutputStream) = {
-    os.writeObject(indexer)
     os.writeObject(weights)
     os.writeObject(rule)
   }
@@ -221,11 +215,8 @@ trait ShiftReduceParsing extends Problem {
   }
   def loadModel(in:ObjectInputStream) = {
     import enju.util.LogUtil._
-    track("Loading feature templates of CCG parser ...") {
-      indexer = in.readObject.asInstanceOf[ml.FeatureIndexer[Feature]]
-    }
     track("Loading feature weights of CCG parser ...") {
-      weights = in.readObject.asInstanceOf[WeightVector]
+      weights = in.readObject.asInstanceOf[Array[Float]]
     }
 
     // TODO: branch according to the setting of rule (cfg or not)
@@ -234,7 +225,7 @@ trait ShiftReduceParsing extends Problem {
     // val unary = in.readObject.asInstanceOf[Map[Int, Array[(Category,String)]]]
     // rule = parser.CFGRule(binary, unary, headFinder)
   }
-  def getDecoder(perceptron:ml.Perceptron[parser.ActionLabel], train:Boolean = true) =
+  def getDecoder(indexer: ml.FeatureIndexer[Feature], perceptron:ml.Perceptron[parser.ActionLabel], train:Boolean = true) =
     if (train && ParserOptions.beam == 1)
       new parser.DeterministicDecoder(indexer,
         featureExtractors,
