@@ -4,16 +4,17 @@ import lexicon._
 import tagger.{LF => Feature, _}
 
 import scala.io.Source
-import scala.collection.mutable.ArraySeq
+import scala.collection.mutable.{ArraySeq, ArrayBuffer, HashMap}
 import scala.reflect.ClassTag
 import java.io.{ObjectInputStream, ObjectOutputStream, FileWriter}
 
-trait SuperTagging extends Problem {
+trait SuperTagging extends Problem { outer =>
   type DictionaryType <: Dictionary
-  type WeightVector = ml.NumericBuffer[Float]
+
+  type WeightVector = ml.WeightVector[Float]
 
   var dict: DictionaryType = _
-  var indexer: ml.FeatureIndexer[Feature] = _  // feature -> int
+  var featureMap: HashMap[Feature, Int] = _
   var weights: WeightVector = _ // featureId -> weight; these 3 variables are serialized/deserialized
 
   def featureExtractors = { // you can change features by modifying this function
@@ -42,19 +43,30 @@ trait SuperTagging extends Problem {
 
     val numTrainInstances = trainSentences.foldLeft(0) { _ + _.size }
 
-    indexer = new ml.FeatureIndexer[Feature]
-    weights = new WeightVector
+    featureMap = new HashMap[Feature, Int]
+    val indexer = new ml.ExactFeatureIndexer(featureMap)
+    weights = ml.WeightVector.growable[Float]()
+
     val trainer = getClassifierTrainer(numTrainInstances)
     val tagger = new MaxEntMultiTaggerTrainer(indexer, featureExtractors, trainer, dict)
 
     tagger.trainWithCache(trainSentences, TrainingOptions.numIters)
 
     trainer.postProcess // including lazy-updates of all weights
-    Problem.removeZeroWeightFeatures(indexer, weights)
-    weights.foreach { w => assert(w != 0) }
-
+    reduceFeatures
     save
   }
+
+  def reduceFeatures = {
+    val buffer = weights.asInstanceOf[ml.GrowableWeightVector[Float]].array // 0 1.0 2.0 0 0 1.0 ...
+    val activeIdxs = buffer.zipWithIndex.filter(_._1 != 0).map(_._2)  // 1 2 5
+    println(s"# features reduced from ${buffer.size} to ${activeIdxs.size}")
+    val idxMap = activeIdxs.zipWithIndex.toMap // {1->0, 2->1 5->2}
+
+    featureMap = featureMap.collect { case (f, oldIdx) if idxMap.isDefinedAt(oldIdx) => (f, idxMap(oldIdx)) }
+    weights = new ml.FixedWeightVector[Float](activeIdxs.map(buffer(_)).toArray)
+  }
+
   override def predict = {
     //loadModel
   }
@@ -86,15 +98,21 @@ trait SuperTagging extends Problem {
     }
     assignedSentences
   }
-  def getTagger = new MaxEntMultiTagger(indexer, featureExtractors, getClassifier, dict)
-  def getClassifier = new ml.ALogLinearClassifier[Int](weights)
+  def getTagger = new MaxEntMultiTagger(new ml.ExactFeatureIndexer(featureMap), featureExtractors, getClassifier, dict)
+  def getClassifier = new ml.LogLinearClassifier[Int] {
+    override val weights = outer.weights
+  } // new FixedLogLinerClassifier(weights)
   def getClassifierTrainer(numInstances: Int): ml.OnlineLogLinearTrainer[Int] = {
     import OptionEnumTypes.TaggerTrainAlgorithm
     TaggerOptions.taggerTrainAlg match {
-      case TaggerTrainAlgorithm.sgd => new ml.LogLinearSGD(weights, TaggerOptions.stepSizeA.toFloat)
-      case TaggerTrainAlgorithm.adaGradL1 => new ml.LogLinearAdaGradL1(weights, TaggerOptions.lambda.toFloat, TaggerOptions.eta.toFloat)
-      case TaggerTrainAlgorithm.cumulativeL1 =>
-        new ml.LogLinearSGDCumulativeL1(weights, TaggerOptions.stepSizeA.toFloat, TaggerOptions.lambda.toFloat, numInstances)
+      case TaggerTrainAlgorithm.sgd =>
+        new ml.LogLinearSGD[Int](TaggerOptions.stepSizeA.toFloat) {
+          override val weights = outer.weights
+        }
+      case TaggerTrainAlgorithm.adaGradL1 =>
+        new ml.LogLinearAdaGradL1[Int](TaggerOptions.lambda.toFloat, TaggerOptions.eta.toFloat) {
+          override val weights = outer.weights
+        }
     }
   }
 
@@ -128,34 +146,36 @@ trait SuperTagging extends Problem {
   }
   override def save = {
     import java.io._
-    saveFeaturesToText
+    // saveFeaturesToText
     System.err.println("saving tagger model to " + OutputOptions.saveModelPath)
-    val os = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(OutputOptions.saveModelPath)))
+
+    val os = enju.util.IOUtil.openBinOut(OutputOptions.saveModelPath)
     saveModel(os)
     os.close
   }
   def saveModel(os: ObjectOutputStream) = {
     os.writeObject(dict)
-    os.writeObject(indexer)
+
+    os.writeObject(featureMap)
     os.writeObject(weights)
   }
-  def saveFeaturesToText = if (OutputOptions.taggerFeaturePath != "") {
-    System.err.println("saving features in text to " + OutputOptions.taggerFeaturePath)
-    val fw = new FileWriter(OutputOptions.taggerFeaturePath)
-    indexer.foreach {
-      case (k, v) =>
-        val featureString = k match {
-          case SuperTaggingFeature(unlabeled, label) => (unlabeled match {
-            case unlabeled: FeatureWithoutDictionary => unlabeled.mkString
-            case unlabeled: FeatureOnDictionary => unlabeled.mkString(dict)
-          }) + "_=>_" + dict.getCategory(label)
-        }
-        fw.write(featureString + " " + weights(v) + "\n")
-    }
-    fw.flush
-    fw.close
-    System.err.println("done.")
-  }
+  // def saveFeaturesToText = if (OutputOptions.taggerFeaturePath != "") {
+  //   System.err.println("saving features in text to " + OutputOptions.taggerFeaturePath)
+  //   val fw = new FileWriter(OutputOptions.taggerFeaturePath)
+  //   indexer.foreach {
+  //     case (k, v) =>
+  //       val featureString = k match {
+  //         case SuperTaggingFeature(unlabeled, label) => (unlabeled match {
+  //           case unlabeled: FeatureWithoutDictionary => unlabeled.mkString
+  //           case unlabeled: FeatureOnDictionary => unlabeled.mkString(dict)
+  //         }) + "_=>_" + dict.getCategory(label)
+  //       }
+  //       fw.write(featureString + " " + weights(v) + "\n")
+  //   }
+  //   fw.flush
+  //   fw.close
+  //   System.err.println("done.")
+  // }
   def outputPredictions[S<:CandAssignedSentence](sentences:Array[S]) = if (OutputOptions.outputPath != "") {
     System.err.println("saving tagger prediction results to " + OutputOptions.outputPath)
     val fw = new FileWriter(OutputOptions.outputPath)
@@ -177,8 +197,9 @@ trait SuperTagging extends Problem {
   }
   def loadModel(in: ObjectInputStream) = enju.util.LogUtil.track("Loading supertagger ...") {
     dict = in.readObject.asInstanceOf[DictionaryType]
-    indexer = in.readObject.asInstanceOf[ml.FeatureIndexer[Feature]]
-    weights = in.readObject.asInstanceOf[WeightVector]
+    featureMap = in.readObject.asInstanceOf[HashMap[Feature, Int]]
+    weights = in.readObject.asInstanceOf[ml.WeightVector[Float]]
+    assert(featureMap.size == weights.size)
   }
   def setCategoryDictionary(sentences: Seq[GoldSuperTaggedSentence]): Unit =
     dict.categoryDictionary.resetWithSentences(sentences, DictionaryOptions.unkThreathold)

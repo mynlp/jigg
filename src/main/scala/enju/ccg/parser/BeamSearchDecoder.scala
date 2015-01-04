@@ -73,7 +73,14 @@ class BeamSearchDecoder(val indexer:FeatureIndexer[LF],
       possibleActions(path.state, sentence).map { action =>
 
         // We don't need to cache feature values at test time; so we directly calculate featureIdxs from unlabeled features
-        val featureIdxs = unlabeledFeatures.map { _.assignLabel(action.toLabel) }.map { indexer.getOrElse(_, -1) }.toArray
+        // This is heavily called so try a bit of optimization
+        val featureIdxs = new Array[Int](unlabeledFeatures.size)
+        var i = 0
+        val actionLabel = action.toLabel
+        while (i < featureIdxs.size) {
+          featureIdxs(i) = indexer.get(unlabeledFeatures(i).assignLabel(actionLabel))
+          i += 1
+        }
         val sumScore = path.score + classifier.featureScore(featureIdxs)
         Candidate(path, WrappedAction(action, false), sumScore) // do not preserve (partial) features at test time
       }

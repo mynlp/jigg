@@ -56,9 +56,9 @@ object TaggerOptions extends Options {
 
   @Option(gloss="Beta for decising the threshold of k-best at prediction") var beta = 0.001
   @Option(gloss="Maximum number of k, -1 for no limit") var maxK = -1
-  @Option(gloss="Parameter a of step size function = t^(-a) (used in sgd or cumulativeL1)") var stepSizeA = 0.2
+  @Option(gloss="Parameter a of step size function = t^(-a) (used in sgd)") var stepSizeA = 0.2
   @Option(gloss="Parameter eta of AdaGrad") var eta = 0.1
-  @Option(gloss="Reguralization strength called lambda (in AdaGrad) or C (in cumulative)") var lambda = 0.000000005
+  @Option(gloss="Reguralization strength in AdaGrad") var lambda = 0.000000005
 
   @Option(gloss="Which training method is used at optimization of superTagger") var taggerTrainAlg = TaggerTrainAlgorithm.adaGradL1
 }

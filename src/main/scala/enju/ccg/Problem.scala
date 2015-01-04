@@ -2,7 +2,6 @@ package enju.ccg
 
 import java.io.File
 import scala.collection.mutable.HashMap
-import ml.{NumericBuffer, FeatureIndexer}
 
 trait Problem {
   def train: Unit
@@ -25,24 +24,6 @@ trait Problem {
       case true => // ok, success
       case false =>
         System.err.println("Directory " + path + " already exits; we override the contents.")
-    }
-  }
-
-  object Problem {
-    def removeZeroWeightFeatures[F](indexer: FeatureIndexer[F], weightsList: NumericBuffer[Float]*): Unit = {
-      val baseWeights = weightsList(0)
-      if (indexer.size > baseWeights.size) {
-        indexer.removeElemsOver(baseWeights.size)
-      }
-      val oldSize = indexer.size
-      val removingIdxs = baseWeights.zipWithIndex.filter(_._1 == 0).map(_._2)
-      indexer.removeIndexes(removingIdxs)
-
-      weightsList.foreach { weights =>
-        weights.removeIndexes(removingIdxs)
-        assert(weights.size == indexer.size)
-      }
-      println("feature size is reduced from " + oldSize + " -> " + indexer.size)
     }
   }
 }

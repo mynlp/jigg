@@ -1,9 +1,9 @@
 package enju.ccg.ml
 
-class LogLinearAdaGradL1[L](override val weights: NumericBuffer[Float], val lambda: Float, val eta: Float)
-    extends OnlineLogLinearTrainer[L] {
-  val lastUpdates = new NumericBuffer[Int](weights.size)
-  val diagGt = new NumericBuffer[Float](weights.size)
+abstract class LogLinearAdaGradL1[L](val lambda: Float, val eta: Float) extends OnlineLogLinearTrainer[L] {
+
+  private[this] val lastUpdates = WeightVector.growable[Float]()
+  private[this] val diagGt = WeightVector.growable[Float]()
 
   override protected def weight(idx: Int): Float =
     if (lastUpdates(idx) == time) weights(idx)
@@ -49,4 +49,8 @@ class LogLinearAdaGradL1[L](override val weights: NumericBuffer[Float], val lamb
   override def postProcess: Unit = {
     (0 until weights.size).foreach { weight(_) }
   }
+}
+
+class FixedLogLinearAdaGradL1[L](val weightArray: Array[Float], lambda: Float, eta: Float) extends LogLinearAdaGradL1(lambda, eta) {
+  override val weights = new FixedWeightVector(weightArray)
 }

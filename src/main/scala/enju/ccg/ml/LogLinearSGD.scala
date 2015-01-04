@@ -1,7 +1,7 @@
 package enju.ccg.ml
 
-class LogLinearSGD[L](override val weights: NumericBuffer[Float], val a: Float)
-    extends OnlineLogLinearTrainer[L] {
+abstract class LogLinearSGD[L](val a: Float) extends OnlineLogLinearTrainer[L] {
+
   def stepSize = Math.pow(time + 1, -a).toFloat // avoid the overflow
   def updateExampleWeights(e: Example[L], gold: L, derivative: Float): Unit = {
     val dw = stepSize * derivative
@@ -12,4 +12,9 @@ class LogLinearSGD[L](override val weights: NumericBuffer[Float], val a: Float)
       i += 1
     }
   }
+}
+
+class FixedLogLinearSGD[L](val weightArray: Array[Float], a: Float) extends LogLinearSGD(a) {
+
+  override val weights = new FixedWeightVector(weightArray)
 }

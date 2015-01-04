@@ -11,5 +11,5 @@ public class OptionEnumTypes {
   
   public enum CategoryLookUpMethod { surfaceOnly, surfaceAndPoS, surfaceAndSecondFineTag, surfaceAndSecondWithConj };
 
-  public enum TaggerTrainAlgorithm { sgd, adaGradL1, cumulativeL1 };
+  public enum TaggerTrainAlgorithm { sgd, adaGradL1 };
 }

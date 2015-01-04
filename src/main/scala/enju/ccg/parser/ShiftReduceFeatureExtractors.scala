@@ -28,12 +28,13 @@ class ZhangExtractor extends FeatureExtractor {
   import FeatureTypes._
   import FeatureTypes.{ZhangTemplate => TMP}
   def addFeatures(ctx:Context, features:ArrayBuffer[UF]) = {
-    type Item = (Int,Int,Int)
-    @inline def w(item: Item):Char = item._1.toChar
-    @inline def p(item: Item):Short = item._2.toShort
-    @inline def c(item: Item):Short = item._3.toShort
-    def getItemsAt(s:WrappedCategory) = (ctx.word(s.head), ctx.pos(s.head), s.cat)
-    def wordPoSAt(i:Int) = (ctx.word(i), ctx.pos(i), 0)
+    case class Item(w: Char, p: Short, c: Short)
+
+    @inline def w(item: Item):Char = item.w
+    @inline def p(item: Item):Short = item.p
+    @inline def c(item: Item):Short = item.c
+    def getItemsAt(s:WrappedCategory) = Item(ctx.word(s.head).toChar, ctx.pos(s.head).toShort, s.cat.toShort)
+    def wordPoSAt(i:Int) = Item(ctx.word(i).toChar, ctx.pos(i).toShort, 0.toShort)
 
     val s0: Option[Item] = ctx.s0 map { getItemsAt(_) }
     val s1 = ctx.s1 map { getItemsAt(_) }
@@ -211,7 +212,6 @@ trait FeatureExtractorsBase {
 
   def extractUnlabeledHelper(sentence:CandAssignedSentence, state:State, extractors: Seq[FeatureExtractor]): Seq[UF] = {
     val features = new ArrayBuffer[UF]
-    features.clear
     features += FeatureTypes.Bias()
 
     val ctx = context(sentence, state)
