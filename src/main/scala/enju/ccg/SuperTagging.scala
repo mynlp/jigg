@@ -148,7 +148,8 @@ trait SuperTagging extends Problem { outer =>
     import java.io._
     // saveFeaturesToText
     System.err.println("saving tagger model to " + OutputOptions.saveModelPath)
-    val os = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(OutputOptions.saveModelPath)))
+
+    val os = enju.util.IOUtil.openBinOut(OutputOptions.saveModelPath)
     saveModel(os)
     os.close
   }

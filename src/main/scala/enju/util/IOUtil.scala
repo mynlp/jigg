@@ -7,6 +7,8 @@ import java.util.zip.GZIPOutputStream;
 object IOUtil {
   def openBinIn(path: String): ObjectInputStream =
     new ObjectInputStream(new BufferedInputStream(inStream(path)))
+  def openBinOut(path: String): ObjectOutputStream =
+    new ObjectOutputStream(new BufferedOutputStream(outStream(path)))
 
   def openIn(path: String): BufferedReader = bufReader(inStream(path))
 
@@ -15,6 +17,10 @@ object IOUtil {
   def inStream(path: String) = path match {
     case gzipped if gzipped.endsWith(".gz") => new GZIPInputStream(new FileInputStream(gzipped))
     case file => new FileInputStream(file)
+  }
+  def outStream(path: String) = path match {
+    case gzipped if gzipped.endsWith(".gz") => new GZIPOutputStream(new FileOutputStream(gzipped))
+    case file => new FileOutputStream(file)
   }
 
   def bufReader(stream: InputStream) = new BufferedReader(new InputStreamReader(stream))

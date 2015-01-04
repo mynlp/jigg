@@ -15,7 +15,7 @@ trait FeatureIndexer[Feature] extends Serializable {
   def get(key: Feature) = getIndex(key)
 }
 
-@SerialVersionUID(-3058955006170004987L)
+@SerialVersionUID(1L)
 class ExactFeatureIndexer[Feature](val map: HashMap[Feature, Int]) extends FeatureIndexer[Feature] {
 
   def size: Int = map.size
@@ -40,7 +40,7 @@ class HashedFeatureIndexer[Feature] private(
 
   def size = maxFeatureSize
 
-  def getIndex(key: Feature) = 1 + (math.abs(hasher(key)) % maxFeatureSize)
+  def getIndex(key: Feature) = (math.abs(hasher(key)) % maxFeatureSize)
 }
 
 object HashedFeatureIndexer {

@@ -10,6 +10,7 @@ trait ShiftReduceParsing extends Problem {
 
   var tagging: SuperTagging = _
   var weights: Array[Float] = _
+  var indexer: ml.HashedFeatureIndexer[Feature] = _
   var rule: parser.Rule = _
 
   def featureExtractors = {
@@ -18,8 +19,6 @@ trait ShiftReduceParsing extends Problem {
   }
   def instantiateSuperTagging: SuperTagging
   def getHeadFinder(trees: Seq[ParseTree[NodeLabel]]): parser.HeadFinder
-
-  def createIndexer(featureSize: Int = 2 << 23) = ml.HashedFeatureIndexer[Feature](featureSize)
 
   override def train = { // asuming the model of SuperTagging is saved
     loadSuperTagging
@@ -34,7 +33,8 @@ trait ShiftReduceParsing extends Problem {
     rule = parser.CFGRule.extractRulesFromDerivations(derivations, getHeadFinder(parseTrees))
     System.err.println("done.")
 
-    val indexer = createIndexer()
+    indexer = ml.HashedFeatureIndexer[Feature]()
+
     weights = new Array[Float](indexer.size)
     val perceptron = new ml.FixedPerceptron[parser.ActionLabel](weights)
 
@@ -119,7 +119,7 @@ trait ShiftReduceParsing extends Problem {
     System.err.println()
     predDerivations
   }
-  def getPredDecoder = getDecoder(createIndexer(), new ml.FixedPerceptron[parser.ActionLabel](weights), false)
+  def getPredDecoder = getDecoder(indexer, new ml.FixedPerceptron[parser.ActionLabel](weights), false)
 
   def evaluateCategoryAccuracy(sentences:Array[GoldSuperTaggedSentence], derivations:Array[Derivation]) = {
     val (numCorrects, numCompletes) = sentences.zip(derivations).foldLeft(0, 0) {
@@ -157,13 +157,14 @@ trait ShiftReduceParsing extends Problem {
     //saveFeaturesToText
 
     System.err.println("saving tagger+parser model to " + OutputOptions.saveModelPath)
-    val os = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(OutputOptions.saveModelPath)))
+    val os = enju.util.IOUtil.openBinOut(OutputOptions.saveModelPath)
     tagging.saveModel(os)
     saveModel(os)
     os.close
   }
   def saveModel(os:ObjectOutputStream) = {
     os.writeObject(weights)
+    os.writeObject(indexer)
     os.writeObject(rule)
   }
   // def saveFeaturesToText = if (OutputOptions.parserFeaturePath != "") {
@@ -218,6 +219,7 @@ trait ShiftReduceParsing extends Problem {
     track("Loading feature weights of CCG parser ...") {
       weights = in.readObject.asInstanceOf[Array[Float]]
     }
+    indexer = in.readObject.asInstanceOf[ml.HashedFeatureIndexer[Feature]]
 
     // TODO: branch according to the setting of rule (cfg or not)
     rule = in.readObject.asInstanceOf[parser.CFGRule]
