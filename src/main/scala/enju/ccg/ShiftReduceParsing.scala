@@ -302,12 +302,20 @@ class JapaneseShiftReduceParsing extends ShiftReduceParsing {
         val numCorrectHeads = gold.headSeq.dropRight(1).zip(pred.headSeq).count { a => a._1 == a._2 }
         (corrects + numCorrectHeads, completes + (if (numCorrectHeads == pred.size - 1) 1 else 0))
     }
+    val (numConnectedB, numConnectedS) = preds.foldLeft(0, 0) {
+      case ((connectedB, connectedS), pred) =>
+        val numConnectedHeads = pred.headSeq.dropRight(1).count(_ != -1)
+        (connectedB + numConnectedHeads, connectedS + (if (numConnectedHeads == pred.size - 1) 1 else 0))
+    }
+
     val numInstances = preds.map(_.size - 1).sum
 
     def format_acc(numer: Int, denom: Int) = "%f (%d/%d)".format(numer.toDouble / denom.toDouble, numer, denom)
 
     System.err.println("bunsetsu accuracy: " + format_acc(numCorrects, numInstances))
     System.err.println("sentence accuracy: " + format_acc(numCompletes, preds.size))
+    System.err.println("Coverage of fully connected analysis (bunsetsu): " + format_acc(numConnectedB, numInstances))
+    System.err.println("Coverage of fully connected analysis (sentence): " + format_acc(numConnectedS, preds.size))
 
     val (activeNumCorrect, activeSum) = preds.zip(golds).foldLeft(0, 0) {
       case ((corrects, sum), (pred, gold)) =>
