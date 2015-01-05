@@ -118,10 +118,16 @@ class CCGBankReader(dict:Dictionary) {
     }
 
     def isIntermediate(a:String): Boolean = a match {
-      case "<" | ">" | ">Bn" | ">Bx" | "<Bn" | "Φ" | "ADV" | "ADN" | "SSEQ" => true
-      case "<Bx" => sys.error("backward crossed detected?")
+      case rulePattern(_) => true
       case _ => false
     }
+    /** This pattern works both for old and new versions of CCGBank annotation.
+      * In 20141020: Rules are <|>|>Bn|>Bx|<Bn|Φ|ADV |ADN         |SSEQ
+      * In 20141205: Rules are <|>|>B |>Bi|<Bi|Φ|ADVi|ADN(int|ext)|SSEQ
+      *
+      * where i is a number (matches to \d). That is, `n` is removed from new definition.
+      */
+    private[this] val rulePattern = """<|>|>Bn?|>Bx\d?|<B(n|\d)|Φ|ADV\d?|ADN\w*|SSEQ""".r
 
     def readTree: Option[Tree] = {
       skipSpaces
