@@ -6,7 +6,7 @@ name := "enju-ccg"
 
 scalaVersion := "2.10.2"
 
-version := "0.2"
+version := "0.3"
 
 fork in run := true
 

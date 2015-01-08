@@ -9,7 +9,7 @@ The project name (transccg) is temporary and probably changed. I'm looking for o
 
 ## How to use
 
-The current version is 0.2. You can use `transccg-0.2.jar` in the project root directory, which is a self-contained jar of the current version.
+The current version is 0.3. You can use `jar/transccg.jar`, which is a self-contained jar of the current version.
 
 ### Preparing a pre-trained model
 
@@ -19,7 +19,7 @@ To run a CCG parser for a raw text, a pre-trained model file is required, which 
 ./script/download_model.sh
 ```
 
-This downloads some models in the `model` directory.
+This downloads a jar file containing several models with differnt speed/accuracy in `jar` directory.
 
 ### Command line usage
 
@@ -29,7 +29,7 @@ To get CCG parses from raw sentences, a pipeline module `enju.pipeline.Pipeline`
 $ cat sample.txt
 Scalaは良い言語です。
 文法がとても簡潔です。
-$ java -Xmx4g -cp transccg-0.2.jar enju.pipeline.Pipeline -annotators ssplit,kuromoji,ccg -file sample.txt -ccg.numKbest 3
+$ java -Xmx4g -cp "jar/*" enju.pipeline.Pipeline -annotators ssplit,kuromoji,ccg -file sample.txt -ccg.numKbest 3
 ```
 
 The syntax is very similar to Stanford CoreNLP. The required arguments are as follows:

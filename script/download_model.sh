@@ -1,9 +1,7 @@
 #!/bin/sh
 
-model=`dirname $0`/../model
+jar=`dirname $0`/../jar
 
-mkdir -p $model
+modelurl="http://kmcs.nii.ac.jp/~noji/transccg/models/ccg-models-0.3.jar"
 
-wget http://kmcs.nii.ac.jp/~noji/transccg/jaccg-0.2-beam64.ser.gz -P $model
-
-# wget http://kmcs.nii.ac.jp/~noji/transccg/jaccg-0.1-beam128.ser.gz -P $model
+wget $modelurl -P $jar
