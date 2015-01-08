@@ -85,14 +85,18 @@ class JumanAnnotator(val name: String, val props: Properties) extends SentencesA
         val is_ambiguty_token = (tokenized.head == '@')
           val tokenized_features = if (is_ambiguty_token) tokenized.drop(2).split(" ") else tokenized.split(" ") //drop "@ "
 
-        val surf           = tokenized_features(0)
-        val reading        = tokenized_features(1)
-        val base           = tokenized_features(2)
-        val pos            = tokenized_features(3)
-        val pos1           = tokenized_features(5)
-        val inflectionType = tokenized_features(7)
-        val inflectionForm = tokenized_features(9)
-        val features       = tokenized_features.drop(11).mkString(" ") // avoid splitting features with " "
+        val surf              = tokenized_features(0)
+        val reading           = tokenized_features(1)
+        val base              = tokenized_features(2)
+        val pos               = tokenized_features(3)
+        val pos_id            = tokenized_features(4)
+        val pos1              = tokenized_features(5)
+        val pos1_id           = tokenized_features(6)
+        val inflectionType    = tokenized_features(7)
+        val inflectionType_id = tokenized_features(8)
+        val inflectionForm    = tokenized_features(9)
+        val inflectionForm_id = tokenized_features(10)
+        val features          = tokenized_features.drop(11).mkString(" ") // avoid splitting features with " "
 
 
         val pos2           = None
@@ -123,6 +127,10 @@ class JumanAnnotator(val name: String, val props: Properties) extends SentencesA
           base={ base }
           reading={ reading }
           pronounce={ pronounce }
+          pos_id={ pos_id }
+          pos1_id={ pos1_id }
+          inflectionType_id={ inflectionType_id }
+          inflectionForm_id={ inflectionForm_id }
           features={ if (features == "NIL") features else features.init.tail }/> // remove quotation marks
         }
         else{
@@ -138,6 +146,10 @@ class JumanAnnotator(val name: String, val props: Properties) extends SentencesA
           base={ base }
           reading={ reading }
           pronounce={ pronounce }
+          pos_id={ pos_id }
+          pos1_id={ pos1_id }
+          inflectionType_id={ inflectionType_id }
+          inflectionForm_id={ inflectionForm_id }
           features={ if (features == "NIL") features else features.init.tail }/> // remove quotation marks
         }
 
