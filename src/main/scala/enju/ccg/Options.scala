@@ -65,7 +65,7 @@ object TaggerOptions extends Options {
 
 object ParserOptions extends Options {
   @Option(gloss="Beam width; if k=1, deterministic decoder is used") var beam:Int = 64
-  @Option(gloss="Prefer connected derivation at prediction") var preferConnected: Boolean = false
+  @Option(gloss="Prefer connected derivation at prediction") var preferConnected: Boolean = true
 }
 
 // object OP extends Options
