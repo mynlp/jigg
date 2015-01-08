@@ -204,7 +204,19 @@ trait ShiftReduceParsing extends Problem {
 
     val begin = System.currentTimeMillis
 
-    val in = enju.util.IOUtil.openBinIn(InputOptions.loadModelPath)
+    val in = InputOptions.loadModelPath match {
+      case "" =>
+        val loader = Thread.currentThread.getContextClassLoader
+        val modelName = s"ccg-models/parser/beam=${ParserOptions.beam}.ser.gz"
+        System.err.println("Search for model: " + modelName)
+
+        val input = loader.getResourceAsStream(modelName)
+
+        enju.util.IOUtil.openZipBinIn(input)
+
+      case path => enju.util.IOUtil.openBinIn(path)
+    }
+
     tagging = instantiateSuperTagging
     tagging.loadModel(in)
     loadModel(in)

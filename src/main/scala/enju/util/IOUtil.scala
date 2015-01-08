@@ -5,8 +5,14 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 object IOUtil {
-  def openBinIn(path: String): ObjectInputStream =
-    new ObjectInputStream(new BufferedInputStream(inStream(path)))
+  def openBinIn(path: String): ObjectInputStream = oiStream(inStream(path))
+  def openBinIn(in: InputStream): ObjectInputStream = oiStream(in)
+
+  def openZipBinIn(in: InputStream) = openBinIn(new GZIPInputStream(in))
+
+  private[this] def oiStream(in: InputStream) =
+    new ObjectInputStream(new BufferedInputStream(in))
+
   def openBinOut(path: String): ObjectOutputStream =
     new ObjectOutputStream(new BufferedOutputStream(outStream(path)))
 

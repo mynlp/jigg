@@ -27,7 +27,7 @@ object InputOptions extends Options {
   @Option(gloss = "Path to Japanese category expantion definitions (required when training Tagger)") var templatePath = ""
   @Option(gloss = "Path to lexicon (word/pos -> category mappings)") var lexiconPath = ""
 
-  @Option(gloss = "Path to trained model") var loadModelPath = "model/jaccg-0.2-beam64.ser.gz"
+  @Option(gloss = "Path to trained model") var loadModelPath = "" //"model/jaccg-0.2-beam64.ser.gz"
 }
 
 object OutputOptions extends Options {
