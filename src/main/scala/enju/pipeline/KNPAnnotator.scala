@@ -90,7 +90,6 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
     val basic_phrases_num = knpResult.filter(str => isBasicPhrase(str)).length
     val knp_result_rev = knpResult.reverse
 
-
     var bp_id = basic_phrases_num - 1
     var tok_id = knpResult.filter(str => isToken(str)).length - 1
     var tokenIDs : List[String] = List()
