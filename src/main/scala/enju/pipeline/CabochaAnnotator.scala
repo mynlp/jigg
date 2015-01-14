@@ -46,7 +46,7 @@ class CabochaAnnotator(val name: String, val props: Properties) extends Sentence
     val nodeSeq = (xml \\ "chunk").map{
       chunk =>
       val c_id = cid(sid, (chunk \ "@id").toString)
-      val c_tokens = (chunk \ "tok").map(tok => tid(sid, (tok \ "@id").toString)).mkString(",")
+      val c_tokens = (chunk \ "tok").map(tok => tid(sid, (tok \ "@id").toString)).mkString(" ")
       val c_head = tid(sid, (chunk \ "@head").toString)
       val c_func = tid(sid, (chunk \ "@func").toString)
       <chunk id={ c_id } tokens={ c_tokens } head={ c_head } func = {c_func} />
