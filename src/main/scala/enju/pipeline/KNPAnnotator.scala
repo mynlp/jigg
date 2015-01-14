@@ -101,7 +101,7 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
           tok_id -= 1
         }
         else if (isBasicPhrase(knp_str)) {
-          ans = <basic_phrase id={ bpid(sid, bp_id) } tokens={ tokenIDs.mkString(",") } features={ knp_str.split(" ")(2) } /> +: ans
+          ans = <basic_phrase id={ bpid(sid, bp_id) } tokens={ tokenIDs.mkString(" ") } features={ knp_str.split(" ")(2) } /> +: ans
 
           if(tok_id == 0 && bp_id == 0){
             break
@@ -127,7 +127,7 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
           tok_id -= 1
         }
         else if (isChunk(knp_str)) {
-          ans = <chunk id={ cid(sid, chunk_id) } tokens={ tokenIDs.mkString(",") } features={ knp_str.split(" ")(2) } /> +: ans
+          ans = <chunk id={ cid(sid, chunk_id) } tokens={ tokenIDs.mkString(" ") } features={ knp_str.split(" ")(2) } /> +: ans
 
           if(tok_id == 0 && chunk_id == 0){
             break
