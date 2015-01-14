@@ -147,7 +147,6 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
     val bpdep_num = bpdep_strs.length
     var bpd_id = 0
 
-
     // init: remove the last dependency (+ -1D ...)
     val dpd_xml = bpdep_strs.init.map{
       bpdep_str =>
