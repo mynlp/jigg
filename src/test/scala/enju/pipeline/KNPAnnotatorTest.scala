@@ -87,7 +87,7 @@ class KNPAnnotatorTest extends FunSuite {
 
     val feature1 = "<文頭><人名><ガ><助詞><体言><係:ガ格><区切:0-0><格要素><連用要素><名詞項候補><先行詞候補><SM-人><SM-主体><正規化代表表記:太郎/たろう><NE:PERSON:太郎><照応詞候補:太郎><解析格:ガ><EID:0>"
     val feature2 = "<文末><時制-過去><句点><用言:動><レベル:C><区切:5-5><ID:（文末）><係:文末><提題受:30><主節><格要素><連用要素><動態述語><正規化代表表記:走る/はしる><用言代表表記:走る/はしる><主題格:一人称優位><格関係0:ガ:太郎><格解析結果:走る/はしる:動13:ガ/C/太郎/0/0/1;ヲ/U/-/-/-/-;ニ/U/-/-/-/-;ト/U/-/-/-/-;デ/U/-/-/-/-;カラ/U/-/-/-/-;ヨリ/U/-/-/-/-;マデ/U/-/-/-/-;時間/U/-/-/-/-;外の関係/U/-/-/-/-;ノ/U/-/-/-/-;修飾/U/-/-/-/-;トスル/U/-/-/-/-;ニオク/U/-/-/-/-;ニカンスル/U/-/-/-/-;ニヨル/U/-/-/-/-;ヲフクメル/U/-/-/-/-;ヲハジメル/U/-/-/-/-;ヲノゾク/U/-/-/-/-;ヲツウジル/U/-/-/-/-><EID:1><述語項構造:走る/はしる:動13:ガ/C/太郎/0>"
-    val expected = <basic_phrases><basic_phrase id="s0_0" tokens="s0_0,s0_1" features={feature1} /><basic_phrase id="s0_1" tokens="s0_2,s0_3" features={feature2} /></basic_phrases>
+    val expected = <basic_phrases><basic_phrase id="s0_0" tokens="s0_0 s0_1" features={feature1} /><basic_phrase id="s0_1" tokens="s0_2 s0_3" features={feature2} /></basic_phrases>
 
     val knp = new KNPAnnotator("knp", new Properties)
 
@@ -110,7 +110,7 @@ class KNPAnnotatorTest extends FunSuite {
     val feature1 = "<文頭><人名><ガ><助詞><体言><係:ガ格><区切:0-0><格要素><連用要素><正規化代表表記:太郎/たろう><主辞代表表記:太郎/たろう>"
     val feature2 = "<文末><時制-過去><句点><用言:動><レベル:C><区切:5-5><ID:（文末）><係:文末><提題受:30><主節><格要素><連用要素><動態述語><正規化代表表記:走る/はしる><主辞代表表記:走る/はしる>"
 
-    val expected = <chunks><chunk id="s0_0" tokens="s0_0,s0_1" features={feature1} /><chunk id="s0_1" tokens="s0_2,s0_3" features={feature2}/></chunks>
+    val expected = <chunks><chunk id="s0_0" tokens="s0_0 s0_1" features={feature1} /><chunk id="s0_1" tokens="s0_2 s0_3" features={feature2}/></chunks>
 
     val knp = new KNPAnnotator("knp", new Properties)
     knp.getChunks(input, "s0") should be(expected)
