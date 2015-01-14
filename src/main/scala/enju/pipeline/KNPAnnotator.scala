@@ -1,5 +1,7 @@
 package enju.pipeline
 
+
+import scala.util.control.Breaks.{break, breakable}
 import scala.xml._
 import java.io.BufferedReader
 import java.io.BufferedWriter
@@ -22,7 +24,16 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
     knp_process.destroy()
   }
 
-  private def tid(sindex: String, tindex: String) = sindex + "_" + tindex
+  def isBasicPhrase(knp_str:String) : Boolean = knp_str(0) == '+'
+  def isChunk(knp_str:String) : Boolean = knp_str(0) == '*'
+  def isDocInfo(knp_str:String) : Boolean = knp_str(0) == '#'
+  def isEOS(knp_str:String) : Boolean = knp_str == "EOS"
+  def isToken(knp_str:String) : Boolean = ! isBasicPhrase(knp_str) && ! isChunk(knp_str) && ! isDocInfo(knp_str) && ! isEOS(knp_str)
+
+
+  private def tid(sindex: String, tindex: Int) = sindex + "_" + tindex.toString
+  private def bpid(sindex: String, bpindex: Int) = sindex + "_" + bpindex.toString
+
 
   def getTokens(knpResult:Seq[String], sid:String) : Node = {
     var tokenIndex = 0
@@ -48,7 +59,7 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
       val pronounce      = None
 
       val node = <token
-      id={ tid(sid, tokenIndex.toString) }
+      id={ tid(sid, tokenIndex) }
       surf={ surf }
       pos={ pos }
       pos1={ pos1 }
@@ -69,6 +80,36 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
     }
 
     <tokens>{ nodes }</tokens>
+  }
+
+  def getBasicPhrases(knpResult:Seq[String], sid:String) : NodeSeq = {
+    val basic_phrases_num = knpResult.filter(str => isBasicPhrase(str)).length
+    val knp_result_rev = knpResult.reverse
+
+
+    var bp_id = basic_phrases_num - 1
+    var tok_id = knpResult.filter(str => isToken(str)).length - 1
+    var tokenIDs : List[String] = List()
+    var ans = scala.xml.NodeSeq.fromSeq(Seq())
+
+    breakable {
+    for (knp_str <- knp_result_rev) {
+      if (isToken(knp_str)){
+        tokenIDs = tid(sid, tok_id) +: tokenIDs
+        tok_id -= 1
+      }
+      else if (isBasicPhrase(knp_str)) {
+        ans = <basic_phrase id={ bpid(sid, bp_id) } tokens={ tokenIDs.mkString(",") } features={ knp_str.split(" ")(2) } /> +: ans
+
+        if(tok_id == 0 && bp_id == 0){
+          break
+        }
+        bp_id -= 1
+        tokenIDs = List()
+      }
+    }
+}
+    <basic_phrases>{ ans }</basic_phrases>
   }
 
 
@@ -109,13 +150,9 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
       Iterator.continually(knp_in.readLine()).takeWhile(_ != "EOS").toSeq :+ "EOS"
     }
 
-    // val text = sentence.text
     val sindex = (sentence \ "@id").toString
     val juman_tokens = (sentence \\ "tokens").head
-    // val knp_result = XML.loadString(runKNP(tokens).mkString)
     val knp_result_seq = runKNP(juman_tokens)
-    // val knp_result_rev = knp_result_seq.reverse
-
     val knp_tokens = getTokens(knp_result_seq, sindex)
     // convertXml(sentence, knp_result, sindex)
 
