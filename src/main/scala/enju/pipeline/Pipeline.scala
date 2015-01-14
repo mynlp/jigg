@@ -36,6 +36,7 @@ class Pipeline(val props: Properties) {
     case "kuromoji" => new KuromojiAnnotator(name, props)
     case "mecab" => new MecabAnnotator(name, props)
     case "juman" => new JumanAnnotator(name, props)
+    case "knp" => new KNPAnnotator(name, props)
     case "ccg" => new CCGParseAnnotator(name, props)
     case other =>
       // assuming other is class name?
