@@ -32,6 +32,7 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
 
 
   private def tid(sindex: String, tindex: Int) = sindex + "_" + tindex.toString
+  private def cid(sindex: String, cindex: Int) = sindex + "_" + cindex
   private def bpid(sindex: String, bpindex: Int) = sindex + "_" + bpindex.toString
 
 
@@ -112,13 +113,37 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
     <basic_phrases>{ ans }</basic_phrases>
   }
 
+  def getChunks(knpResult:Seq[String], sid:String) : NodeSeq = {
+    var chunk_id = knpResult.filter(str => isChunk(str)).length - 1
+    var tok_id = knpResult.filter(str => isToken(str)).length - 1
+    var tokenIDs : List[String] = List()
+    var ans = scala.xml.NodeSeq.fromSeq(Seq())
+
+    breakable {
+    for (knp_str <- knpResult.reverse) {
+      if (isToken(knp_str)){
+        tokenIDs = tid(sid, tok_id) +: tokenIDs
+        tok_id -= 1
+      }
+      else if (isChunk(knp_str)) {
+        ans = <chunk id={ cid(sid, chunk_id) } tokens={ tokenIDs.mkString(",") } features={ knp_str.split(" ")(2) } /> +: ans
+
+        if(tok_id == 0 && chunk_id == 0){
+          break
+        }
+        chunk_id -= 1
+        tokenIDs = List()
+      }
+    }
+}
+    <chunks>{ ans }</chunks>
+  }
+
   def makeXml(sentence:Node, knpResult:Seq[String], sid:String) : Node = {
     val knp_tokens = getTokens(knpResult, sid)
     val sentence_with_tokens = enju.util.XMLUtil.replaceAll(sentence, "tokens")(node => knp_tokens)
-
-    val basic_phrases = getBasicPhrases(knpResult, sid)
-    val sentence_with_bps = enju.util.XMLUtil.addChild(sentence, basic_phrases)
-
+    val sentence_with_bps = enju.util.XMLUtil.addChild(sentence_with_tokens, getBasicPhrases(knpResult, sid))
+    val sentence_with_chunks = enju.util.XMLUtil.addChild(sentence_with_bps, getChunks(knpResult, sid))
       //tokens have been annotated by another annotator
       // val tokens = getTokens(knp_xml, sid)
 
@@ -127,7 +152,7 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
 
 
       // dependencies.map(enju.util.XMLUtil.addChild(sentence_with_chunks, _)).getOrElse(sentence_with_chunks)
-    sentence_with_bps
+    sentence_with_chunks
   }
 
 
