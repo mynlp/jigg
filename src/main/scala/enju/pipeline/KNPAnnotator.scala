@@ -216,10 +216,6 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
     <case_relations>{ ans }</case_relations>
   }
 
-
-
-
-
   def makeXml(sentence:Node, knpResult:Seq[String], sid:String) : Node = {
     val knp_tokens = getTokens(knpResult, sid)
     val sentence_with_tokens = enju.util.XMLUtil.replaceAll(sentence, "tokens")(node => knp_tokens)
