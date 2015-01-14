@@ -35,7 +35,7 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
   private def cid(sindex: String, cindex: Int) = sindex + "_" + cindex
   private def bpid(sindex: String, bpindex: Int) = sindex + "_" + bpindex.toString
   private def bpdid(sindex: String, bpdindex: Int) = sindex + "_" + bpdindex.toString
-
+  private def depid(sindex: String, depindex: Int) = sindex + "_" + depindex.toString
 
   def getTokens(knpResult:Seq[String], sid:String) : Node = {
     var tokenIndex = 0
@@ -164,15 +164,37 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
   }
 
 
+  def getDependencies(knpResult:Seq[String], sid:String) : NodeSeq = {
+    val dep_strs = knpResult.filter(knp_str => isChunk(knp_str))
+    val dep_num = dep_strs.length
+    var dep_id = 0
+
+
+    // init: remove the last dependency (* -1D ...)
+    val dep_xml = dep_strs.init.map{
+      dep_str =>
+      val hd = depid(sid, dep_str.split(" ")(1).init.toInt)
+      val dp = depid(sid, dep_id)
+      val lab = dep_str.split(" ")(1).last.toString
+
+      val ans = <dependency id={depid(sid, dep_id)} head={hd} dependent={dp} label={lab} />
+      dep_id += 1
+
+      ans
+    }
+
+    <dependencies root={depid(sid, dep_num-1)} >{ dep_xml }</dependencies>
+  }
+
   def makeXml(sentence:Node, knpResult:Seq[String], sid:String) : Node = {
     val knp_tokens = getTokens(knpResult, sid)
     val sentence_with_tokens = enju.util.XMLUtil.replaceAll(sentence, "tokens")(node => knp_tokens)
     val sentence_with_bps = enju.util.XMLUtil.addChild(sentence_with_tokens, getBasicPhrases(knpResult, sid))
     val sentence_with_chunks = enju.util.XMLUtil.addChild(sentence_with_bps, getChunks(knpResult, sid))
     val sentence_with_bpdeps = enju.util.XMLUtil.addChild(sentence_with_chunks, getBasicPhraseDependencies(knpResult, sid))
+    val sentence_with_deps = enju.util.XMLUtil.addChild(sentence_with_bpdeps, getDependencies(knpResult, sid))
 
-
-    sentence_with_bpdeps
+    sentence_with_deps
   }
 
   override def newSentenceAnnotation(sentence: Node): Node = {
