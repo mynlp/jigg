@@ -112,6 +112,26 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
     <basic_phrases>{ ans }</basic_phrases>
   }
 
+  def makeXml(sentence:Node, knpResult:Seq[String], sid:String) : Node = {
+    val knp_tokens = getTokens(knpResult, sid)
+    val sentence_with_tokens = enju.util.XMLUtil.replaceAll(sentence, "tokens")(node => knp_tokens)
+
+    val basic_phrases = getBasicPhrases(knpResult, sid)
+    val sentence_with_bps = enju.util.XMLUtil.addChild(sentence, basic_phrases)
+
+      //tokens have been annotated by another annotator
+      // val tokens = getTokens(knp_xml, sid)
+
+      // val chunks = getChunks(knp_xml, sid)
+      // val dependencies = getDependencies(knp_xml, sid)
+
+
+      // dependencies.map(enju.util.XMLUtil.addChild(sentence_with_chunks, _)).getOrElse(sentence_with_chunks)
+    sentence_with_bps
+  }
+
+
+
 
   override def newSentenceAnnotation(sentence: Node): Node = {
     def runKNP(tokens:Node): Seq[String] = {
@@ -152,11 +172,9 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
 
     val sindex = (sentence \ "@id").toString
     val juman_tokens = (sentence \\ "tokens").head
-    val knp_result_seq = runKNP(juman_tokens)
-    val knp_tokens = getTokens(knp_result_seq, sindex)
-    // convertXml(sentence, knp_result, sindex)
+    val knp_result = runKNP(juman_tokens)
 
-    enju.util.XMLUtil.replaceAll(sentence, "tokens")(node => knp_tokens)
+    makeXml(sentence, knp_result, sindex)
   }
 
   override def requires = Set(Annotator.JaTokenize)
