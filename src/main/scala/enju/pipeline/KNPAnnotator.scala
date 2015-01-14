@@ -1,6 +1,5 @@
 package enju.pipeline
 
-
 import scala.util.control.Breaks.{break, breakable}
 import scala.xml._
 import java.io.BufferedReader
@@ -238,7 +237,7 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
   }
 
   def recovJumanOutput(juman_tokens:Node) : Seq[String] = {
-   (juman_tokens \\ "token").map{
+    (juman_tokens \\ "token").map{
       tok =>
       val tok_str = (tok \ "@surf") + " " + (tok \ "@reading") + " " + (tok \ "@base") + " " +
       (tok \ "@pos") + " " + (tok \ "@pos_id") + " " +
