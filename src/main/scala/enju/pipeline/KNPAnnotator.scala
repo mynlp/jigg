@@ -34,6 +34,7 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
   private def tid(sindex: String, tindex: Int) = sindex + "_" + tindex.toString
   private def cid(sindex: String, cindex: Int) = sindex + "_" + cindex
   private def bpid(sindex: String, bpindex: Int) = sindex + "_" + bpindex.toString
+  private def bpdid(sindex: String, bpdindex: Int) = sindex + "_" + bpdindex.toString
 
 
   def getTokens(knpResult:Seq[String], sid:String) : Node = {
@@ -94,22 +95,22 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
     var ans = scala.xml.NodeSeq.fromSeq(Seq())
 
     breakable {
-    for (knp_str <- knp_result_rev) {
-      if (isToken(knp_str)){
-        tokenIDs = tid(sid, tok_id) +: tokenIDs
-        tok_id -= 1
-      }
-      else if (isBasicPhrase(knp_str)) {
-        ans = <basic_phrase id={ bpid(sid, bp_id) } tokens={ tokenIDs.mkString(",") } features={ knp_str.split(" ")(2) } /> +: ans
-
-        if(tok_id == 0 && bp_id == 0){
-          break
+      for (knp_str <- knp_result_rev) {
+        if (isToken(knp_str)){
+          tokenIDs = tid(sid, tok_id) +: tokenIDs
+          tok_id -= 1
         }
-        bp_id -= 1
-        tokenIDs = List()
+        else if (isBasicPhrase(knp_str)) {
+          ans = <basic_phrase id={ bpid(sid, bp_id) } tokens={ tokenIDs.mkString(",") } features={ knp_str.split(" ")(2) } /> +: ans
+
+          if(tok_id == 0 && bp_id == 0){
+            break
+          }
+          bp_id -= 1
+          tokenIDs = List()
+        }
       }
     }
-}
     <basic_phrases>{ ans }</basic_phrases>
   }
 
@@ -120,43 +121,59 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
     var ans = scala.xml.NodeSeq.fromSeq(Seq())
 
     breakable {
-    for (knp_str <- knpResult.reverse) {
-      if (isToken(knp_str)){
-        tokenIDs = tid(sid, tok_id) +: tokenIDs
-        tok_id -= 1
-      }
-      else if (isChunk(knp_str)) {
-        ans = <chunk id={ cid(sid, chunk_id) } tokens={ tokenIDs.mkString(",") } features={ knp_str.split(" ")(2) } /> +: ans
-
-        if(tok_id == 0 && chunk_id == 0){
-          break
+      for (knp_str <- knpResult.reverse) {
+        if (isToken(knp_str)){
+          tokenIDs = tid(sid, tok_id) +: tokenIDs
+          tok_id -= 1
         }
-        chunk_id -= 1
-        tokenIDs = List()
+        else if (isChunk(knp_str)) {
+          ans = <chunk id={ cid(sid, chunk_id) } tokens={ tokenIDs.mkString(",") } features={ knp_str.split(" ")(2) } /> +: ans
+
+          if(tok_id == 0 && chunk_id == 0){
+            break
+          }
+          chunk_id -= 1
+          tokenIDs = List()
+        }
       }
     }
-}
     <chunks>{ ans }</chunks>
   }
+
+
+  def getBasicPhraseDependencies(knpResult:Seq[String], sid:String) : NodeSeq = {
+    val bpdep_strs = knpResult.filter(knp_str => isBasicPhrase(knp_str))
+    val bpdep_num = bpdep_strs.length
+    var bpd_id = 0
+
+
+    // init: remove the last dependency (+ -1D ...)
+    val dpd_xml = bpdep_strs.init.map{
+      bpdep_str =>
+      val hd = bpdid(sid, bpdep_str.split(" ")(1).init.toInt)
+      val dp = bpdid(sid, bpd_id)
+      val lab = bpdep_str.split(" ")(1).last.toString
+
+      val ans = <basic_phrase_dependency id={bpdid(sid, bpd_id)} head={hd} dependent={dp} label={lab} />
+      bpd_id += 1
+
+      ans
+    }
+
+    <basic_phrase_dependencies root={bpdid(sid, bpdep_num-1)} >{ dpd_xml }</basic_phrase_dependencies>
+  }
+
 
   def makeXml(sentence:Node, knpResult:Seq[String], sid:String) : Node = {
     val knp_tokens = getTokens(knpResult, sid)
     val sentence_with_tokens = enju.util.XMLUtil.replaceAll(sentence, "tokens")(node => knp_tokens)
     val sentence_with_bps = enju.util.XMLUtil.addChild(sentence_with_tokens, getBasicPhrases(knpResult, sid))
     val sentence_with_chunks = enju.util.XMLUtil.addChild(sentence_with_bps, getChunks(knpResult, sid))
-      //tokens have been annotated by another annotator
-      // val tokens = getTokens(knp_xml, sid)
-
-      // val chunks = getChunks(knp_xml, sid)
-      // val dependencies = getDependencies(knp_xml, sid)
+    val sentence_with_bpdeps = enju.util.XMLUtil.addChild(sentence_with_chunks, getBasicPhraseDependencies(knpResult, sid))
 
 
-      // dependencies.map(enju.util.XMLUtil.addChild(sentence_with_chunks, _)).getOrElse(sentence_with_chunks)
-    sentence_with_chunks
+    sentence_with_bpdeps
   }
-
-
-
 
   override def newSentenceAnnotation(sentence: Node): Node = {
     def runKNP(tokens:Node): Seq[String] = {
