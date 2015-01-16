@@ -11,7 +11,9 @@ import java.util.Properties
 
 class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnnotator {
   val knp_command: String = props.getProperty("knp.command", "knp")
-  lazy private[this] val knp_process = new java.lang.ProcessBuilder(knp_command, "-tab", "-ne", "-anaphora").start
+
+  //for KNP 4.12 (-ne option is unneed)
+  lazy private[this] val knp_process = new java.lang.ProcessBuilder(knp_command, "-tab", "-anaphora").start
   lazy private[this] val knp_in = new BufferedReader(new InputStreamReader(knp_process.getInputStream, "UTF-8"))
   lazy private[this] val knp_out = new BufferedWriter(new OutputStreamWriter(knp_process.getOutputStream, "UTF-8"))
 
@@ -36,6 +38,7 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
   private def bpid(sindex: String, bpindex: Int) = sindex + "_" + bpindex.toString
   private def bpdid(sindex: String, bpdindex: Int) = sindex + "_" + bpdindex.toString
   private def depid(sindex: String, depindex: Int) = sindex + "_" + depindex.toString
+  private def crid(sindex: String, crindex:Int) = sindex + "_" + crindex.toString
 
   def getTokens(knpResult:Seq[String], sid:String) : Node = {
     var tokenIndex = 0
@@ -186,15 +189,51 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
     <dependencies root={depid(sid, dep_num-1)} >{ dep_xml }</dependencies>
   }
 
+  // "格解析結果:走る/はしる:動13:ガ/C/太郎/0/0/1;ヲ/U/-/-/-/-;ニ/U/-/-/-/-;ト/U/-/-/-/-;デ/U/-/-/-/-;カラ/U/-/-/-/-;ヨリ/U/-/-/-/-;マデ/U/-/-/-/-;時間/U/-/-/-/-;外の関係/U/-/-/-/-;ノ/U/-/-/-/-;修飾/U/-/-/-/-;トスル/U/-/-/-/-;ニオク/U/-/-/-/-;ニカンスル/U/-/-/-/-;ニヨル/U/-/-/-/-;ヲフクメル/U/-/-/-/-;ヲハジメル/U/-/-/-/-;ヲノゾク/U/-/-/-/-;ヲツウジル/U/-/-/-/-
+  def getCaseRelations(knpResult:Seq[String], tokens_xml:NodeSeq, bps_xml:NodeSeq, sid:String) : NodeSeq = {
+    var cr_id = 0
+
+    val ans = knpResult.filter(str => isBasicPhrase(str)).zipWithIndex.filter(tpl => tpl._1.contains("<格解析結果:")).map{
+      tpl =>
+      val str = tpl._1
+      val bp_ind = tpl._2
+
+      val pattern1 = "<格解析結果:[^>]+>".r
+      val sp = pattern1.findFirstIn(str).getOrElse("<>").init.tail.split(":")
+      val case_results = sp(3)  //  ガ/C/太郎/0/0/1;ヲ/ ...
+      val hd = bpid(sid, bp_ind)
+
+      case_results.split(";").map{
+        str =>
+        val case_result = str.split("/")
+        val lab = case_result(0)
+        val fl = case_result(1)
+        val dp = if (case_result(3) == "-") "unk" else tid("s" + (sid.tail.toInt - case_result(4).toInt), case_result(3).toInt) // assumes that sentence_id is as "s0"
+
+        val ans_xml = <case_relation id={crid(sid, cr_id)} head={hd} depend={dp} label={lab} flag={fl} />
+        cr_id += 1
+        ans_xml
+      }
+    }.flatten
+
+    <case_relations>{ ans }</case_relations>
+  }
+
+
+
+
+
   def makeXml(sentence:Node, knpResult:Seq[String], sid:String) : Node = {
     val knp_tokens = getTokens(knpResult, sid)
     val sentence_with_tokens = enju.util.XMLUtil.replaceAll(sentence, "tokens")(node => knp_tokens)
-    val sentence_with_bps = enju.util.XMLUtil.addChild(sentence_with_tokens, getBasicPhrases(knpResult, sid))
+    val basic_phrases = getBasicPhrases(knpResult, sid)
+    val sentence_with_bps = enju.util.XMLUtil.addChild(sentence_with_tokens, basic_phrases)
     val sentence_with_chunks = enju.util.XMLUtil.addChild(sentence_with_bps, getChunks(knpResult, sid))
     val sentence_with_bpdeps = enju.util.XMLUtil.addChild(sentence_with_chunks, getBasicPhraseDependencies(knpResult, sid))
     val sentence_with_deps = enju.util.XMLUtil.addChild(sentence_with_bpdeps, getDependencies(knpResult, sid))
+    val sentence_with_case_relations = enju.util.XMLUtil.addChild(sentence_with_deps, getCaseRelations(knpResult, knp_tokens, basic_phrases, sid))
 
-    sentence_with_deps
+    sentence_with_case_relations
   }
 
   override def newSentenceAnnotation(sentence: Node): Node = {

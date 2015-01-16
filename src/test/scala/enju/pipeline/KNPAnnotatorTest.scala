@@ -137,7 +137,6 @@ class KNPAnnotatorTest extends FunSuite {
   }
 
   test("getDependencies"){
-
     val input = """|# S-ID:1 KNP:4.11-CF1.1 DATE:2015/01/13 SCORE:-7.16850
                    |* 1D <文頭><人名><ガ><助詞><体言><係:ガ格><区切:0-0><格要素><連用要素><正規化代表表記:太郎/たろう><主辞代表表記:太郎/たろう>
                    |+ 1D <文頭><人名><ガ><助詞><体言><係:ガ格><区切:0-0><格要素><連用要素><名詞項候補><先行詞候補><SM-人><SM-主体><正規化代表表記:太郎/たろう><NE:PERSON:太郎><照応詞候補:太郎><解析格:ガ><EID:0>
@@ -156,4 +155,24 @@ class KNPAnnotatorTest extends FunSuite {
     knp.getDependencies(input, "s0") should be(expected)
   }
 
+  test("getCaseRelations"){
+    val input = """|# S-ID:1 KNP:4.11-CF1.1 DATE:2015/01/13 SCORE:-7.16850
+                   |* 1D <文頭><人名><ガ><助詞><体言><係:ガ格><区切:0-0><格要素><連用要素><正規化代表表記:太郎/たろう><主辞代表表記:太郎/たろう>
+                   |+ 1D <文頭><人名><ガ><助詞><体言><係:ガ格><区切:0-0><格要素><連用要素><名詞項候補><先行詞候補><SM-人><SM-主体><正規化代表表記:太郎/たろう><NE:PERSON:太郎><照応詞候補:太郎><解析格:ガ><EID:0>
+                   |太郎 たろう 太郎 名詞 6 人名 5 * 0 * 0 "人名:日本:名:45:0.00106 疑似代表表記 代表表記:太郎/たろう" <人名:日本:名:45:0.00106><疑似代表表記><代表表記:太郎/たろう><正規化代表表記:太郎/たろう><文頭><漢字><かな漢字><名詞相当語><自立><内容語><タグ単位始><文節始><固有キー><文節主辞><係:ガ格><NE:PERSON:S>
+                   |が が が 助詞 9 格助詞 1 * 0 * 0 NIL <かな漢字><ひらがな><付属>
+                   |* -1D <文末><時制-過去><句点><用言:動><レベル:C><区切:5-5><ID:（文末）><係:文末><提題受:30><主節><格要素><連用要素><動態述語><正規化代表表記:走る/はしる><主辞代表表記:走る/はしる>
+                   |+ -1D <文末><時制-過去><句点><用言:動><レベル:C><区切:5-5><ID:（文末）><係:文末><提題受:30><主節><格要素><連用要素><動態述語><正規化代表表記:走る/はしる><用言代表表記:走る/はしる><主題格:一人称優位><格関係0:ガ:太郎><格解析結果:走る/はしる:動13:ガ/C/太郎/0/0/1;ヲ/U/-/-/-/-;ニ/U/-/-/-/-;ト/U/-/-/-/-;デ/U/-/-/-/-;カラ/U/-/-/-/-;ヨリ/U/-/-/-/-;マデ/U/-/-/-/-;時間/U/-/-/-/-;外の関係/U/-/-/-/-;ノ/U/-/-/-/-;修飾/U/-/-/-/-;トスル/U/-/-/-/-;ニオク/U/-/-/-/-;ニカンスル/U/-/-/-/-;ニヨル/U/-/-/-/-;ヲフクメル/U/-/-/-/-;ヲハジメル/U/-/-/-/-;ヲノゾク/U/-/-/-/-;ヲツウジル/U/-/-/-/-><EID:1><述語項構造:走る/はしる:動13:ガ/C/太郎/0>
+                   |走った はしった 走る 動詞 2 * 0 子音動詞ラ行 10 タ形 10 "代表表記:走る/はしる" <代表表記:走る/はしる><正規化代表表記:走る/はしる><表現文末><かな漢字><活用語><自立><内容語><タグ単位始><文節始><文節主辞>
+                   |。 。 。 特殊 1 句点 1 * 0 * 0 NIL <文末><英記号><記号><付属>
+                   |EOS
+""".stripMargin.split("\n").toSeq
+
+    val expected = <case_relations><case_relation id="s0_0" head="s0_1" depend="s0_0" label="ガ" flag="C" /><case_relation id="s0_1" head="s0_1" depend="unk" label="ヲ" flag="U" /><case_relation id="s0_2" head="s0_1" depend="unk" label="ニ" flag="U" /><case_relation id="s0_3" head="s0_1" depend="unk" label="ト" flag="U" /><case_relation id="s0_4" head="s0_1" depend="unk" label="デ" flag="U" /><case_relation id="s0_5" head="s0_1" depend="unk" label="カラ" flag="U" /><case_relation id="s0_6" head="s0_1" depend="unk" label="ヨリ" flag="U" /><case_relation id="s0_7" head="s0_1" depend="unk" label="マデ" flag="U" /><case_relation id="s0_8" head="s0_1" depend="unk" label="時間" flag="U" /><case_relation id="s0_9" head="s0_1" depend="unk" label="外の関係" flag="U" /><case_relation id="s0_10" head="s0_1" depend="unk" label="ノ" flag="U" /><case_relation id="s0_11" head="s0_1" depend="unk" label="修飾" flag="U" /><case_relation id="s0_12" head="s0_1" depend="unk" label="トスル" flag="U" /><case_relation id="s0_13" head="s0_1" depend="unk" label="ニオク" flag="U" /><case_relation id="s0_14" head="s0_1" depend="unk" label="ニカンスル" flag="U" /><case_relation id="s0_15" head="s0_1" depend="unk" label="ニヨル" flag="U" /><case_relation id="s0_16" head="s0_1" depend="unk" label="ヲフクメル" flag="U" /><case_relation id="s0_17" head="s0_1" depend="unk" label="ヲハジメル" flag="U" /><case_relation id="s0_18" head="s0_1" depend="unk" label="ヲノゾク" flag="U" /><case_relation id="s0_19" head="s0_1" depend="unk" label="ヲツウジル" flag="U" /></case_relations>
+
+    val knp = new KNPAnnotator("knp", new Properties)
+    val tokens = knp.getTokens(input, "s0")
+    val bps = knp.getBasicPhrases(input, "s0")
+    knp.getCaseRelations(input, tokens, bps, "s0") should be (expected)
+  }
 }
