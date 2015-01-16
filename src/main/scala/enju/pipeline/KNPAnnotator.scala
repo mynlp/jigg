@@ -228,45 +228,47 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
     val sentence_with_tokens = enju.util.XMLUtil.replaceAll(sentence, "tokens")(node => knp_tokens)
     val basic_phrases = getBasicPhrases(knpResult, sid)
     val sentence_with_bps = enju.util.XMLUtil.addChild(sentence_with_tokens, basic_phrases)
-    val sentence_with_chunks = enju.util.XMLUtil.addChild(sentence_with_bps, getChunks(knpResult, sid))
-    val sentence_with_bpdeps = enju.util.XMLUtil.addChild(sentence_with_chunks, getBasicPhraseDependencies(knpResult, sid))
-    val sentence_with_deps = enju.util.XMLUtil.addChild(sentence_with_bpdeps, getDependencies(knpResult, sid))
-    val sentence_with_case_relations = enju.util.XMLUtil.addChild(sentence_with_deps, getCaseRelations(knpResult, knp_tokens, basic_phrases, sid))
+    // val sentence_with_chunks = enju.util.XMLUtil.addChild(sentence_with_bps, getChunks(knpResult, sid))
+    // val sentence_with_bpdeps = enju.util.XMLUtil.addChild(sentence_with_chunks, getBasicPhraseDependencies(knpResult, sid))
+    // val sentence_with_deps = enju.util.XMLUtil.addChild(sentence_with_bpdeps, getDependencies(knpResult, sid))
+    // val sentence_with_case_relations = enju.util.XMLUtil.addChild(sentence_with_deps, getCaseRelations(knpResult, knp_tokens, basic_phrases, sid))
 
-    sentence_with_case_relations
+    // sentence_with_case_relations
+    enju.util.XMLUtil.addChild(sentence_with_bps, <test knpResult={knpResult.mkString("$")} />)
+  }
+
+  def recovJumanOutput(juman_tokens:Node) : Seq[String] = {
+   (juman_tokens \\ "token").map{
+      tok =>
+      val tok_str = (tok \ "@surf") + " " + (tok \ "@reading") + " " + (tok \ "@base") + " " +
+      (tok \ "@pos") + " " + (tok \ "@pos_id") + " " +
+      (tok \ "@pos1") + " " + (tok \ "@pos1_id") + " " +
+      (tok \ "@inflectionType") + " " + (tok \ "@inflectionType_id") + " " +
+      (tok \ "@inflectionForm") + " " + (tok \ "@inflectionForm_id") + " " +
+      "\"" + (tok \ "@features") + "\"\n"
+
+      val token_alt_seq = (tok \ "token_alt")
+
+      if (token_alt_seq.isEmpty){
+        Seq(tok_str)
+      }
+      else{
+        tok_str +: token_alt_seq.map{
+          tok_alt =>
+          "@ " + (tok_alt \ "@surf") + " " + (tok_alt \ "@reading") + " " + (tok_alt \ "@base") + " " +
+          (tok_alt \ "@pos") + " " + (tok_alt \ "@pos_id") + " " +
+          (tok_alt \ "@pos1") + " " + (tok_alt \ "@pos1_id") + " " +
+          (tok_alt \ "@inflectionType") + " " + (tok_alt \ "@inflectionType_id") + " " +
+          (tok_alt \ "@inflectionForm") + " " + (tok_alt \ "@inflectionForm_id") + " " +
+          "\"" + (tok_alt \ "@features") + "\"\n"
+        }
+      }
+    }.foldLeft(List() : List[String])(_ ::: _.toList).toSeq :+ "EOS\n"
   }
 
   override def newSentenceAnnotation(sentence: Node): Node = {
-    def runKNP(tokens:Node): Seq[String] = {
-      // def runKNP(tokens:Node, sindex:String): Seq[String] = {
-      val toks = (tokens \\ "token").map{
-        tok =>
-        val tok_str = (tok \ "@surf") + " " + (tok \ "@reading") + " " + (tok \ "@base") + " " +
-        (tok \ "@pos") + " " + (tok \ "@pos_id") + " " +
-        (tok \ "@pos1") + " " + (tok \ "@pos1_id") + " " +
-        (tok \ "@inflectionType") + " " + (tok \ "@inflectionType_id") + " " +
-        (tok \ "@inflectionForm") + " " + (tok \ "@inflectionForm_id") + " " +
-        "\"" + (tok \ "@features") + "\"\n"
-
-        val token_alt_seq = (tok \ "token_alt")
-
-        if (token_alt_seq.isEmpty){
-          Seq(tok_str)
-        }
-        else{
-          tok_str +: token_alt_seq.map{
-            tok_alt =>
-            "@ " + (tok_alt \ "@surf") + " " + (tok_alt \ "@reading") + " " + (tok_alt \ "@base") + " " +
-            (tok_alt \ "@pos") + " " + (tok_alt \ "@pos_id") + " " +
-            (tok_alt \ "@pos1") + " " + (tok_alt \ "@pos1_id") + " " +
-            (tok_alt \ "@inflectionType") + " " + (tok_alt \ "@inflectionType_id") + " " +
-            (tok_alt \ "@inflectionForm") + " " + (tok_alt \ "@inflectionForm_id") + " " +
-            "\"" + (tok_alt \ "@features") + "\"\n"
-          }
-        }
-      }.foldLeft(List() : List[String])(_ ::: _.toList).toSeq :+ "EOS\n"
-
-      knp_out.write(toks.mkString)
+    def runKNP(juman_tokens:Node): Seq[String] = {
+      knp_out.write(recovJumanOutput(juman_tokens).mkString)
       knp_out.newLine()
       knp_out.flush()
 
@@ -274,7 +276,7 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
     }
 
     val sindex = (sentence \ "@id").toString
-    val juman_tokens = (sentence \\ "tokens").head
+    val juman_tokens = (sentence \ "tokens").head
     val knp_result = runKNP(juman_tokens)
 
     makeXml(sentence, knp_result, sindex)
