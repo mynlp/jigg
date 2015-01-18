@@ -64,8 +64,8 @@ class JumanAnnotator(val name: String, val props: Properties) extends SentencesA
 
 
 
-    def id(sindex: String, tindex: Int) = sindex + "_" + tindex
-    def id_alt(sindex: String, tindex: Int, aindex: Int) = sindex + "_" + tindex + "_" + aindex
+    def tid(sindex: String, tindex: Int) = sindex + "_tok" + tindex
+    def tid_alt(sindex: String, tindex: Int, aindex: Int) = sindex + "_tok" + tindex + "_alt" + aindex
 
     val sindex = (sentence \ "@id").toString
     val text = sentence.text
@@ -116,7 +116,7 @@ class JumanAnnotator(val name: String, val props: Properties) extends SentencesA
 
         val nodes = if (is_ambiguty_token){
           <token_alt
-          id={ id_alt(sindex, tokenIndex, tokenaltIndex) }
+          id={ tid_alt(sindex, tokenIndex, tokenaltIndex) }
           surf={ surf }
           pos={ pos }
           pos1={ pos1 }
@@ -135,7 +135,7 @@ class JumanAnnotator(val name: String, val props: Properties) extends SentencesA
         }
         else{
           <token
-          id={ id(sindex, tokenIndex) }
+          id={ tid(sindex, tokenIndex) }
           surf={ surf }
           pos={ pos }
           pos1={ pos1 }
