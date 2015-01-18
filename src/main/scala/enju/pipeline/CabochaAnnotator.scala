@@ -17,17 +17,17 @@ class CabochaAnnotator(val name: String, val props: Properties) extends Sentence
   lazy private[this] val cabocha_out = new BufferedWriter(new OutputStreamWriter(cabocha_process.getOutputStream, "UTF-8"))
 
   /**
-    * Close the external process and the interface
-    */
+   * Close the external process and the interface
+   */
   override def close() {
     cabocha_out.close()
     cabocha_in.close()
     cabocha_process.destroy()
   }
 
-  private def tid(sindex: String, tindex: String) = sindex + "_" + tindex
-  private def cid(sindex: String, cindex: String) = sindex + "_" + cindex
-  private def did(sindex: String, dindex: String) = sindex + "_" + dindex
+  private def tid(sindex: String, tindex: String) = sindex + "_tok" + tindex
+  private def cid(sindex: String, cindex: String) = sindex + "_chu" + cindex
+  private def did(sindex: String, dindex: String) = sindex + "_dep" + dindex
 
 
   //ununsed
