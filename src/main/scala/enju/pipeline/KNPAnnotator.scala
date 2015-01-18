@@ -13,18 +13,18 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
   val knp_command: String = props.getProperty("knp.command", "knp")
 
   //for KNP 4.12 (-ne option is unneed)
-  lazy private[this] val knp_process = new java.lang.ProcessBuilder(knp_command, "-tab", "-anaphora").start
-  lazy private[this] val knp_in = new BufferedReader(new InputStreamReader(knp_process.getInputStream, "UTF-8"))
-  lazy private[this] val knp_out = new BufferedWriter(new OutputStreamWriter(knp_process.getOutputStream, "UTF-8"))
+  // lazy private[this] val knp_process = new java.lang.ProcessBuilder(knp_command, "-tab", "-anaphora").start
+  // lazy private[this] val knp_in = new BufferedReader(new InputStreamReader(knp_process.getInputStream, "UTF-8"))
+  // lazy private[this] val knp_out = new BufferedWriter(new OutputStreamWriter(knp_process.getOutputStream, "UTF-8"))
 
   /**
     * Close the external process and the interface
     */
-  override def close() {
-    knp_out.close()
-    knp_in.close()
-    knp_process.destroy()
-  }
+  // override def close() {
+  //   knp_out.close()
+  //   knp_in.close()
+  //   knp_process.destroy()
+  // }
 
   def isBasicPhrase(knp_str:String) : Boolean = knp_str(0) == '+'
   def isChunk(knp_str:String) : Boolean = knp_str(0) == '*'
@@ -277,6 +277,10 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
   }
 
   override def newSentenceAnnotation(sentence: Node): Node = {
+  val knp_process = new java.lang.ProcessBuilder(knp_command, "-tab", "-anaphora").start
+ val knp_in = new BufferedReader(new InputStreamReader(knp_process.getInputStream, "UTF-8"))
+val knp_out = new BufferedWriter(new OutputStreamWriter(knp_process.getOutputStream, "UTF-8"))
+
     def runKNP(juman_tokens:Node): Seq[String] = {
       knp_out.write(recovJumanOutput(juman_tokens).mkString)
       knp_out.newLine()
