@@ -1,12 +1,13 @@
 package enju.pipeline
 
-import scala.util.control.Breaks.{break, breakable}
-import scala.xml._
 import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.util.Properties
+import scala.util.control.Breaks.{break, breakable}
+import scala.util.matching.Regex
+import scala.xml._
 
 class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnnotator {
   val knp_command: String = props.getProperty("knp.command", "knp")
@@ -38,6 +39,7 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
   private def bpdid(sindex: String, bpdindex: Int) = sindex + "_bpdep" + bpdindex.toString
   private def depid(sindex: String, depindex: Int) = sindex + "_dep" + depindex.toString
   private def crid(sindex: String, crindex:Int) = sindex + "_cr" + crindex.toString
+  private def corefid(sindex: String, corefindex:Int) = sindex + "_coref" + corefindex.toString
 
   def getTokens(knpResult:Seq[String], sid:String) : Node = {
     var tokenIndex = 0
@@ -226,6 +228,35 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
     <case_relations>{ ans }</case_relations>
   }
 
+  def getCoreferences(bp_xml:NodeSeq, sid:String) : Node = {
+    val eid_hash = scala.collection.mutable.LinkedHashMap[Int, String]()
+
+    (bp_xml \ "basic_phrase").map{
+      bp =>
+      val bpid = (bp \ "@id").toString
+      val feature : String = (bp \ "@features").text
+
+      val pattern = new Regex("""\<EID:(\d+)\>""", "eid")
+      val eid = pattern.findFirstMatchIn(feature).map(m => m.group("eid").toInt).getOrElse(-1)
+
+
+      //eidが存在したら後ろに追加、なければ新しく生成
+      if (eid_hash.contains(eid)){
+        eid_hash(eid) = eid_hash(eid) + " " + bpid
+      }
+      else{
+        eid_hash(eid) = bpid
+      }
+    }
+
+    val ans = eid_hash.map{
+      case (eid, bps) =>
+        <coreference id={corefid(sid, eid)} basic_phrases={bps} />
+    }
+
+    <coreferences>{ ans }</coreferences>
+  }
+
   def makeXml(sentence:Node, knpResult:Seq[String], sid:String) : Node = {
     val knp_tokens = getTokens(knpResult, sid)
     val sentence_with_tokens = enju.util.XMLUtil.replaceAll(sentence, "tokens")(node => knp_tokens)
@@ -235,9 +266,8 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
     val sentence_with_bpdeps = enju.util.XMLUtil.addChild(sentence_with_chunks, getBasicPhraseDependencies(knpResult, sid))
     val sentence_with_deps = enju.util.XMLUtil.addChild(sentence_with_bpdeps, getDependencies(knpResult, sid))
     val sentence_with_case_relations = enju.util.XMLUtil.addChild(sentence_with_deps, getCaseRelations(knpResult, knp_tokens, basic_phrases, sid))
-
-    sentence_with_case_relations
-    // enju.util.XMLUtil.addChild(sentence_with_bps, <test knpResult={knpResult.mkString("$")} />)
+    val sentence_with_coreferences = enju.util.XMLUtil.addChild(sentence_with_case_relations, getCoreferences(basic_phrases, sid))
+    sentence_with_coreferences
   }
 
   def recovJumanOutput(juman_tokens:Node) : Seq[String] = {
@@ -270,9 +300,9 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
   }
 
   override def newSentenceAnnotation(sentence: Node): Node = {
-  val knp_process = new java.lang.ProcessBuilder(knp_command, "-tab", "-anaphora").start
- val knp_in = new BufferedReader(new InputStreamReader(knp_process.getInputStream, "UTF-8"))
-val knp_out = new BufferedWriter(new OutputStreamWriter(knp_process.getOutputStream, "UTF-8"))
+    val knp_process = new java.lang.ProcessBuilder(knp_command, "-tab", "-anaphora").start
+    val knp_in = new BufferedReader(new InputStreamReader(knp_process.getInputStream, "UTF-8"))
+    val knp_out = new BufferedWriter(new OutputStreamWriter(knp_process.getOutputStream, "UTF-8"))
 
     def runKNP(juman_tokens:Node): Seq[String] = {
       knp_out.write(recovJumanOutput(juman_tokens).mkString)
