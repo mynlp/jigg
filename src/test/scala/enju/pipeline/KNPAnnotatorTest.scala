@@ -13,7 +13,7 @@ class KNPAnnotatorTest extends FunSuite {
                    |EOS
 """.stripMargin.split("\n").toSeq
 
-    val expected_tokens = <tokens><token surf="太郎" reading="たろう" base="太郎" pos="名詞" pos_id="6" pos1="人名" pos1_id="5" inflectionType="*" inflectionType_id="0" inflectionForm="*" inflectionForm_id="0" features="人名:日本:名:45:0.00106 疑似代表表記 代表表記:太郎/たろう &lt;人名:日本:名:45:0.00106&gt;&lt;疑似代表表記&gt;&lt;代表表記:太郎/たろう&gt;&lt;正規化代表表記:太郎/たろう&gt;&lt;文頭&gt;&lt;文末&gt;&lt;表現文末&gt;&lt;漢字&gt;&lt;かな漢字&gt;&lt;名詞相当語&gt;&lt;自立&gt;&lt;内容語&gt;&lt;タグ単位始&gt;&lt;文節始&gt;&lt;固有キー&gt;&lt;文節主辞&gt;" id="s0_tok0"/></tokens>
+    val expected_tokens = <tokens><token surf="太郎" reading="たろう" base="太郎" pos="名詞" pos_id="6" pos1="人名" pos1_id="5" inflectionType="*" inflectionType_id="0" inflectionForm="*" inflectionForm_id="0" features="&quot;人名:日本:名:45:0.00106 疑似代表表記 代表表記:太郎/たろう&quot; &lt;人名:日本:名:45:0.00106&gt;&lt;疑似代表表記&gt;&lt;代表表記:太郎/たろう&gt;&lt;正規化代表表記:太郎/たろう&gt;&lt;文頭&gt;&lt;文末&gt;&lt;表現文末&gt;&lt;漢字&gt;&lt;かな漢字&gt;&lt;名詞相当語&gt;&lt;自立&gt;&lt;内容語&gt;&lt;タグ単位始&gt;&lt;文節始&gt;&lt;固有キー&gt;&lt;文節主辞&gt;" id="s0_tok0"/></tokens>
 
     val knp = new KNPAnnotator("knp", new Properties)
 
@@ -397,21 +397,30 @@ class KNPAnnotatorTest extends FunSuite {
 
   test("getNamedEntities 2"){
     val input = """|# S-ID:1 KNP:4.12-CF1.1 DATE:2015/01/20 SCORE:-7.16850
-|* 1D <文頭><人名><ガ><助詞><体言><係:ガ格><区切:0-0><格要素><連用要素><正規化代表表記:太郎/たろう><主辞代表表記:太郎/たろう>
-|+ 1D <文頭><人名><ガ><助詞><体言><係:ガ格><区切:0-0><格要素><連用要素><名詞項候補><先行詞候補><SM-人><SM-主体><正規化代表表記:太郎/たろう><NE:PERSON:太郎><照応詞候補:太郎><解析格:ガ><EID:0>
-|太郎 たろう 太郎 名詞 6 人名 5 * 0 * 0 "人名:日本:名:45:0.00106 疑似代表表記 代表表記:太郎/たろう" <人名:日本:名:45:0.00106><疑似代表表記><代表表記:太郎/たろう><正規化代表表記:太郎/たろう><文頭><漢字><かな漢字><名詞相当語><自立><内容語><タグ単位始><文節始><固有キー><文節主辞><係:ガ格><NE:PERSON:S>
-|が が が 助詞 9 格助詞 1 * 0 * 0 NIL <かな漢字><ひらがな><付属>
-|* -1D <文末><時制-過去><句点><用言:動><レベル:C><区切:5-5><ID:（文末）><係:文末><提題受:30><主節><格要素><連用要素><動態述語><正規化代表表記:走る/はしる><主辞代表表記:走る/はしる>
-|+ -1D <文末><時制-過去><句点><用言:動><レベル:C><区切:5-5><ID:（文末）><係:文末><提題受:30><主節><格要素><連用要素><動態述語><正規化代表表記:走る/はしる><用言代表表記:走る/はしる><主題格:一人称優位><格関係0:ガ:太郎><格解析結果:走る/はしる:動13:ガ/C/太郎/0/0/1;ヲ/U/-/-/-/-;ニ/U/-/-/-/-;ト/U/-/-/-/-;デ/U/-/-/-/-;カラ/U/-/-/-/-;ヨリ/U/-/-/-/-;マデ/U/-/-/-/-;時間/U/-/-/-/-;外の関係/U/-/-/-/-;ノ/U/-/-/-/-;修飾/U/-/-/-/-;トスル/U/-/-/-/-;ニオク/U/-/-/-/-;ニカンスル/U/-/-/-/-;ニヨル/U/-/-/-/-;ヲフクメル/U/-/-/-/-;ヲハジメル/U/-/-/-/-;ヲノゾク/U/-/-/-/-;ヲツウジル/U/-/-/-/-><EID:1><述語項構造:走る/はしる:動13:ガ/C/太郎/0>
-|走った はしった 走る 動詞 2 * 0 子音動詞ラ行 10 タ形 10 "代表表記:走る/はしる" <代表表記:走る/はしる><正規化代表表記:走る/はしる><表現文末><かな漢字><活用語><自立><内容語><タグ単位始><文節始><文節主辞>
-|。 。 。 特殊 1 句点 1 * 0 * 0 NIL <文末><英記号><記号><付属>
-|EOS
+                   |* 1D <文頭><人名><ガ><助詞><体言><係:ガ格><区切:0-0><格要素><連用要素><正規化代表表記:太郎/たろう><主辞代表表記:太郎/たろう>
+                   |+ 1D <文頭><人名><ガ><助詞><体言><係:ガ格><区切:0-0><格要素><連用要素><名詞項候補><先行詞候補><SM-人><SM-主体><正規化代表表記:太郎/たろう><NE:PERSON:太郎><照応詞候補:太郎><解析格:ガ><EID:0>
+                   |太郎 たろう 太郎 名詞 6 人名 5 * 0 * 0 "人名:日本:名:45:0.00106 疑似代表表記 代表表記:太郎/たろう" <人名:日本:名:45:0.00106><疑似代表表記><代表表記:太郎/たろう><正規化代表表記:太郎/たろう><文頭><漢字><かな漢字><名詞相当語><自立><内容語><タグ単位始><文節始><固有キー><文節主辞><係:ガ格><NE:PERSON:S>
+                   |が が が 助詞 9 格助詞 1 * 0 * 0 NIL <かな漢字><ひらがな><付属>
+                   |* -1D <文末><時制-過去><句点><用言:動><レベル:C><区切:5-5><ID:（文末）><係:文末><提題受:30><主節><格要素><連用要素><動態述語><正規化代表表記:走る/はしる><主辞代表表記:走る/はしる>
+                   |+ -1D <文末><時制-過去><句点><用言:動><レベル:C><区切:5-5><ID:（文末）><係:文末><提題受:30><主節><格要素><連用要素><動態述語><正規化代表表記:走る/はしる><用言代表表記:走る/はしる><主題格:一人称優位><格関係0:ガ:太郎><格解析結果:走る/はしる:動13:ガ/C/太郎/0/0/1;ヲ/U/-/-/-/-;ニ/U/-/-/-/-;ト/U/-/-/-/-;デ/U/-/-/-/-;カラ/U/-/-/-/-;ヨリ/U/-/-/-/-;マデ/U/-/-/-/-;時間/U/-/-/-/-;外の関係/U/-/-/-/-;ノ/U/-/-/-/-;修飾/U/-/-/-/-;トスル/U/-/-/-/-;ニオク/U/-/-/-/-;ニカンスル/U/-/-/-/-;ニヨル/U/-/-/-/-;ヲフクメル/U/-/-/-/-;ヲハジメル/U/-/-/-/-;ヲノゾク/U/-/-/-/-;ヲツウジル/U/-/-/-/-><EID:1><述語項構造:走る/はしる:動13:ガ/C/太郎/0>
+                   |走った はしった 走る 動詞 2 * 0 子音動詞ラ行 10 タ形 10 "代表表記:走る/はしる" <代表表記:走る/はしる><正規化代表表記:走る/はしる><表現文末><かな漢字><活用語><自立><内容語><タグ単位始><文節始><文節主辞>
+                   |。 。 。 特殊 1 句点 1 * 0 * 0 NIL <文末><英記号><記号><付属>
+                   |EOS
 """.stripMargin.split("\n").toSeq
 
     val expected = <named_entities><named_entity id="s0_ne0" tokens="s0_tok0" label="PERSON" /></named_entities>
 
     val knp = new KNPAnnotator("knp", new Properties)
     knp.getNamedEntities(input, "s0") should be (expected)
+  }
+
+  test("recovJumanOutput"){
+    val juman_tokens = <tokens><token features="&quot;人名:日本:名:45:0.00106&quot;" inflectionForm_id="0" inflectionType_id="0" pos1_id="5" pos_id="6" reading="たろう" base="太郎" inflectionForm="*" inflectionType="*" pos1="人名" pos="名詞" surf="太郎" id="s0_tok0"/><token features="NIL" inflectionForm_id="0" inflectionType_id="0" pos1_id="1" pos_id="9" reading="が" base="が" inflectionForm="*" inflectionType="*" pos1="格助詞" pos="助詞" surf="が" id="s0_tok1"/><token features="&quot;代表表記:本/ほん 漢字読み:音 カテゴリ:人工物-その他;抽象物&quot;" inflectionForm_id="0" inflectionType_id="0" pos1_id="1" pos_id="6" reading="ほん" base="本" inflectionForm="*" inflectionType="*" pos1="普通名詞" pos="名詞" surf="本" id="s0_tok2"/><token features="NIL" inflectionForm_id="0" inflectionType_id="0" pos1_id="1" pos_id="9" reading="を" base="を" inflectionForm="*" inflectionType="*" pos1="格助詞" pos="助詞" surf="を" id="s0_tok3"/><token features="&quot;代表表記:買う/かう ドメイン:家庭・暮らし;ビジネス 反義:動詞:売る/うる&quot;" inflectionForm_id="10" inflectionType_id="12" pos1_id="0" pos_id="2" reading="かった" base="買う" inflectionForm="タ形" inflectionType="子音動詞ワ行" pos1="*" pos="動詞" surf="買った" id="s0_tok4"/></tokens>
+
+    val expected = Seq("太郎 たろう 太郎 名詞 6 人名 5 * 0 * 0 \"人名:日本:名:45:0.00106\"\n", "が が が 助詞 9 格助詞 1 * 0 * 0 NIL\n", "本 ほん 本 名詞 6 普通名詞 1 * 0 * 0 \"代表表記:本/ほん 漢字読み:音 カテゴリ:人工物-その他;抽象物\"\n", "を を を 助詞 9 格助詞 1 * 0 * 0 NIL\n", "買った かった 買う 動詞 2 * 0 子音動詞ワ行 12 タ形 10 \"代表表記:買う/かう ドメイン:家庭・暮らし;ビジネス 反義:動詞:売る/うる\"\n", "EOS\n")
+
+    val knp = new KNPAnnotator("knp", new Properties)
+    knp.recovJumanOutput(juman_tokens) should be (expected)
   }
 
 }

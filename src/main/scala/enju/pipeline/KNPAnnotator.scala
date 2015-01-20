@@ -61,7 +61,7 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
       val inflectionType_id = tok(8)
       val inflectionForm    = tok(9)
       val inflectionForm_id = tok(10)
-      val features          = tok.drop(11).mkString(" ").filter(ch => ch != '"')
+      val features          = tok.drop(11).mkString(" ")
       val pos2           = None
       val pos3           = None
       val pronounce      = None
@@ -324,10 +324,7 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
       }
     }
 
-    if(last_BIES == "S"){
-      ans = ans :+ <named_entity id={neid(sid, ne_ind)} tokens={temp_tokens.mkString(" ")} label={temp_label} />
-    }
-    else if(last_BIES == "E"){
+    if(last_BIES == "S" || (last_BIES == "E")){
       ans = ans :+ <named_entity id={neid(sid, ne_ind)} tokens={temp_tokens.mkString(" ")} label={temp_label} />
     }
 
@@ -358,7 +355,7 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
       (tok \ "@pos1") + " " + (tok \ "@pos1_id") + " " +
       (tok \ "@inflectionType") + " " + (tok \ "@inflectionType_id") + " " +
       (tok \ "@inflectionForm") + " " + (tok \ "@inflectionForm_id") + " " +
-      "\"" + (tok \ "@features") + "\"\n"
+        (tok \ "@features").text + "\n"
 
       val token_alt_seq = (tok \ "token_alt")
 
@@ -373,7 +370,7 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
           (tok_alt \ "@pos1") + " " + (tok_alt \ "@pos1_id") + " " +
           (tok_alt \ "@inflectionType") + " " + (tok_alt \ "@inflectionType_id") + " " +
           (tok_alt \ "@inflectionForm") + " " + (tok_alt \ "@inflectionForm_id") + " " +
-          "\"" + (tok_alt \ "@features") + "\"\n"
+            (tok \ "@features").text + "\n"
         }
       }
     }.foldLeft(List() : List[String])(_ ::: _.toList).toSeq :+ "EOS\n"
