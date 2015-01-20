@@ -41,6 +41,7 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
   private def crid(sindex: String, crindex:Int) = sindex + "_cr" + crindex.toString
   private def corefid(sindex: String, corefindex:Int) = sindex + "_coref" + corefindex.toString
   private def parid(sindex: String, parindex:Int) = sindex + "_par" + parindex.toString
+  private def neid(sindex: String, neindex:Int) = sindex + "_ne" + neindex.toString
 
   def getTokens(knpResult:Seq[String], sid:String) : Node = {
     var tokenIndex = 0
@@ -288,7 +289,48 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
     <predicate_argument_relations>{ ans }</predicate_argument_relations>
   }
 
+  def getNamedEntities(knpResult:Seq[String], sid:String) : Node = {
+    var ne_ind = 0
+    var last_BIES = "N" //for convenience, use "N" as non-tag of "B/I/E/S"
+    var temp_tokens : Seq[String] = Seq()
+    var temp_label = ""
 
+    val pattern = new Regex("""\<NE:([A-Z]+):([BIES])\>""", "re_label", "re_BIES")
+    var ans = NodeSeq.fromSeq(Seq())
+
+    for (tpl <- knpResult.filter(knp_str => isToken(knp_str)).zipWithIndex){
+      val knp_str = tpl._1
+      val tok_ind = tpl._2
+      val (re_label, re_BIES) = pattern.findFirstMatchIn(knp_str).map(m => (m.group("re_label"), m.group("re_BIES"))).getOrElse(("", "N"))
+
+      if ((last_BIES == "N" && re_BIES == "B") || (last_BIES == "N" && re_BIES == "S")){
+        last_BIES = re_BIES
+        temp_tokens = temp_tokens :+ tid(sid, tok_ind)
+        temp_label = re_label
+      }
+      else if((last_BIES == "S" && re_BIES == "N") || (last_BIES == "B" && re_BIES == "N") || (last_BIES == "E" && re_BIES == "N")){
+        ans = ans :+ <named_entity id={neid(sid, ne_ind)} tokens={temp_tokens.mkString(" ")} label={temp_label} />
+
+        last_BIES = re_BIES
+        ne_ind += 1
+        temp_tokens = Seq()
+        temp_label = ""
+      }
+      else if((last_BIES == "B" && re_BIES == "I") || (last_BIES == "B" && re_BIES == "E") || (last_BIES == "I" && re_BIES == "E")){
+        last_BIES = re_BIES
+        temp_tokens = temp_tokens :+ tid(sid, tok_ind)
+      }
+    }
+
+    if(last_BIES == "S"){
+      ans = ans :+ <named_entity id={neid(sid, ne_ind)} tokens={temp_tokens.mkString(" ")} label={temp_label} />
+    }
+    else if(last_BIES == "E"){
+      ans = ans :+ <named_entity id={neid(sid, ne_ind)} tokens={temp_tokens.mkString(" ")} label={temp_label} />
+    }
+
+    <named_entities>{ ans }</named_entities>
+  }
 
   def makeXml(sentence:Node, knpResult:Seq[String], sid:String) : Node = {
     val knp_tokens = getTokens(knpResult, sid)
@@ -300,9 +342,10 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
     val sentence_with_deps = enju.util.XMLUtil.addChild(sentence_with_bpdeps, getDependencies(knpResult, sid))
     val sentence_with_case_relations = enju.util.XMLUtil.addChild(sentence_with_deps, getCaseRelations(knpResult, knp_tokens, basic_phrases, sid))
     val sentence_with_coreferences = enju.util.XMLUtil.addChild(sentence_with_case_relations, getCoreferences(basic_phrases, sid))
-    sentence_with_coreferences
+    val sentence_with_predicate_argument = enju.util.XMLUtil.addChild(sentence_with_coreferences, getPredicateArgumentRelations(knpResult, sid))
+    val sentence_with_named_entity = enju.util.XMLUtil.addChild(sentence_with_predicate_argument, getNamedEntities(knpResult, sid))
 
-    enju.util.XMLUtil.addChild(sentence_with_coreferences, getPredicateArgumentRelations(knpResult, sid))
+    sentence_with_named_entity
   }
 
   def recovJumanOutput(juman_tokens:Node) : Seq[String] = {
@@ -354,5 +397,5 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
   }
 
   override def requires = Set(Annotator.JaTokenize)
-  override def requirementsSatisfied = Set(Annotator.JaChunk, Annotator.JaDependency)
+  override def requirementsSatisfied = Set(Annotator.JaChunk, Annotator.JaDependency, Annotator.NamedEntity)
 }
