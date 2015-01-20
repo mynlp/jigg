@@ -6,7 +6,7 @@ import scala.io.Source
 import scala.xml.{XML, Node}
 import jp.jigg.util.LogUtil.{ track, multipleTrack }
 
-class Pipeline(val props: Properties) {
+class Pipeline(val props: Properties = new Properties) {
 
   // TODO: sort by resolving dependencies
   val annotatorNames = props.getProperty("annotators").split("""[,\s]+""")
@@ -47,7 +47,7 @@ class Pipeline(val props: Properties) {
     val fn = props.getProperty("file")
     val root = fn match {
       case null => sys.error("file property should be given.")
-      case fn => initializeXML(jp.jigg.util.IOUtil.openIterator(fn).mkString("\n"))
+      case fn => Pipeline.xml(jp.jigg.util.IOUtil.openIterator(fn).mkString("\n"))
     }
 
     val xml = multipleTrack("Annotating %s with %s".format(fn, annotatorNames.mkString(", "))) {
@@ -79,14 +79,15 @@ class Pipeline(val props: Properties) {
     }
     var in = readLine
     try while (in != "") {
-      val xml = annotate(initializeXML(in), annotators)
+      val xml = annotate(Pipeline.xml(in), annotators)
       val printer = new scala.xml.PrettyPrinter(500, 2)
       println(printer.format(xml))
       in = readLine
     } finally close(annotators)
   }
 
-  def initializeXML(raw: String) = <root><document>{ raw }</document></root>
+  def annotate(root: Node): Node = annotate(root, createAnnotators)
+  def annotate(input: String): Node = annotate(Pipeline.xml(input), createAnnotators)
 
   def annotate(root: Node, annotators: List[Annotator], verbose: Boolean = false): Node = {
     def annotateRecur(input: Node, unprocessed: List[Annotator]): Node = unprocessed match {
@@ -112,4 +113,5 @@ object Pipeline {
       case _ => pipeline.run
     }
   }
+  def xml(raw: String) = <root><document>{ raw }</document></root>
 }
