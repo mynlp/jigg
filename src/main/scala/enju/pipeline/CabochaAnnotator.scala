@@ -99,7 +99,6 @@ class CabochaAnnotator(val name: String, val props: Properties) extends Sentence
       } :+ "EOS\n"
 
       cabocha_out.write(toks.mkString)
-      cabocha_out.newLine()
       cabocha_out.flush()
 
       Iterator.continually(cabocha_in.readLine()).takeWhile(_ != "</sentence>").toSeq :+ "</sentence>"
