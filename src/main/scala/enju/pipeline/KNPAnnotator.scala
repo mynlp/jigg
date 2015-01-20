@@ -40,6 +40,7 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
   private def depid(sindex: String, depindex: Int) = sindex + "_dep" + depindex.toString
   private def crid(sindex: String, crindex:Int) = sindex + "_cr" + crindex.toString
   private def corefid(sindex: String, corefindex:Int) = sindex + "_coref" + corefindex.toString
+  private def parid(sindex: String, parindex:Int) = sindex + "_par" + parindex.toString
 
   def getTokens(knpResult:Seq[String], sid:String) : Node = {
     var tokenIndex = 0
@@ -241,8 +242,6 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
       val pattern = new Regex("""\<EID:(\d+)\>""", "eid")
       val eid = pattern.findFirstMatchIn(feature).map(m => m.group("eid").toInt).getOrElse(-1)
 
-
-      //eidが存在したら後ろに追加、なければ新しく生成
       if (eid_hash.contains(eid)){
         eid_hash(eid) = eid_hash(eid) + " " + bpid
       }
@@ -259,6 +258,40 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
     <coreferences>{ ans }</coreferences>
   }
 
+  def getPredicateArgumentRelations(knpResult:Seq[String], sid:String) : Node = {
+    var par_ind = 0
+
+    //<述語項構造:飲む/のむ:動1:ガ/N/麻生太郎/1;ヲ/C/コーヒー/2>
+    val pattern = new Regex("""\<述語項構造:[^:]+:[^:]+:(.+)\>""", "args")
+
+    val ans = knpResult.filter(knp_str => isBasicPhrase(knp_str)).zipWithIndex.filter(tpl => tpl._1.contains("<述語項構造:")).map{
+      tpl =>
+      val knp_str = tpl._1
+      val bp_ind = tpl._2
+
+      val args_opt = pattern.findFirstMatchIn(knp_str).map(m => m.group("args"))
+      args_opt.map{
+        args =>
+        args.split(";").map{
+          arg =>
+          val sp = arg.split("/")
+          val label = sp(0)
+          val flag = sp(1)
+          //val name = sp(2)
+          val eid = sp(3).toInt
+
+          val ans = <predicate_argument_relation id={parid(sid, par_ind)} predicate={bpid(sid, bp_ind)} argument={corefid(sid, eid)} label={label} flag={flag} />
+          par_ind += 1
+          ans
+        }
+      }.getOrElse(NodeSeq.fromSeq(Seq()))
+    }
+
+    <predicate_argument_relations>{ ans }</predicate_argument_relations>
+  }
+
+
+
   def makeXml(sentence:Node, knpResult:Seq[String], sid:String) : Node = {
     val knp_tokens = getTokens(knpResult, sid)
     val sentence_with_tokens = enju.util.XMLUtil.replaceAll(sentence, "tokens")(node => knp_tokens)
@@ -270,6 +303,8 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
     val sentence_with_case_relations = enju.util.XMLUtil.addChild(sentence_with_deps, getCaseRelations(knpResult, knp_tokens, basic_phrases, sid))
     val sentence_with_coreferences = enju.util.XMLUtil.addChild(sentence_with_case_relations, getCoreferences(basic_phrases, sid))
     sentence_with_coreferences
+
+    enju.util.XMLUtil.addChild(sentence_with_coreferences, getPredicateArgumentRelations(knpResult, sid))
   }
 
   def recovJumanOutput(juman_tokens:Node) : Seq[String] = {
