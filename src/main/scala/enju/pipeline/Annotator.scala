@@ -24,6 +24,7 @@ object Annotator {
   case object JaChunk extends Requirement
   case object JaDependency extends Requirement
   case object JaCCG extends Requirement
+  case object NamedEntity extends Requirement
 }
 
 /** A trait for an annotator which modifies a sentence node. If an annotator is sentence-level
