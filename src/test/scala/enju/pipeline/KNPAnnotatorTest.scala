@@ -131,7 +131,6 @@ class KNPAnnotatorTest extends FunSuite {
 
     val expected = <basic_phrase_dependencies root="s0_bp1"><basic_phrase_dependency id="s0_bpdep0" head="s0_bp1" dependent="s0_bp0" label="D"/></basic_phrase_dependencies>
 
-
     val knp = new KNPAnnotator("knp", new Properties)
     knp.getBasicPhraseDependencies(input, "s0") should be(expected)
   }

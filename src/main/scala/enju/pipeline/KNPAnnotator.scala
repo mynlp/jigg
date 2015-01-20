@@ -94,7 +94,6 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
     val basic_phrases_num = knpResult.filter(str => isBasicPhrase(str)).length
     val knp_result_rev = knpResult.reverse
 
-
     var bp_ind = basic_phrases_num - 1
     var tok_ind = knpResult.filter(str => isToken(str)).length - 1
     var tokenIDs : List[String] = List()
@@ -152,7 +151,6 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
     val bpdep_num = bpdep_strs.length
     var bpd_ind = 0
 
-
     // init: remove the last dependency (+ -1D ...)
     val dpd_xml = bpdep_strs.init.map{
       bpdep_str =>
@@ -174,7 +172,6 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
     val dep_strs = knpResult.filter(knp_str => isChunk(knp_str))
     val dep_num = dep_strs.length
     var dep_ind = 0
-
 
     // init: remove the last dependency (* -1D ...)
     val dep_xml = dep_strs.init.map{
