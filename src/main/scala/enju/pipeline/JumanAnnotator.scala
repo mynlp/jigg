@@ -17,8 +17,8 @@ class JumanAnnotator(val name: String, val props: Properties) extends SentencesA
 
 
   /**
-   * Close the external process and the interface
-   */
+    * Close the external process and the interface
+    */
   override def close() {
     juman_out.close()
     juman_in.close()
@@ -83,7 +83,7 @@ class JumanAnnotator(val name: String, val props: Properties) extends SentencesA
       tokens.filter(s => s != "EOS").map{
         tokenized =>
         val is_ambiguty_token = (tokenized.head == '@')
-          val tokenized_features = if (is_ambiguty_token) tokenized.drop(2).split(" ") else tokenized.split(" ") //drop "@ "
+        val tokenized_features = if (is_ambiguty_token) tokenized.drop(2).split(" ") else tokenized.split(" ") //drop "@ "
 
         val surf              = tokenized_features(0)
         val reading           = tokenized_features(1)
@@ -131,7 +131,7 @@ class JumanAnnotator(val name: String, val props: Properties) extends SentencesA
           pos1_id={ pos1_id }
           inflectionType_id={ inflectionType_id }
           inflectionForm_id={ inflectionForm_id }
-          features={ if (features == "NIL") features else features.init.tail }/> // remove quotation marks
+          features={ features }/> // For easy recoverment of the result of Juman, don't remove quotation marks
         }
         else{
           <token
@@ -150,7 +150,7 @@ class JumanAnnotator(val name: String, val props: Properties) extends SentencesA
           pos1_id={ pos1_id }
           inflectionType_id={ inflectionType_id }
           inflectionForm_id={ inflectionForm_id }
-          features={ if (features == "NIL") features else features.init.tail }/> // remove quotation marks
+          features={ features }/> // For easy recoverment of the result of Juman, don't remove quotation marks
         }
 
         nodes
