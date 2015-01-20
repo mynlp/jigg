@@ -341,7 +341,6 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
 
     def runKNP(juman_tokens:Node): Seq[String] = {
       knp_out.write(recovJumanOutput(juman_tokens).mkString)
-      knp_out.newLine()
       knp_out.flush()
 
       Iterator.continually(knp_in.readLine()).takeWhile(_ != "EOS").toSeq :+ "EOS"
