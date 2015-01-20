@@ -2,6 +2,7 @@ package jp.jigg.util
 
 import scala.xml._
 import scala.xml.transform.{RewriteRule, RuleTransformer}
+import scala.collection.JavaConversions._
 
 object XMLUtil {
   def addChild(n: Node, newChild: NodeSeq): Node = n match {
@@ -29,4 +30,9 @@ object XMLUtil {
     case t: Atom[_] => Text("")
     case other => other
   }))
+
+  def find(node: Node, that: String): Node = (node \ that)(0)
+  def findAll(node: Node, that: String): java.util.List[Node] = node \ that
+  def findSub(node: Node, that: String): Node = (node \\ that)(0)
+  def findAllSub(node: Node, that: String): java.util.List[Node] = node \\ that
 }
