@@ -25,9 +25,9 @@ class CabochaAnnotator(val name: String, val props: Properties) extends Sentence
     cabocha_process.destroy()
   }
 
-  private def tid(sindex: String, tindex: String) = sindex + "_t" + tindex
-  private def cid(sindex: String, cindex: String) = sindex + "_c" + cindex
-  private def did(sindex: String, dindex: String) = sindex + "_d" + dindex
+  private def tid(sindex: String, tindex: String) = sindex + "_tok" + tindex
+  private def cid(sindex: String, cindex: String) = sindex + "_chu" + cindex
+  private def did(sindex: String, dindex: String) = sindex + "_dep" + dindex
 
 
   //ununsed
@@ -46,7 +46,7 @@ class CabochaAnnotator(val name: String, val props: Properties) extends Sentence
     val nodeSeq = (xml \\ "chunk").map{
       chunk =>
       val c_id = cid(sid, (chunk \ "@id").toString)
-      val c_tokens = (chunk \ "tok").map(tok => tid(sid, (tok \ "@id").toString)).mkString(",")
+      val c_tokens = (chunk \ "tok").map(tok => tid(sid, (tok \ "@id").toString)).mkString(" ")
       val c_head = tid(sid, (chunk \ "@head").toString)
       val c_func = tid(sid, (chunk \ "@func").toString)
       <chunk id={ c_id } tokens={ c_tokens } head={ c_head } func = {c_func} />
@@ -99,7 +99,6 @@ class CabochaAnnotator(val name: String, val props: Properties) extends Sentence
       } :+ "EOS\n"
 
       cabocha_out.write(toks.mkString)
-      cabocha_out.newLine()
       cabocha_out.flush()
 
       Iterator.continually(cabocha_in.readLine()).takeWhile(_ != "</sentence>").toSeq :+ "</sentence>"
