@@ -57,19 +57,14 @@ class JumanAnnotator(val name: String, val props: Properties) extends SentencesA
       juman_out.write(text)
       juman_out.newLine()
       juman_out.flush()
-
-      Iterator.continually(juman_in.readLine()).takeWhile {line => line != null && line != "EOS"}.toSeq
+      Iterator.continually(juman_in.readLine()).takeWhile{line => line != null && line != "EOS"}.toSeq
     }
 
-
-
-
-    def tid(sindex: String, tindex: Int) = sindex + "_tok" + tindex
-    def tid_alt(sindex: String, tindex: Int, aindex: Int) = sindex + "_tok" + tindex + "_alt" + aindex
-
     val sindex = (sentence \ "@id").toString
+    def tid(tindex: Int) = sindex + "_tok" + tindex
+    def tid_alt(tindex: Int, aindex: Int) = tid(tindex) + "_alt" + aindex
+
     val text = sentence.text
-    val tokens = runJuman(text).map{str => str.replace("\t", ",")}
 
     //Before tokenIndex is substituted, it will be added 1. So, the first tokenIndex is 0.
     var tokenIndex = -1
@@ -80,30 +75,30 @@ class JumanAnnotator(val name: String, val props: Properties) extends SentencesA
     //表層形 読み 原形 品詞 n 品詞細分類1 n 活用型 n 活用形 n 意味情報
 
     val tokenNodes =
-      tokens.filter(s => s != "EOS").map{
+      runJuman(text).filter(s => s != "EOS").map{
         tokenized =>
-        val is_ambiguty_token = (tokenized.head == '@')
-        val tokenized_features = if (is_ambiguty_token) tokenized.drop(2).split(" ") else tokenized.split(" ") //drop "@ "
+        val isAmbiguityToken = (tokenized.head == '@')
+        val tokenizedFeatures = if (isAmbiguityToken) tokenized.drop(2).split(" ") else tokenized.split(" ") //drop "@ "
 
-        val surf              = tokenized_features(0)
-        val reading           = tokenized_features(1)
-        val base              = tokenized_features(2)
-        val pos               = tokenized_features(3)
-        val pos_id            = tokenized_features(4)
-        val pos1              = tokenized_features(5)
-        val pos1_id           = tokenized_features(6)
-        val inflectionType    = tokenized_features(7)
-        val inflectionType_id = tokenized_features(8)
-        val inflectionForm    = tokenized_features(9)
-        val inflectionForm_id = tokenized_features(10)
-        val features          = tokenized_features.drop(11).mkString(" ") // avoid splitting features with " "
+        val surf             = tokenizedFeatures(0)
+        val reading          = tokenizedFeatures(1)
+        val base             = tokenizedFeatures(2)
+        val pos              = tokenizedFeatures(3)
+        val posID            = tokenizedFeatures(4)
+        val pos1             = tokenizedFeatures(5)
+        val pos1ID           = tokenizedFeatures(6)
+        val inflectionType   = tokenizedFeatures(7)
+        val inflectionTypeID = tokenizedFeatures(8)
+        val inflectionForm   = tokenizedFeatures(9)
+        val inflectionFormID = tokenizedFeatures(10)
+        val features         = tokenizedFeatures.drop(11).mkString(" ") // avoid splitting features with " "
 
 
         val pos2           = None
         val pos3           = None
         val pronounce      = None
 
-        if (is_ambiguty_token){
+        if (isAmbiguityToken){
           tokenaltIndex += 1
         }
         else{
@@ -114,9 +109,9 @@ class JumanAnnotator(val name: String, val props: Properties) extends SentencesA
         }
 
 
-        val nodes = if (is_ambiguty_token){
+        val nodes = if (isAmbiguityToken){
           <token_alt
-          id={ tid_alt(sindex, tokenIndex, tokenaltIndex) }
+          id={ tid_alt(tokenIndex, tokenaltIndex) }
           surf={ surf }
           pos={ pos }
           pos1={ pos1 }
@@ -127,15 +122,15 @@ class JumanAnnotator(val name: String, val props: Properties) extends SentencesA
           base={ base }
           reading={ reading }
           pronounce={ pronounce }
-          pos_id={ pos_id }
-          pos1_id={ pos1_id }
-          inflectionType_id={ inflectionType_id }
-          inflectionForm_id={ inflectionForm_id }
+          pos_id={ posID }
+          pos1_id={ pos1ID }
+          inflectionType_id={ inflectionTypeID }
+          inflectionForm_id={ inflectionFormID }
           features={ features }/> // For easy recoverment of the result of Juman, don't remove quotation marks
         }
         else{
           <token
-          id={ tid(sindex, tokenIndex) }
+          id={ tid(tokenIndex) }
           surf={ surf }
           pos={ pos }
           pos1={ pos1 }
@@ -146,10 +141,10 @@ class JumanAnnotator(val name: String, val props: Properties) extends SentencesA
           base={ base }
           reading={ reading }
           pronounce={ pronounce }
-          pos_id={ pos_id }
-          pos1_id={ pos1_id }
-          inflectionType_id={ inflectionType_id }
-          inflectionForm_id={ inflectionForm_id }
+          pos_id={ posID }
+          pos1_id={ pos1ID }
+          inflectionType_id={ inflectionTypeID }
+          inflectionForm_id={ inflectionFormID }
           features={ features }/> // For easy recoverment of the result of Juman, don't remove quotation marks
         }
 
