@@ -43,7 +43,7 @@ class MecabAnnotator(val name: String, val props: Properties) extends SentencesA
     }
 
 
-    def id(sindex: String, tindex: Int) = sindex + "_" + tindex
+    def tid(sindex: String, tindex: Int) = sindex + "_tok" + tindex
 
     val sindex = (sentence \ "@id").toString
     val text = sentence.text
@@ -72,7 +72,7 @@ class MecabAnnotator(val name: String, val props: Properties) extends SentencesA
 
         //TODO ordering attribute
         val nodes = <token
-        id={ id(sindex, tokenIndex) }
+        id={ tid(sindex, tokenIndex) }
         surf={ surf }
         pos={ pos }
         pos1={ pos1 }
