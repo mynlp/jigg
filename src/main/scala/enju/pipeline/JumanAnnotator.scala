@@ -103,41 +103,23 @@ class JumanAnnotator(val name: String, val props: Properties) extends SentencesA
           tokenaltIndex = -1
         }
 
+        val id = if (isAmbiguityToken) tid_alt(tokenIndex, tokenaltIndex) else tid(tokenIndex)
+        val token = <token
+        id={ id }
+        surf={ surf }
+        pos={ pos }
+        pos1={ pos1 }
+        inflectionType={ inflectionType }
+        inflectionForm={ inflectionForm }
+        base={ base }
+        reading={ reading }
+        pos_id={ posID }
+        pos1_id={ pos1ID }
+        inflectionType_id={ inflectionTypeID }
+        inflectionForm_id={ inflectionFormID }
+        features={ features }/> // For easy recoverment of the result of Juman, don't remove quotation marks
 
-        val nodes = if (isAmbiguityToken){
-          <token_alt
-          id={ tid_alt(tokenIndex, tokenaltIndex) }
-          surf={ surf }
-          pos={ pos }
-          pos1={ pos1 }
-          inflectionType={ inflectionType }
-          inflectionForm={ inflectionForm }
-          base={ base }
-          reading={ reading }
-          pos_id={ posID }
-          pos1_id={ pos1ID }
-          inflectionType_id={ inflectionTypeID }
-          inflectionForm_id={ inflectionFormID }
-          features={ features }/> // For easy recoverment of the result of Juman, don't remove quotation marks
-        }
-        else{
-          <token
-          id={ tid(tokenIndex) }
-          surf={ surf }
-          pos={ pos }
-          pos1={ pos1 }
-          inflectionType={ inflectionType }
-          inflectionForm={ inflectionForm }
-          base={ base }
-          reading={ reading }
-          pos_id={ posID }
-          pos1_id={ pos1ID }
-          inflectionType_id={ inflectionTypeID }
-          inflectionForm_id={ inflectionFormID }
-          features={ features }/> // For easy recoverment of the result of Juman, don't remove quotation marks
-        }
-
-        nodes
+        if (isAmbiguityToken) token.copy(label="token_alt") else token
       }
 
     val tokensAnnotation = <tokens>{ makeTokenAltChild(tokenNodes) }</tokens>
