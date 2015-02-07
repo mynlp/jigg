@@ -93,11 +93,6 @@ class JumanAnnotator(val name: String, val props: Properties) extends SentencesA
         val inflectionFormID = tokenizedFeatures(10)
         val features         = tokenizedFeatures.drop(11).mkString(" ") // avoid splitting features with " "
 
-
-        val pos2           = None
-        val pos3           = None
-        val pronounce      = None
-
         if (isAmbiguityToken){
           tokenaltIndex += 1
         }
@@ -115,13 +110,10 @@ class JumanAnnotator(val name: String, val props: Properties) extends SentencesA
           surf={ surf }
           pos={ pos }
           pos1={ pos1 }
-          pos2={ pos2 }
-          pos3={ pos3 }
           inflectionType={ inflectionType }
           inflectionForm={ inflectionForm }
           base={ base }
           reading={ reading }
-          pronounce={ pronounce }
           pos_id={ posID }
           pos1_id={ pos1ID }
           inflectionType_id={ inflectionTypeID }
@@ -134,13 +126,10 @@ class JumanAnnotator(val name: String, val props: Properties) extends SentencesA
           surf={ surf }
           pos={ pos }
           pos1={ pos1 }
-          pos2={ pos2 }
-          pos3={ pos3 }
           inflectionType={ inflectionType }
           inflectionForm={ inflectionForm }
           base={ base }
           reading={ reading }
-          pronounce={ pronounce }
           pos_id={ posID }
           pos1_id={ pos1ID }
           inflectionType_id={ inflectionTypeID }
