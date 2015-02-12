@@ -55,7 +55,7 @@ class JumanAnnotator(val name: String, val props: Properties) extends SentencesA
 
     //Before tokenIndex is substituted, it will be added 1. So, the first tokenIndex is 0.
     var tokenIndex = -1
-    var tokenaltIndex = 0
+    var tokenaltIndex = -1
 
     //output form of Juman
     //surf reading base pos n pos1 n inflectionType n inflectionForm meaningInformation
