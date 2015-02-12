@@ -26,29 +26,16 @@ class JumanAnnotator(val name: String, val props: Properties) extends SentencesA
   }
 
   def makeTokenAltChild(nodes: NodeSeq) : NodeSeq = {
-    if (nodes.length >= 1 && nodes.head.label == "token"){
-      val ans: ArrayBuffer[Node] = new ArrayBuffer()
-      var tmp = nodes.head
+    var ans = NodeSeq.Empty
 
-      for (node <- nodes.tail){
-        if (node.label == "token"){
-          ans += tmp
-          tmp = node
-        }
-        else if(node.label == "token_alt"){
-          tmp = enju.util.XMLUtil.addChild(tmp, node)
-        }
-        else{
-          //Do nothing
-          //Is this OK?
-        }
-      }
-      ans += tmp
-      return NodeSeq.fromSeq(ans.toSeq)
+    val tokenBoundaries = nodes.zipWithIndex.filter(_._1.label=="token").map(_._2) :+ nodes.size
+    for (tpl <- tokenBoundaries.sliding(2)){
+      val begin = tpl(0)
+      val end = tpl(1)
+
+      ans = ans :+ (begin+1 to end-1).foldLeft(nodes(begin))((ans, i) => enju.util.XMLUtil.addChild(ans, nodes(i)))
     }
-    else{
-      return nodes
-    }
+    ans
   }
 
 
