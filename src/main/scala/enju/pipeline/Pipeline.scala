@@ -8,6 +8,14 @@ import enju.util.LogUtil.{ track, multipleTrack }
 
 class Pipeline(val props: Properties) {
 
+  // TODO: should document ID be given here?  Somewhere else?
+  private[this] var documentID: Int = 0
+  def newDocumentID(): String = {
+    val new_id = "d" + documentID
+    documentID += 1
+    new_id
+  }
+
   // TODO: sort by resolving dependencies
   val annotatorNames = props.getProperty("annotators").split("""[,\s]+""")
 
@@ -86,7 +94,7 @@ class Pipeline(val props: Properties) {
     } finally close(annotators)
   }
 
-  def initializeXML(raw: String) = <root><document>{ raw }</document></root>
+  def initializeXML(raw: String) = <root><document id={ newDocumentID() }>{ raw }</document></root>
 
   def annotate(root: Node, annotators: List[Annotator], verbose: Boolean = false): Node = {
     def annotateRecur(input: Node, unprocessed: List[Annotator]): Node = unprocessed match {
