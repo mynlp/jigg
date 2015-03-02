@@ -256,7 +256,7 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
           par_ind += 1
           ans
         }
-      }.getOrElse(NodeSeq.fromSeq(Seq()))
+      }.getOrElse(NodeSeq.Empty)
     }
 
     <predicate_argument_relations>{ ans }</predicate_argument_relations>
@@ -269,7 +269,7 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
     var temp_label = ""
 
     val pattern = new Regex("""\<NE:([A-Z]+):([BIES])\>""", "re_label", "re_BIES")
-    var ans = NodeSeq.fromSeq(Seq())
+    var ans = NodeSeq.Empty
 
     for (tpl <- knpResult.filter(knp_str => isToken(knp_str)).zipWithIndex){
       val knp_str = tpl._1
