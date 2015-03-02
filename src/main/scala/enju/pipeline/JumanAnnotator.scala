@@ -100,13 +100,13 @@ class JumanAnnotator(val name: String, val props: Properties) extends SentencesA
         inflectionForm={ inflectionForm }
         base={ base }
         reading={ reading }
-        pos_id={ posId }
-        pos1_id={ pos1Id }
-        inflectionType_id={ inflectionTypeId }
-        inflectionForm_id={ inflectionFormId }
+        posId={ posId }
+        pos1Id={ pos1Id }
+        inflectionTypeId={ inflectionTypeId }
+        inflectionFormId={ inflectionFormId }
         features={ features }/> // For easy recoverment of the result of Juman, don't remove quotation marks
 
-        if (isAmbiguityToken) token.copy(label="token_alt") else token
+        if (isAmbiguityToken) token.copy(label="tokenAlt") else token
       }
 
     val tokensAnnotation = <tokens>{ makeTokenAltChild(tokenNodes) }</tokens>

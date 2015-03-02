@@ -7,8 +7,8 @@ import scala.xml._
 
 class JumanAnnotatorTest extends FunSuite {
   test("makeTokenAltChild 1") {
-    val input = NodeSeq.fromSeq(Seq(<token/>, <token_alt/>))
-    val expected = NodeSeq.fromSeq(Seq(<token><token_alt/></token>))
+    val input = NodeSeq.fromSeq(Seq(<token/>, <tokenAlt/>))
+    val expected = NodeSeq.fromSeq(Seq(<token><tokenAlt/></token>))
 
     val juman = new JumanAnnotator("juman", new Properties)
 
@@ -16,8 +16,8 @@ class JumanAnnotatorTest extends FunSuite {
   }
 
   test("makeTokenAltChild 2") {
-    val input = NodeSeq.fromSeq(Seq(<token/>, <token_alt/>, <token/>))
-    val expected = NodeSeq.fromSeq(Seq(<token><token_alt/></token>, <token/>))
+    val input = NodeSeq.fromSeq(Seq(<token/>, <tokenAlt/>, <token/>))
+    val expected = NodeSeq.fromSeq(Seq(<token><tokenAlt/></token>, <token/>))
 
     val juman = new JumanAnnotator("juman", new Properties)
 
@@ -25,8 +25,8 @@ class JumanAnnotatorTest extends FunSuite {
   }
 
   test("makeTokenAltChild 3") {
-    val input = NodeSeq.fromSeq(Seq(<token/>, <token_alt/>, <token_alt/>, <token/>, <token_alt/>))
-    val expected = NodeSeq.fromSeq(Seq(<token><token_alt/><token_alt/></token>, <token><token_alt/></token>))
+    val input = NodeSeq.fromSeq(Seq(<token/>, <tokenAlt/>, <tokenAlt/>, <token/>, <tokenAlt/>))
+    val expected = NodeSeq.fromSeq(Seq(<token><tokenAlt/><tokenAlt/></token>, <token><tokenAlt/></token>))
 
     val juman = new JumanAnnotator("juman", new Properties)
 
