@@ -91,7 +91,7 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
   }
 
   def getBasicPhrases(knpResult:Seq[String], sid:String) : NodeSeq = {
-    val basic_phrases_num = knpResult.filter(str => isBasicPhrase(str)).length
+    val basic_phrases_num = knpResult.count(isBasicPhrase(_))
     val knp_result_rev = knpResult.reverse
 
     var bp_id = basic_phrases_num - 1
