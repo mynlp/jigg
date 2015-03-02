@@ -5,7 +5,6 @@ import java.io.BufferedWriter
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.util.Properties
-import scala.util.control.Breaks.{break, breakable}
 import scala.util.matching.Regex
 import scala.xml._
 
@@ -106,31 +105,19 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
   }
 
   def getChunks(knpResult:Seq[String], sid:String) : NodeSeq = {
-    var chunk_ind = knpResult.filter(str => isChunk(str)).length - 1
-    var tok_ind = knpResult.filter(str => isToken(str)).length - 1
-    var tokenIDs : List[String] = List()
-    var ans = scala.xml.NodeSeq.fromSeq(Seq())
+    var tokIdx = -1
 
-    breakable {
-      for (knp_str <- knpResult.reverse) {
-        if (isToken(knp_str)){
-          tokenIDs = tid(sid, tok_ind) +: tokenIDs
-          tok_ind -= 1
-        }
-        else if (isChunk(knp_str)) {
-          ans = <chunk id={ cid(sid, chunk_ind) } tokens={ tokenIDs.mkString(" ") } features={ knp_str.split(" ")(2) } /> +: ans
-
-          if(tok_ind == 0 && chunk_ind == 0){
-            break
-          }
-          chunk_ind -= 1
-          tokenIDs = List()
-        }
+    val chunkBoundaries = knpResult.zipWithIndex.filter(x=>isChunk(x._1)).map(_._2) :+ knpResult.size
+    val chunks = chunkBoundaries.sliding(2).toSeq.zipWithIndex map { case (Seq(b, e), chunkIdx) =>
+      val knpStr = knpResult(b)
+      val tokenIDs = (b + 1 until e).filter(i=>isToken(knpResult(i))) map { _ =>
+        tokIdx += 1
+        tid(sid, tokIdx)
       }
+      <chunk id={ cid(sid, chunkIdx) } tokens={ tokenIDs.mkString(" ") } features={ knpStr.split(" ")(2) }/>
     }
-    <chunks>{ ans }</chunks>
+    <chunks>{ chunks }</chunks>
   }
-
 
   def getBasicPhraseDependencies(knpResult:Seq[String], sid:String) : NodeSeq = {
     val bpdep_strs = knpResult.filter(knp_str => isBasicPhrase(knp_str))
