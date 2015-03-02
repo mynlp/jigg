@@ -9,20 +9,20 @@ import java.io.OutputStreamWriter
 import scala.collection.mutable.ArrayBuffer
 
 class JumanAnnotator(val name: String, val props: Properties) extends SentencesAnnotator {
-  val juman_command: String = props.getProperty("juman.command", "juman")
+  val jumanCommand: String = props.getProperty("juman.command", "juman")
 
-  lazy private[this] val juman_process = new java.lang.ProcessBuilder((juman_command)).start
-  lazy private[this] val juman_in = new BufferedReader(new InputStreamReader(juman_process.getInputStream, "UTF-8"))
-  lazy private[this] val juman_out = new BufferedWriter(new OutputStreamWriter(juman_process.getOutputStream, "UTF-8"))
+  lazy private[this] val jumanProcess = new java.lang.ProcessBuilder((jumanCommand)).start
+  lazy private[this] val jumanIn = new BufferedReader(new InputStreamReader(jumanProcess.getInputStream, "UTF-8"))
+  lazy private[this] val jumanOut = new BufferedWriter(new OutputStreamWriter(jumanProcess.getOutputStream, "UTF-8"))
 
 
   /**
     * Close the external process and the interface
     */
   override def close() {
-    juman_out.close()
-    juman_in.close()
-    juman_process.destroy()
+    jumanOut.close()
+    jumanIn.close()
+    jumanProcess.destroy()
   }
 
   def makeTokenAltChild(nodes: NodeSeq) : NodeSeq = {
@@ -41,21 +41,21 @@ class JumanAnnotator(val name: String, val props: Properties) extends SentencesA
 
   override def newSentenceAnnotation(sentence: Node): Node = {
     def runJuman(text: String): Seq[String] = {
-      juman_out.write(text)
-      juman_out.newLine()
-      juman_out.flush()
-      Iterator.continually(juman_in.readLine()).takeWhile{line => line != null && line != "EOS"}.toSeq
+      jumanOut.write(text)
+      jumanOut.newLine()
+      jumanOut.flush()
+      Iterator.continually(jumanIn.readLine()).takeWhile{line => line != null && line != "EOS"}.toSeq
     }
 
     val sindex = (sentence \ "@id").toString
     def tid(tindex: Int) = sindex + "_tok" + tindex
-    def tid_alt(tindex: Int, aindex: Int) = tid(tindex) + "_alt" + aindex
+    def tidAlt(tindex: Int, aindex: Int) = tid(tindex) + "_alt" + aindex
 
     val text = sentence.text
 
     //Before tokenIndex is substituted, it will be added 1. So, the first tokenIndex is 0.
     var tokenIndex = -1
-    var tokenaltIndex = -1
+    var tokenAltIndex = -1
 
     //output form of Juman
     //surf reading base pos n pos1 n inflectionType n inflectionForm meaningInformation
@@ -71,26 +71,26 @@ class JumanAnnotator(val name: String, val props: Properties) extends SentencesA
         val reading          = tokenizedFeatures(1)
         val base             = tokenizedFeatures(2)
         val pos              = tokenizedFeatures(3)
-        val posID            = tokenizedFeatures(4)
+        val posId            = tokenizedFeatures(4)
         val pos1             = tokenizedFeatures(5)
-        val pos1ID           = tokenizedFeatures(6)
+        val pos1Id           = tokenizedFeatures(6)
         val inflectionType   = tokenizedFeatures(7)
-        val inflectionTypeID = tokenizedFeatures(8)
+        val inflectionTypeId = tokenizedFeatures(8)
         val inflectionForm   = tokenizedFeatures(9)
-        val inflectionFormID = tokenizedFeatures(10)
+        val inflectionFormId = tokenizedFeatures(10)
         val features         = tokenizedFeatures.drop(11).mkString(" ") // avoid splitting features with " "
 
         if (isAmbiguityToken){
-          tokenaltIndex += 1
+          tokenAltIndex += 1
         }
         else{
           tokenIndex += 1
 
-          //Before tokenaltIndex is substituted, it will be added 1. So, the first tokenIndex is 0.
-          tokenaltIndex = -1
+          //Before tokenAltIndex is substituted, it will be added 1. So, the first tokenIndex is 0.
+          tokenAltIndex = -1
         }
 
-        val id = if (isAmbiguityToken) tid_alt(tokenIndex, tokenaltIndex) else tid(tokenIndex)
+        val id = if (isAmbiguityToken) tidAlt(tokenIndex, tokenAltIndex) else tid(tokenIndex)
         val token = <token
         id={ id }
         surf={ surf }
@@ -100,10 +100,10 @@ class JumanAnnotator(val name: String, val props: Properties) extends SentencesA
         inflectionForm={ inflectionForm }
         base={ base }
         reading={ reading }
-        pos_id={ posID }
-        pos1_id={ pos1ID }
-        inflectionType_id={ inflectionTypeID }
-        inflectionForm_id={ inflectionFormID }
+        pos_id={ posId }
+        pos1_id={ pos1Id }
+        inflectionType_id={ inflectionTypeId }
+        inflectionForm_id={ inflectionFormId }
         features={ features }/> // For easy recoverment of the result of Juman, don't remove quotation marks
 
         if (isAmbiguityToken) token.copy(label="token_alt") else token
