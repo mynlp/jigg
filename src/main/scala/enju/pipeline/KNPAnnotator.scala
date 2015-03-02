@@ -91,32 +91,18 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
   }
 
   def getBasicPhrases(knpResult:Seq[String], sid:String) : NodeSeq = {
-    val basic_phrases_num = knpResult.count(isBasicPhrase(_))
-    val knp_result_rev = knpResult.reverse
+    var tokIdx = -1
 
-    var bp_id = basic_phrases_num - 1
-    var tok_id = knpResult.filter(str => isToken(str)).length - 1
-    var tokenIDs : List[String] = List()
-    var ans = scala.xml.NodeSeq.fromSeq(Seq())
-
-    breakable {
-      for (knp_str <- knp_result_rev) {
-        if (isToken(knp_str)){
-          tokenIDs = tid(sid, tok_ind) +: tokenIDs
-          tok_ind -= 1
-        }
-        else if (isBasicPhrase(knp_str)) {
-          ans = <basic_phrase id={ bpid(sid, bp_ind) } tokens={ tokenIDs.mkString(" ") } features={ knp_str.split(" ")(2) } /> +: ans
-
-          if(tok_ind == 0 && bp_ind == 0){
-            break
-          }
-          bp_ind -= 1
-          tokenIDs = List()
-        }
+    val basicPhraseBoundaries = knpResult.zipWithIndex.filter(x=>isBasicPhrase(x._1)).map(_._2) :+ knpResult.size
+    val basicPhrases = basicPhraseBoundaries.sliding(2).toSeq.zipWithIndex map { case (Seq(b,  e), bpIdx) =>
+      val knpStr = knpResult(b)
+      val tokenIDs = (b + 1 until e).filter(i=>isToken(knpResult(i))) map { _ =>
+        tokIdx += 1
+        tid(sid, tokIdx)
       }
+      <basic_phrase id={ bpid(sid, bpIdx) } tokens={ tokenIDs.mkString(" ") } features={ knpStr.split(" ")(2) } />
     }
-    <basic_phrases>{ ans }</basic_phrases>
+    <basic_phrases>{ basicPhrases }</basic_phrases>
   }
 
   def getChunks(knpResult:Seq[String], sid:String) : NodeSeq = {
