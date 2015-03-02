@@ -9,27 +9,27 @@ import scala.util.matching.Regex
 import scala.xml._
 
 class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnnotator {
-  val knp_command: String = props.getProperty("knp.command", "knp")
+  val knpCommand: String = props.getProperty("knp.command", "knp")
 
   //for KNP 4.12 (-ne option is unneed)
-  lazy private[this] val knp_process = new java.lang.ProcessBuilder(knp_command, "-tab", "-anaphora").start
-  lazy private[this] val knp_in = new BufferedReader(new InputStreamReader(knp_process.getInputStream, "UTF-8"))
-  lazy private[this] val knp_out = new BufferedWriter(new OutputStreamWriter(knp_process.getOutputStream, "UTF-8"))
+  lazy private[this] val knpProcess = new java.lang.ProcessBuilder(knpCommand, "-tab", "-anaphora").start
+  lazy private[this] val knpIn = new BufferedReader(new InputStreamReader(knpProcess.getInputStream, "UTF-8"))
+  lazy private[this] val knpOut = new BufferedWriter(new OutputStreamWriter(knpProcess.getOutputStream, "UTF-8"))
 
   /**
     * Close the external process and the interface
     */
   override def close() {
-    knp_out.close()
-    knp_in.close()
-    knp_process.destroy()
+    knpOut.close()
+    knpIn.close()
+    knpProcess.destroy()
   }
 
-  def isBasicPhrase(knp_str:String) : Boolean = knp_str(0) == '+'
-  def isChunk(knp_str:String) : Boolean = knp_str(0) == '*'
-  def isDocInfo(knp_str:String) : Boolean = knp_str(0) == '#'
-  def isEOS(knp_str:String) : Boolean = knp_str == "EOS"
-  def isToken(knp_str:String) : Boolean = ! isBasicPhrase(knp_str) && ! isChunk(knp_str) && ! isDocInfo(knp_str) && ! isEOS(knp_str)
+  def isBasicPhrase(knpStr:String) : Boolean = knpStr(0) == '+'
+  def isChunk(knpStr:String) : Boolean = knpStr(0) == '*'
+  def isDocInfo(knpStr:String) : Boolean = knpStr(0) == '#'
+  def isEOS(knpStr:String) : Boolean = knpStr == "EOS"
+  def isToken(knpStr:String) : Boolean = ! isBasicPhrase(knpStr) && ! isChunk(knpStr) && ! isDocInfo(knpStr) && ! isEOS(knpStr)
 
 
   private def tid(sindex: String, tindex: Int) = sindex + "_tok" + tindex.toString
@@ -53,13 +53,13 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
       val reading           = tok(1)
       val base              = tok(2)
       val pos               = tok(3)
-      val pos_id            = tok(4)
+      val posId            = tok(4)
       val pos1              = tok(5)
-      val pos1_id           = tok(6)
+      val pos1Id           = tok(6)
       val inflectionType    = tok(7)
-      val inflectionType_id = tok(8)
+      val inflectionTypeId = tok(8)
       val inflectionForm    = tok(9)
-      val inflectionForm_id = tok(10)
+      val inflectionFormId = tok(10)
       val features          = tok.drop(11).mkString(" ")
       val pos2           = None
       val pos3           = None
@@ -77,10 +77,10 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
       base={ base }
       reading={ reading }
       pronounce={ pronounce }
-      pos_id={ pos_id }
-      pos1_id={ pos1_id }
-      inflectionType_id={ inflectionType_id }
-      inflectionForm_id={ inflectionForm_id }
+      pos_id={ posId }
+      pos1_id={ pos1Id }
+      inflectionType_id={ inflectionTypeId }
+      inflectionForm_id={ inflectionFormId }
       features={ features }/>
       tokenIndex += 1
       node
@@ -120,83 +120,83 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
   }
 
   def getBasicPhraseDependencies(knpResult:Seq[String], sid:String) : NodeSeq = {
-    val bpdep_strs = knpResult.filter(knp_str => isBasicPhrase(knp_str))
-    val bpdep_num = bpdep_strs.length
-    var bpd_ind = 0
+    val bpdepStrs = knpResult.filter(knpStr => isBasicPhrase(knpStr))
+    val bpdepNum = bpdepStrs.length
+    var bpdInd = 0
 
     // init: remove the last dependency (+ -1D ...)
-    val dpd_xml = bpdep_strs.init.map{
-      bpdep_str =>
-      val hd = bpid(sid, bpdep_str.split(" ")(1).init.toInt)
-      val dep = bpid(sid, bpd_ind)
-      val lab = bpdep_str.split(" ")(1).last.toString
+    val dpdXml = bpdepStrs.init.map{
+      bpdepStr =>
+      val hd = bpid(sid, bpdepStr.split(" ")(1).init.toInt)
+      val dep = bpid(sid, bpdInd)
+      val lab = bpdepStr.split(" ")(1).last.toString
 
-      val ans = <basic_phrase_dependency id={bpdid(sid, bpd_ind)} head={hd} dependent={dep} label={lab} />
-      bpd_ind += 1
+      val ans = <basic_phrase_dependency id={bpdid(sid, bpdInd)} head={hd} dependent={dep} label={lab} />
+      bpdInd += 1
 
       ans
     }
 
-    <basic_phrase_dependencies root={bpid(sid, bpdep_num-1)} >{ dpd_xml }</basic_phrase_dependencies>
+    <basic_phrase_dependencies root={bpid(sid, bpdepNum-1)} >{ dpdXml }</basic_phrase_dependencies>
   }
 
 
   def getDependencies(knpResult:Seq[String], sid:String) : NodeSeq = {
-    val dep_strs = knpResult.filter(knp_str => isChunk(knp_str))
-    val dep_num = dep_strs.length
-    var dep_ind = 0
+    val depStrs = knpResult.filter(knpStr => isChunk(knpStr))
+    val depNum = depStrs.length
+    var depInd = 0
 
 
     // init: remove the last dependency (* -1D ...)
-    val dep_xml = dep_strs.init.map{
-      dep_str =>
-      val hd = cid(sid, dep_str.split(" ")(1).init.toInt)
-      val dep = cid(sid, dep_ind)
-      val lab = dep_str.split(" ")(1).last.toString
+    val depXml = depStrs.init.map{
+      depStr =>
+      val hd = cid(sid, depStr.split(" ")(1).init.toInt)
+      val dep = cid(sid, depInd)
+      val lab = depStr.split(" ")(1).last.toString
 
-      val ans = <dependency id={depid(sid, dep_ind)} head={hd} dependent={dep} label={lab} />
-      dep_ind += 1
+      val ans = <dependency id={depid(sid, depInd)} head={hd} dependent={dep} label={lab} />
+      depInd += 1
 
       ans
     }
 
-    <dependencies root={cid(sid, dep_num-1)} >{ dep_xml }</dependencies>
+    <dependencies root={cid(sid, depNum-1)} >{ depXml }</dependencies>
   }
 
   // "格解析結果:走る/はしる:動13:ガ/C/太郎/0/0/1;ヲ/U/-/-/-/-;ニ/U/-/-/-/-;ト/U/-/-/-/-;デ/U/-/-/-/-;カラ/U/-/-/-/-;ヨリ/U/-/-/-/-;マデ/U/-/-/-/-;時間/U/-/-/-/-;外の関係/U/-/-/-/-;ノ/U/-/-/-/-;修飾/U/-/-/-/-;トスル/U/-/-/-/-;ニオク/U/-/-/-/-;ニカンスル/U/-/-/-/-;ニヨル/U/-/-/-/-;ヲフクメル/U/-/-/-/-;ヲハジメル/U/-/-/-/-;ヲノゾク/U/-/-/-/-;ヲツウジル/U/-/-/-/-
-  def getCaseRelations(knpResult:Seq[String], tokens_xml:NodeSeq, bps_xml:NodeSeq, sid:String) : NodeSeq = {
-    var cr_ind = 0
+  def getCaseRelations(knpResult:Seq[String], tokensXml:NodeSeq, bpsXml:NodeSeq, sid:String) : NodeSeq = {
+    var crInd = 0
 
     val ans = knpResult.filter(str => isBasicPhrase(str)).zipWithIndex.filter(tpl => tpl._1.contains("<格解析結果:")).map{
       tpl =>
       val str = tpl._1
-      val bp_ind = tpl._2
+      val bpInd = tpl._2
 
       val pattern1 = "<格解析結果:[^>]+>".r
       val sp = pattern1.findFirstIn(str).getOrElse("<>").init.tail.split(":")
-      val case_results = sp(3)  //  ガ/C/太郎/0/0/1;ヲ/ ...
-      val hd = bpid(sid, bp_ind)
+      val caseResults = sp(3)  //  ガ/C/太郎/0/0/1;ヲ/ ...
+      val hd = bpid(sid, bpInd)
 
-      case_results.split(";").map{
+      caseResults.split(";").map{
         str =>
-        val case_result = str.split("/")
-        val lab = case_result(0)
-        val fl = case_result(1)
+        val caseResult = str.split("/")
+        val lab = caseResult(0)
+        val fl = caseResult(1)
 
         // assumes that sentence_id is as "s0"
-        val depend_bpid = if (case_result(3) == "-") None else Some(bpid("s" + (sid.tail.toInt - case_result(4).toInt), case_result(3).toInt))
-        val depend_tok : Option[String]= depend_bpid.map{
+        val dependBpid = if (caseResult(3) == "-") None else Some(bpid("s" + (sid.tail.toInt - caseResult(4).toInt), caseResult(3).toInt))
+        val dependTok : Option[String]= dependBpid.map{
           bpid =>
           //find a token whose surf equals to case_result(2)
 
-          val depend_bp : Option[NodeSeq] = (bps_xml \\ "basic_phrase").find(bp => (bp \ "@id").toString == bpid)
-          val token_ids : List[String] = depend_bp.map(bp => (bp \ "@tokens").toString.split(' ').toList).getOrElse(List() : List[String])
-          token_ids.find(tok_id => ((tokens_xml \ "token").find(tok => (tok \ "@id").toString == tok_id).getOrElse(<error/>) \ "@surf").toString == case_result(2))
+          val dependBp : Option[NodeSeq] = (bpsXml \\ "basic_phrase").find(bp => (bp \ "@id").toString == bpid)
+          val tokenIds : List[String] = dependBp.map(bp => (bp \ "@tokens").toString.split(' ').toList).getOrElse(List() : List[String])
+          tokenIds.find(tokId => ((tokensXml \ "token").find(tok => (tok \ "@id").toString == tokId).getOrElse(<error/>) \ "@surf").toString == caseResult(2))
         }.flatten
 
-        val ans_xml = <case_relation id={crid(sid, cr_ind)} head={hd} depend={ depend_tok.getOrElse("unk") } label={lab} flag={fl} />
-        cr_ind += 1
-        ans_xml
+        val ansXml = <case_relation id={crid(sid, crInd)} head={hd} depend={ dependTok.getOrElse("unk") } label={lab} flag={fl} />
+        crInd += 1
+        ansXml
       }
     }.flatten
 
@@ -204,7 +204,7 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
   }
 
   def getCoreferences(bp_xml:NodeSeq, sid:String) : Node = {
-    val eid_hash = scala.collection.mutable.LinkedHashMap[Int, String]()
+    val eidHash = scala.collection.mutable.LinkedHashMap[Int, String]()
 
     (bp_xml \ "basic_phrase").map{
       bp =>
@@ -214,15 +214,15 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
       val pattern = new Regex("""\<EID:(\d+)\>""", "eid")
       val eid = pattern.findFirstMatchIn(feature).map(m => m.group("eid").toInt).getOrElse(-1)
 
-      if (eid_hash.contains(eid)){
-        eid_hash(eid) = eid_hash(eid) + " " + bpid
+      if (eidHash.contains(eid)){
+        eidHash(eid) = eidHash(eid) + " " + bpid
       }
       else{
-        eid_hash(eid) = bpid
+        eidHash(eid) = bpid
       }
     }
 
-    val ans = eid_hash.map{
+    val ans = eidHash.map{
       case (eid, bps) =>
         <coreference id={corefid(sid, eid)} basic_phrases={bps} />
     }
@@ -231,18 +231,18 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
   }
 
   def getPredicateArgumentRelations(knpResult:Seq[String], sid:String) : Node = {
-    var par_ind = 0
+    var parInd = 0
 
     //<述語項構造:飲む/のむ:動1:ガ/N/麻生太郎/1;ヲ/C/コーヒー/2>
     val pattern = new Regex("""\<述語項構造:[^:]+:[^:]+:(.+)\>""", "args")
 
-    val ans = knpResult.filter(knp_str => isBasicPhrase(knp_str)).zipWithIndex.filter(tpl => tpl._1.contains("<述語項構造:")).map{
+    val ans = knpResult.filter(knpStr => isBasicPhrase(knpStr)).zipWithIndex.filter(tpl => tpl._1.contains("<述語項構造:")).map{
       tpl =>
-      val knp_str = tpl._1
-      val bp_ind = tpl._2
+      val knpStr = tpl._1
+      val bpInd = tpl._2
 
-      val args_opt = pattern.findFirstMatchIn(knp_str).map(m => m.group("args"))
-      args_opt.map{
+      val argsOpt = pattern.findFirstMatchIn(knpStr).map(m => m.group("args"))
+      argsOpt.map{
         args =>
         args.split(";").map{
           arg =>
@@ -252,8 +252,8 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
           //val name = sp(2)
           val eid = sp(3).toInt
 
-          val ans = <predicate_argument_relation id={parid(sid, par_ind)} predicate={bpid(sid, bp_ind)} argument={corefid(sid, eid)} label={label} flag={flag} />
-          par_ind += 1
+          val ans = <predicate_argument_relation id={parid(sid, parInd)} predicate={bpid(sid, bpInd)} argument={corefid(sid, eid)} label={label} flag={flag} />
+          parInd += 1
           ans
         }
       }.getOrElse(NodeSeq.Empty)
@@ -263,84 +263,84 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
   }
 
   def getNamedEntities(knpResult:Seq[String], sid:String) : Node = {
-    var ne_ind = 0
-    var last_BIES = "N" //for convenience, use "N" as non-tag of "B/I/E/S"
-    var temp_tokens : Seq[String] = Seq()
-    var temp_label = ""
+    var neInd = 0
+    var lastTag = "N" //for convenience, use "N" as non-tag of "B/I/E/S"
+    var tempTokens : Seq[String] = Seq()
+    var tempLabel = ""
 
-    val pattern = new Regex("""\<NE:([A-Z]+):([BIES])\>""", "re_label", "re_BIES")
+    val pattern = new Regex("""\<NE:([A-Z]+):([BIES])\>""", "reLabel", "reTag")
     var ans = NodeSeq.Empty
 
-    for (tpl <- knpResult.filter(knp_str => isToken(knp_str)).zipWithIndex){
-      val knp_str = tpl._1
-      val tok_ind = tpl._2
-      val (re_label, re_BIES) = pattern.findFirstMatchIn(knp_str).map(m => (m.group("re_label"), m.group("re_BIES"))).getOrElse(("", "N"))
+    for (tpl <- knpResult.filter(knpStr => isToken(knpStr)).zipWithIndex){
+      val knpStr = tpl._1
+      val tokInd = tpl._2
+      val (reLabel, reTag) = pattern.findFirstMatchIn(knpStr).map(m => (m.group("reLabel"), m.group("reTag"))).getOrElse(("", "N"))
 
-      if ((last_BIES == "N" && re_BIES == "B") || (last_BIES == "N" && re_BIES == "S")){
-        last_BIES = re_BIES
-        temp_tokens = temp_tokens :+ tid(sid, tok_ind)
-        temp_label = re_label
+      if ((lastTag == "N" && reTag == "B") || (lastTag == "N" && reTag == "S")){
+        lastTag = reTag
+        tempTokens = tempTokens :+ tid(sid, tokInd)
+        tempLabel = reLabel
       }
-      else if((last_BIES == "S" && re_BIES == "N") || (last_BIES == "B" && re_BIES == "N") || (last_BIES == "E" && re_BIES == "N")){
-        ans = ans :+ <named_entity id={neid(sid, ne_ind)} tokens={temp_tokens.mkString(" ")} label={temp_label} />
+      else if((lastTag == "S" && reTag == "N") || (lastTag == "B" && reTag == "N") || (lastTag == "E" && reTag == "N")){
+        ans = ans :+ <named_entity id={neid(sid, neInd)} tokens={tempTokens.mkString(" ")} label={tempLabel} />
 
-        last_BIES = re_BIES
-        ne_ind += 1
-        temp_tokens = Seq()
-        temp_label = ""
+        lastTag = reTag
+        neInd += 1
+        tempTokens = Seq()
+        tempLabel = ""
       }
-      else if((last_BIES == "B" && re_BIES == "I") || (last_BIES == "B" && re_BIES == "E") || (last_BIES == "I" && re_BIES == "E")){
-        last_BIES = re_BIES
-        temp_tokens = temp_tokens :+ tid(sid, tok_ind)
+      else if((lastTag == "B" && reTag == "I") || (lastTag == "B" && reTag == "E") || (lastTag == "I" && reTag == "E")){
+        lastTag = reTag
+        tempTokens = tempTokens :+ tid(sid, tokInd)
       }
     }
 
-    if(last_BIES == "S" || (last_BIES == "E")){
-      ans = ans :+ <named_entity id={neid(sid, ne_ind)} tokens={temp_tokens.mkString(" ")} label={temp_label} />
+    if(lastTag == "S" || (lastTag == "E")){
+      ans = ans :+ <named_entity id={neid(sid, neInd)} tokens={tempTokens.mkString(" ")} label={tempLabel} />
     }
 
     <named_entities>{ ans }</named_entities>
   }
 
   def makeXml(sentence:Node, knpResult:Seq[String], sid:String) : Node = {
-    val knp_tokens = getTokens(knpResult, sid)
-    val sentence_with_tokens = enju.util.XMLUtil.replaceAll(sentence, "tokens")(node => knp_tokens)
-    val basic_phrases = getBasicPhrases(knpResult, sid)
-    val sentence_with_bps = enju.util.XMLUtil.addChild(sentence_with_tokens, basic_phrases)
-    val sentence_with_chunks = enju.util.XMLUtil.addChild(sentence_with_bps, getChunks(knpResult, sid))
-    val sentence_with_bpdeps = enju.util.XMLUtil.addChild(sentence_with_chunks, getBasicPhraseDependencies(knpResult, sid))
-    val sentence_with_deps = enju.util.XMLUtil.addChild(sentence_with_bpdeps, getDependencies(knpResult, sid))
-    val sentence_with_case_relations = enju.util.XMLUtil.addChild(sentence_with_deps, getCaseRelations(knpResult, knp_tokens, basic_phrases, sid))
-    val sentence_with_coreferences = enju.util.XMLUtil.addChild(sentence_with_case_relations, getCoreferences(basic_phrases, sid))
-    val sentence_with_predicate_argument = enju.util.XMLUtil.addChild(sentence_with_coreferences, getPredicateArgumentRelations(knpResult, sid))
-    val sentence_with_named_entity = enju.util.XMLUtil.addChild(sentence_with_predicate_argument, getNamedEntities(knpResult, sid))
+    val knpTokens = getTokens(knpResult, sid)
+    val sentenceWithTokens = enju.util.XMLUtil.replaceAll(sentence, "tokens")(node => knpTokens)
+    val basicPhrases = getBasicPhrases(knpResult, sid)
+    val sentenceWithBps = enju.util.XMLUtil.addChild(sentenceWithTokens, basicPhrases)
+    val sentenceWithChunks = enju.util.XMLUtil.addChild(sentenceWithBps, getChunks(knpResult, sid))
+    val sentenceWithBpdeps = enju.util.XMLUtil.addChild(sentenceWithChunks, getBasicPhraseDependencies(knpResult, sid))
+    val sentenceWithDeps = enju.util.XMLUtil.addChild(sentenceWithBpdeps, getDependencies(knpResult, sid))
+    val sentenceWithCaseRelations = enju.util.XMLUtil.addChild(sentenceWithDeps, getCaseRelations(knpResult, knpTokens, basicPhrases, sid))
+    val sentenceWithCoreferences = enju.util.XMLUtil.addChild(sentenceWithCaseRelations, getCoreferences(basicPhrases, sid))
+    val sentenceWithPredicateArguments = enju.util.XMLUtil.addChild(sentenceWithCoreferences, getPredicateArgumentRelations(knpResult, sid))
+    val sentenceWithNamedEntity = enju.util.XMLUtil.addChild(sentenceWithPredicateArguments, getNamedEntities(knpResult, sid))
 
-    sentence_with_named_entity
+    sentenceWithNamedEntity
   }
 
   def recovJumanOutput(juman_tokens:Node) : Seq[String] = {
     (juman_tokens \\ "token").map{
       tok =>
-      val tok_str = (tok \ "@surf") + " " + (tok \ "@reading") + " " + (tok \ "@base") + " " +
+      val tokStr = (tok \ "@surf") + " " + (tok \ "@reading") + " " + (tok \ "@base") + " " +
       (tok \ "@pos") + " " + (tok \ "@pos_id") + " " +
       (tok \ "@pos1") + " " + (tok \ "@pos1_id") + " " +
       (tok \ "@inflectionType") + " " + (tok \ "@inflectionType_id") + " " +
       (tok \ "@inflectionForm") + " " + (tok \ "@inflectionForm_id") + " " +
         (tok \ "@features").text + "\n"
 
-      val token_alt_seq = (tok \ "token_alt")
+      val tokenAltSeq = (tok \ "token_alt")
 
-      if (token_alt_seq.isEmpty){
-        Seq(tok_str)
+      if (tokenAltSeq.isEmpty){
+        Seq(tokStr)
       }
       else{
-        tok_str +: token_alt_seq.map{
-          tok_alt =>
-          "@ " + (tok_alt \ "@surf") + " " + (tok_alt \ "@reading") + " " + (tok_alt \ "@base") + " " +
-          (tok_alt \ "@pos") + " " + (tok_alt \ "@pos_id") + " " +
-          (tok_alt \ "@pos1") + " " + (tok_alt \ "@pos1_id") + " " +
-          (tok_alt \ "@inflectionType") + " " + (tok_alt \ "@inflectionType_id") + " " +
-          (tok_alt \ "@inflectionForm") + " " + (tok_alt \ "@inflectionForm_id") + " " +
+        tokStr +: tokenAltSeq.map{
+          tokAlt =>
+          "@ " + (tokAlt \ "@surf") + " " + (tokAlt \ "@reading") + " " + (tokAlt \ "@base") + " " +
+          (tokAlt \ "@pos") + " " + (tokAlt \ "@pos_id") + " " +
+          (tokAlt \ "@pos1") + " " + (tokAlt \ "@pos1_id") + " " +
+          (tokAlt \ "@inflectionType") + " " + (tokAlt \ "@inflectionType_id") + " " +
+          (tokAlt \ "@inflectionForm") + " " + (tokAlt \ "@inflectionForm_id") + " " +
             (tok \ "@features").text + "\n"
         }
       }
@@ -348,18 +348,18 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
   }
 
   override def newSentenceAnnotation(sentence: Node): Node = {
-    def runKNP(juman_tokens:Node): Seq[String] = {
-      knp_out.write(recovJumanOutput(juman_tokens).mkString)
-      knp_out.flush()
+    def runKNP(jumanTokens:Node): Seq[String] = {
+      knpOut.write(recovJumanOutput(jumanTokens).mkString)
+      knpOut.flush()
 
-      Iterator.continually(knp_in.readLine()).takeWhile(_ != "EOS").toSeq :+ "EOS"
+      Iterator.continually(knpIn.readLine()).takeWhile(_ != "EOS").toSeq :+ "EOS"
     }
 
     val sindex = (sentence \ "@id").toString
-    val juman_tokens = (sentence \ "tokens").head
-    val knp_result = runKNP(juman_tokens)
+    val jumanTokens = (sentence \ "tokens").head
+    val knpResult = runKNP(jumanTokens)
 
-    makeXml(sentence, knp_result, sindex)
+    makeXml(sentence, knpResult, sindex)
   }
 
   override def requires = Set(Annotator.JaTokenize)
