@@ -322,21 +322,24 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
   " " + (tokenNode \ "@features").text + "\n"
 
   def recovJumanOutput(jumanTokens:Node) : Seq[String] = {
+    val ans = scala.collection.mutable.ArrayBuffer.empty[String]
+
     (jumanTokens \\ "token").map{
       tok =>
-      val tokStr = recoverTokenStr(tok, false)
+      ans += recoverTokenStr(tok, false)
+      
       val tokenAltSeq = (tok \ "tokenAlt")
 
-      if (tokenAltSeq.isEmpty){
-        Seq(tokStr)
-      }
-      else{
-        tokStr +: tokenAltSeq.map{
+      if (tokenAltSeq.nonEmpty){
+        tokenAltSeq.map{
           tokAlt =>
-          recoverTokenStr(tokAlt, true)
+          ans += recoverTokenStr(tokAlt, true)
         }
       }
-    }.foldLeft(List() : List[String])(_ ::: _.toList).toSeq :+ "EOS\n"
+    }
+
+    ans += "EOS\n"
+    ans.toSeq
   }
 
   override def newSentenceAnnotation(sentence: Node): Node = {
