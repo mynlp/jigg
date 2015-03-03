@@ -13,11 +13,11 @@ class KNPAnnotatorTest extends FunSuite {
                    |EOS
 """.stripMargin.split("\n").toSeq
 
-    val expected_tokens = <tokens><token surf="太郎" reading="たろう" base="太郎" pos="名詞" pos_id="6" pos1="人名" pos1_id="5" inflectionType="*" inflectionType_id="0" inflectionForm="*" inflectionForm_id="0" features="&quot;人名:日本:名:45:0.00106 疑似代表表記 代表表記:太郎/たろう&quot; &lt;人名:日本:名:45:0.00106&gt;&lt;疑似代表表記&gt;&lt;代表表記:太郎/たろう&gt;&lt;正規化代表表記:太郎/たろう&gt;&lt;文頭&gt;&lt;文末&gt;&lt;表現文末&gt;&lt;漢字&gt;&lt;かな漢字&gt;&lt;名詞相当語&gt;&lt;自立&gt;&lt;内容語&gt;&lt;タグ単位始&gt;&lt;文節始&gt;&lt;固有キー&gt;&lt;文節主辞&gt;" id="s0_tok0"/></tokens>
+    val expectedTokens = <tokens><token surf="太郎" reading="たろう" base="太郎" pos="名詞" posId="6" pos1="人名" pos1Id="5" inflectionType="*" inflectionTypeId="0" inflectionForm="*" inflectionFormId="0" features="&quot;人名:日本:名:45:0.00106 疑似代表表記 代表表記:太郎/たろう&quot; &lt;人名:日本:名:45:0.00106&gt;&lt;疑似代表表記&gt;&lt;代表表記:太郎/たろう&gt;&lt;正規化代表表記:太郎/たろう&gt;&lt;文頭&gt;&lt;文末&gt;&lt;表現文末&gt;&lt;漢字&gt;&lt;かな漢字&gt;&lt;名詞相当語&gt;&lt;自立&gt;&lt;内容語&gt;&lt;タグ単位始&gt;&lt;文節始&gt;&lt;固有キー&gt;&lt;文節主辞&gt;" id="s0_tok0"/></tokens>
 
     val knp = new KNPAnnotator("knp", new Properties)
 
-    knp.getTokens(input, "s0") should be(expected_tokens)
+    knp.getTokens(input, "s0") should be(expectedTokens)
   }
 
   test("getBasicPhrases") {
@@ -29,7 +29,7 @@ class KNPAnnotatorTest extends FunSuite {
 """.stripMargin.split("\n").toSeq
 
     val feature = "<文頭><文末><人名><体言><用言:判><体言止><レベル:C><区切:5-5><ID:（文末）><裸名詞><提題受:30><主節><状態述語><判定詞><名詞項候補><先行詞候補><SM-人><SM-主体><正規化代表表記:太郎/たろう><用言代表表記:太郎/たろう><時制-無時制><照応詞候補:太郎><格解析結果:太郎/たろう:判0:ガ/U/-/-/-/-;ニ/U/-/-/-/-;デ/U/-/-/-/-;カラ/U/-/-/-/-;ヨリ/U/-/-/-/-;マデ/U/-/-/-/-;ヘ/U/-/-/-/-;時間/U/-/-/-/-;外の関係/U/-/-/-/-;修飾/U/-/-/-/-;ノ/U/-/-/-/-;ガ２/U/-/-/-/-;ニトル/U/-/-/-/-><EID:0>"
-    val expected = <basic_phrases><basic_phrase id="s0_bp0" tokens="s0_tok0" features={feature} /></basic_phrases>
+    val expected = <basicPhrases><basicPhrase id="s0_bp0" tokens="s0_tok0" features={feature} /></basicPhrases>
 
     val knp = new KNPAnnotator("knp", new Properties)
 
@@ -86,7 +86,7 @@ class KNPAnnotatorTest extends FunSuite {
 
     val feature1 = "<文頭><人名><ガ><助詞><体言><係:ガ格><区切:0-0><格要素><連用要素><名詞項候補><先行詞候補><SM-人><SM-主体><正規化代表表記:太郎/たろう><NE:PERSON:太郎><照応詞候補:太郎><解析格:ガ><EID:0>"
     val feature2 = "<文末><時制-過去><句点><用言:動><レベル:C><区切:5-5><ID:（文末）><係:文末><提題受:30><主節><格要素><連用要素><動態述語><正規化代表表記:走る/はしる><用言代表表記:走る/はしる><主題格:一人称優位><格関係0:ガ:太郎><格解析結果:走る/はしる:動13:ガ/C/太郎/0/0/1;ヲ/U/-/-/-/-;ニ/U/-/-/-/-;ト/U/-/-/-/-;デ/U/-/-/-/-;カラ/U/-/-/-/-;ヨリ/U/-/-/-/-;マデ/U/-/-/-/-;時間/U/-/-/-/-;外の関係/U/-/-/-/-;ノ/U/-/-/-/-;修飾/U/-/-/-/-;トスル/U/-/-/-/-;ニオク/U/-/-/-/-;ニカンスル/U/-/-/-/-;ニヨル/U/-/-/-/-;ヲフクメル/U/-/-/-/-;ヲハジメル/U/-/-/-/-;ヲノゾク/U/-/-/-/-;ヲツウジル/U/-/-/-/-><EID:1><述語項構造:走る/はしる:動13:ガ/C/太郎/0>"
-    val expected = <basic_phrases><basic_phrase id="s0_bp0" tokens="s0_tok0 s0_tok1" features={feature1} /><basic_phrase id="s0_bp1" tokens="s0_tok2 s0_tok3" features={feature2} /></basic_phrases>
+    val expected = <basicPhrases><basicPhrase id="s0_bp0" tokens="s0_tok0 s0_tok1" features={feature1} /><basicPhrase id="s0_bp1" tokens="s0_tok2 s0_tok3" features={feature2} /></basicPhrases>
 
     val knp = new KNPAnnotator("knp", new Properties)
 
@@ -128,7 +128,7 @@ class KNPAnnotatorTest extends FunSuite {
                    |EOS
 """.stripMargin.split("\n").toSeq
 
-    val expected = <basic_phrase_dependencies root="s0_bp1"><basic_phrase_dependency id="s0_bpdep0" head="s0_bp1" dependent="s0_bp0" label="D"/></basic_phrase_dependencies>
+    val expected = <basicPhraseDependencies root="s0_bp1"><basicPhraseDependency id="s0_bpdep0" head="s0_bp1" dependent="s0_bp0" label="D"/></basicPhraseDependencies>
 
     val knp = new KNPAnnotator("knp", new Properties)
     knp.getBasicPhraseDependencies(input, "s0") should be(expected)
@@ -166,7 +166,7 @@ class KNPAnnotatorTest extends FunSuite {
                    |EOS
 """.stripMargin.split("\n").toSeq
 
-    val expected = <case_relations><case_relation id="s0_cr0" head="s0_bp1" depend="s0_tok0" label="ガ" flag="C" /><case_relation id="s0_cr1" head="s0_bp1" depend="unk" label="ヲ" flag="U" /><case_relation id="s0_cr2" head="s0_bp1" depend="unk" label="ニ" flag="U" /><case_relation id="s0_cr3" head="s0_bp1" depend="unk" label="ト" flag="U" /><case_relation id="s0_cr4" head="s0_bp1" depend="unk" label="デ" flag="U" /><case_relation id="s0_cr5" head="s0_bp1" depend="unk" label="カラ" flag="U" /><case_relation id="s0_cr6" head="s0_bp1" depend="unk" label="ヨリ" flag="U" /><case_relation id="s0_cr7" head="s0_bp1" depend="unk" label="マデ" flag="U" /><case_relation id="s0_cr8" head="s0_bp1" depend="unk" label="時間" flag="U" /><case_relation id="s0_cr9" head="s0_bp1" depend="unk" label="外の関係" flag="U" /><case_relation id="s0_cr10" head="s0_bp1" depend="unk" label="ノ" flag="U" /><case_relation id="s0_cr11" head="s0_bp1" depend="unk" label="修飾" flag="U" /><case_relation id="s0_cr12" head="s0_bp1" depend="unk" label="トスル" flag="U" /><case_relation id="s0_cr13" head="s0_bp1" depend="unk" label="ニオク" flag="U" /><case_relation id="s0_cr14" head="s0_bp1" depend="unk" label="ニカンスル" flag="U" /><case_relation id="s0_cr15" head="s0_bp1" depend="unk" label="ニヨル" flag="U" /><case_relation id="s0_cr16" head="s0_bp1" depend="unk" label="ヲフクメル" flag="U" /><case_relation id="s0_cr17" head="s0_bp1" depend="unk" label="ヲハジメル" flag="U" /><case_relation id="s0_cr18" head="s0_bp1" depend="unk" label="ヲノゾク" flag="U" /><case_relation id="s0_cr19" head="s0_bp1" depend="unk" label="ヲツウジル" flag="U" /></case_relations>
+    val expected = <caseRelations><caseRelation id="s0_cr0" head="s0_bp1" depend="s0_tok0" label="ガ" flag="C" /><caseRelation id="s0_cr1" head="s0_bp1" depend="unk" label="ヲ" flag="U" /><caseRelation id="s0_cr2" head="s0_bp1" depend="unk" label="ニ" flag="U" /><caseRelation id="s0_cr3" head="s0_bp1" depend="unk" label="ト" flag="U" /><caseRelation id="s0_cr4" head="s0_bp1" depend="unk" label="デ" flag="U" /><caseRelation id="s0_cr5" head="s0_bp1" depend="unk" label="カラ" flag="U" /><caseRelation id="s0_cr6" head="s0_bp1" depend="unk" label="ヨリ" flag="U" /><caseRelation id="s0_cr7" head="s0_bp1" depend="unk" label="マデ" flag="U" /><caseRelation id="s0_cr8" head="s0_bp1" depend="unk" label="時間" flag="U" /><caseRelation id="s0_cr9" head="s0_bp1" depend="unk" label="外の関係" flag="U" /><caseRelation id="s0_cr10" head="s0_bp1" depend="unk" label="ノ" flag="U" /><caseRelation id="s0_cr11" head="s0_bp1" depend="unk" label="修飾" flag="U" /><caseRelation id="s0_cr12" head="s0_bp1" depend="unk" label="トスル" flag="U" /><caseRelation id="s0_cr13" head="s0_bp1" depend="unk" label="ニオク" flag="U" /><caseRelation id="s0_cr14" head="s0_bp1" depend="unk" label="ニカンスル" flag="U" /><caseRelation id="s0_cr15" head="s0_bp1" depend="unk" label="ニヨル" flag="U" /><caseRelation id="s0_cr16" head="s0_bp1" depend="unk" label="ヲフクメル" flag="U" /><caseRelation id="s0_cr17" head="s0_bp1" depend="unk" label="ヲハジメル" flag="U" /><caseRelation id="s0_cr18" head="s0_bp1" depend="unk" label="ヲノゾク" flag="U" /><caseRelation id="s0_cr19" head="s0_bp1" depend="unk" label="ヲツウジル" flag="U" /></caseRelations>
 
     val knp = new KNPAnnotator("knp", new Properties)
     val tokens = knp.getTokens(input, "s0")
@@ -195,7 +195,7 @@ class KNPAnnotatorTest extends FunSuite {
 """.stripMargin.split("\n").toSeq
 
 
-    val expected = <case_relations><case_relation flag="C" label="ガ" depend="s0_tok0" head="s0_bp1" id="s0_cr0"/><case_relation flag="U" label="ニ" depend="unk" head="s0_bp1" id="s0_cr1"/><case_relation flag="U" label="ト" depend="unk" head="s0_bp1" id="s0_cr2"/><case_relation flag="U" label="デ" depend="unk" head="s0_bp1" id="s0_cr3"/><case_relation flag="U" label="カラ" depend="unk" head="s0_bp1" id="s0_cr4"/><case_relation flag="U" label="ヨリ" depend="unk" head="s0_bp1" id="s0_cr5"/><case_relation flag="U" label="マデ" depend="unk" head="s0_bp1" id="s0_cr6"/><case_relation flag="U" label="ヘ" depend="unk" head="s0_bp1" id="s0_cr7"/><case_relation flag="U" label="時間" depend="unk" head="s0_bp1" id="s0_cr8"/><case_relation flag="U" label="外の関係" depend="unk" head="s0_bp1" id="s0_cr9"/><case_relation flag="U" label="修飾" depend="unk" head="s0_bp1" id="s0_cr10"/><case_relation flag="N" label="ガ２" depend="s0_tok3" head="s0_bp1" id="s0_cr11"/><case_relation flag="U" label="ノ" depend="unk" head="s0_bp1" id="s0_cr12"/><case_relation flag="U" label="ニクラベル" depend="unk" head="s0_bp1" id="s0_cr13"/><case_relation flag="U" label="トスル" depend="unk" head="s0_bp1" id="s0_cr14"/><case_relation flag="U" label="トイウ" depend="unk" head="s0_bp1" id="s0_cr15"/><case_relation flag="U" label="ニアワセル" depend="unk" head="s0_bp1" id="s0_cr16"/><case_relation flag="U" label="ニトル" depend="unk" head="s0_bp1" id="s0_cr17"/><case_relation flag="U" label="ヲハジメル" depend="unk" head="s0_bp1" id="s0_cr18"/><case_relation flag="U" label="ニカギル" depend="unk" head="s0_bp1" id="s0_cr19"/><case_relation flag="C" label="ガ" depend="s0_tok3" head="s0_bp3" id="s0_cr20"/><case_relation flag="U" label="ヲ" depend="unk" head="s0_bp3" id="s0_cr21"/><case_relation flag="U" label="ニ" depend="unk" head="s0_bp3" id="s0_cr22"/><case_relation flag="U" label="ト" depend="unk" head="s0_bp3" id="s0_cr23"/><case_relation flag="U" label="デ" depend="unk" head="s0_bp3" id="s0_cr24"/><case_relation flag="U" label="カラ" depend="unk" head="s0_bp3" id="s0_cr25"/><case_relation flag="U" label="ヨリ" depend="unk" head="s0_bp3" id="s0_cr26"/><case_relation flag="U" label="マデ" depend="unk" head="s0_bp3" id="s0_cr27"/><case_relation flag="U" label="時間" depend="unk" head="s0_bp3" id="s0_cr28"/><case_relation flag="U" label="外の関係" depend="unk" head="s0_bp3" id="s0_cr29"/><case_relation flag="U" label="ノ" depend="unk" head="s0_bp3" id="s0_cr30"/><case_relation flag="U" label="修飾" depend="unk" head="s0_bp3" id="s0_cr31"/><case_relation flag="U" label="トスル" depend="unk" head="s0_bp3" id="s0_cr32"/><case_relation flag="U" label="ニオク" depend="unk" head="s0_bp3" id="s0_cr33"/><case_relation flag="U" label="ニカンスル" depend="unk" head="s0_bp3" id="s0_cr34"/><case_relation flag="U" label="ニヨル" depend="unk" head="s0_bp3" id="s0_cr35"/><case_relation flag="U" label="ヲフクメル" depend="unk" head="s0_bp3" id="s0_cr36"/><case_relation flag="U" label="ヲハジメル" depend="unk" head="s0_bp3" id="s0_cr37"/><case_relation flag="U" label="ヲノゾク" depend="unk" head="s0_bp3" id="s0_cr38"/><case_relation flag="U" label="ヲツウジル" depend="unk" head="s0_bp3" id="s0_cr39"/></case_relations>
+    val expected = <caseRelations><caseRelation flag="C" label="ガ" depend="s0_tok0" head="s0_bp1" id="s0_cr0"/><caseRelation flag="U" label="ニ" depend="unk" head="s0_bp1" id="s0_cr1"/><caseRelation flag="U" label="ト" depend="unk" head="s0_bp1" id="s0_cr2"/><caseRelation flag="U" label="デ" depend="unk" head="s0_bp1" id="s0_cr3"/><caseRelation flag="U" label="カラ" depend="unk" head="s0_bp1" id="s0_cr4"/><caseRelation flag="U" label="ヨリ" depend="unk" head="s0_bp1" id="s0_cr5"/><caseRelation flag="U" label="マデ" depend="unk" head="s0_bp1" id="s0_cr6"/><caseRelation flag="U" label="ヘ" depend="unk" head="s0_bp1" id="s0_cr7"/><caseRelation flag="U" label="時間" depend="unk" head="s0_bp1" id="s0_cr8"/><caseRelation flag="U" label="外の関係" depend="unk" head="s0_bp1" id="s0_cr9"/><caseRelation flag="U" label="修飾" depend="unk" head="s0_bp1" id="s0_cr10"/><caseRelation flag="N" label="ガ２" depend="s0_tok3" head="s0_bp1" id="s0_cr11"/><caseRelation flag="U" label="ノ" depend="unk" head="s0_bp1" id="s0_cr12"/><caseRelation flag="U" label="ニクラベル" depend="unk" head="s0_bp1" id="s0_cr13"/><caseRelation flag="U" label="トスル" depend="unk" head="s0_bp1" id="s0_cr14"/><caseRelation flag="U" label="トイウ" depend="unk" head="s0_bp1" id="s0_cr15"/><caseRelation flag="U" label="ニアワセル" depend="unk" head="s0_bp1" id="s0_cr16"/><caseRelation flag="U" label="ニトル" depend="unk" head="s0_bp1" id="s0_cr17"/><caseRelation flag="U" label="ヲハジメル" depend="unk" head="s0_bp1" id="s0_cr18"/><caseRelation flag="U" label="ニカギル" depend="unk" head="s0_bp1" id="s0_cr19"/><caseRelation flag="C" label="ガ" depend="s0_tok3" head="s0_bp3" id="s0_cr20"/><caseRelation flag="U" label="ヲ" depend="unk" head="s0_bp3" id="s0_cr21"/><caseRelation flag="U" label="ニ" depend="unk" head="s0_bp3" id="s0_cr22"/><caseRelation flag="U" label="ト" depend="unk" head="s0_bp3" id="s0_cr23"/><caseRelation flag="U" label="デ" depend="unk" head="s0_bp3" id="s0_cr24"/><caseRelation flag="U" label="カラ" depend="unk" head="s0_bp3" id="s0_cr25"/><caseRelation flag="U" label="ヨリ" depend="unk" head="s0_bp3" id="s0_cr26"/><caseRelation flag="U" label="マデ" depend="unk" head="s0_bp3" id="s0_cr27"/><caseRelation flag="U" label="時間" depend="unk" head="s0_bp3" id="s0_cr28"/><caseRelation flag="U" label="外の関係" depend="unk" head="s0_bp3" id="s0_cr29"/><caseRelation flag="U" label="ノ" depend="unk" head="s0_bp3" id="s0_cr30"/><caseRelation flag="U" label="修飾" depend="unk" head="s0_bp3" id="s0_cr31"/><caseRelation flag="U" label="トスル" depend="unk" head="s0_bp3" id="s0_cr32"/><caseRelation flag="U" label="ニオク" depend="unk" head="s0_bp3" id="s0_cr33"/><caseRelation flag="U" label="ニカンスル" depend="unk" head="s0_bp3" id="s0_cr34"/><caseRelation flag="U" label="ニヨル" depend="unk" head="s0_bp3" id="s0_cr35"/><caseRelation flag="U" label="ヲフクメル" depend="unk" head="s0_bp3" id="s0_cr36"/><caseRelation flag="U" label="ヲハジメル" depend="unk" head="s0_bp3" id="s0_cr37"/><caseRelation flag="U" label="ヲノゾク" depend="unk" head="s0_bp3" id="s0_cr38"/><caseRelation flag="U" label="ヲツウジル" depend="unk" head="s0_bp3" id="s0_cr39"/></caseRelations>
 
     val knp = new KNPAnnotator("knp", new Properties)
     val tokens = knp.getTokens(input, "s0")
@@ -217,7 +217,7 @@ class KNPAnnotatorTest extends FunSuite {
 |EOS
 """.stripMargin.split("\n").toSeq
 
-    val expected = <coreferences><coreference id="s0_coref0" basic_phrases="s0_bp0" /><coreference id="s0_coref1" basic_phrases="s0_bp1" /></coreferences>
+    val expected = <coreferences><coreference id="s0_coref0" basicPhrases="s0_bp0" /><coreference id="s0_coref1" basicPhrases="s0_bp1" /></coreferences>
 
     val knp = new KNPAnnotator("knp", new Properties)
     val bps = knp.getBasicPhrases(input, "s0")
@@ -242,7 +242,7 @@ class KNPAnnotatorTest extends FunSuite {
                    |EOS
 """.stripMargin.split("\n").toSeq
 
-    val expected = <coreferences><coreference id="s0_coref0" basic_phrases="s0_bp0" /><coreference id="s0_coref2" basic_phrases="s0_bp1" /><coreference id="s0_coref3" basic_phrases="s0_bp2" /></coreferences>
+    val expected = <coreferences><coreference id="s0_coref0" basicPhrases="s0_bp0" /><coreference id="s0_coref2" basicPhrases="s0_bp1" /><coreference id="s0_coref3" basicPhrases="s0_bp2" /></coreferences>
 
     val knp = new KNPAnnotator("knp", new Properties)
     val bps = knp.getBasicPhrases(input, "s0")
@@ -262,7 +262,7 @@ class KNPAnnotatorTest extends FunSuite {
                    |EOS
 """.stripMargin.split("\n").toSeq
 
-    val expected = <coreferences><coreference id="s0_coref0" basic_phrases="s0_bp0 s0_bp1" /></coreferences>
+    val expected = <coreferences><coreference id="s0_coref0" basicPhrases="s0_bp0 s0_bp1" /></coreferences>
 
     val knp = new KNPAnnotator("knp", new Properties)
     val bps = knp.getBasicPhrases(input, "s0")
@@ -289,7 +289,7 @@ class KNPAnnotatorTest extends FunSuite {
 
     //<述語項構造:飲む/のむ:動1:ガ/N/麻生太郎/1;ヲ/C/コーヒー/2>
 
-    val expected = <predicate_argument_relations><predicate_argument_relation id="s0_par0" predicate="s0_bp3" argument="s0_coref1" label="ガ" flag="N"/><predicate_argument_relation id="s0_par1" predicate="s0_bp3" argument="s0_coref2" label="ヲ" flag="C"/></predicate_argument_relations>
+    val expected = <predicateArgumentRelations><predicateArgumentRelation id="s0_par0" predicate="s0_bp3" argument="s0_coref1" label="ガ" flag="N"/><predicateArgumentRelation id="s0_par1" predicate="s0_bp3" argument="s0_coref2" label="ヲ" flag="C"/></predicateArgumentRelations>
 
     val knp = new KNPAnnotator("knp", new Properties)
     knp.getPredicateArgumentRelations(input, "s0") should be (expected)
@@ -307,7 +307,7 @@ class KNPAnnotatorTest extends FunSuite {
 |EOS
 """.stripMargin.split("\n").toSeq
 
-    val expected = <predicate_argument_relations><predicate_argument_relation id="s0_par0" predicate="s0_bp1" argument="s0_coref0" label="ガ" flag="C"/></predicate_argument_relations>
+    val expected = <predicateArgumentRelations><predicateArgumentRelation id="s0_par0" predicate="s0_bp1" argument="s0_coref0" label="ガ" flag="C"/></predicateArgumentRelations>
 
     val knp = new KNPAnnotator("knp", new Properties)
     knp.getPredicateArgumentRelations(input, "s0") should be (expected)
@@ -343,7 +343,7 @@ class KNPAnnotatorTest extends FunSuite {
     // <述語項構造:値段/ねだん:名1:ノ/O/リンゴ/0>
     // <述語項構造:高い/たかい:形5:ガ/C/値段/2;修飾/C/少し/3>
 
-    val expected = <predicate_argument_relations><predicate_argument_relation id="s0_par0" predicate="s0_bp1" argument="s0_coref0" label="ガ" flag="N"/><predicate_argument_relation id="s0_par1" predicate="s0_bp2" argument="s0_coref0" label="ノ" flag="O"/><predicate_argument_relation id="s0_par2" predicate="s0_bp4" argument="s0_coref2" label="ガ" flag="C"/><predicate_argument_relation id="s0_par3" predicate="s0_bp4" argument="s0_coref3" label="修飾" flag="C"/></predicate_argument_relations>
+    val expected = <predicateArgumentRelations><predicateArgumentRelation id="s0_par0" predicate="s0_bp1" argument="s0_coref0" label="ガ" flag="N"/><predicateArgumentRelation id="s0_par1" predicate="s0_bp2" argument="s0_coref0" label="ノ" flag="O"/><predicateArgumentRelation id="s0_par2" predicate="s0_bp4" argument="s0_coref2" label="ガ" flag="C"/><predicateArgumentRelation id="s0_par3" predicate="s0_bp4" argument="s0_coref3" label="修飾" flag="C"/></predicateArgumentRelations>
 
     val knp = new KNPAnnotator("knp", new Properties)
     knp.getPredicateArgumentRelations(input, "s0") should be (expected)
@@ -365,7 +365,7 @@ class KNPAnnotatorTest extends FunSuite {
                    |EOS
 """.stripMargin.split("\n").toSeq
 
-    val expected = <predicate_argument_relations><predicate_argument_relation id="s0_par0" predicate="s0_bp2" argument="s0_coref0" label="ガ" flag="C"/><predicate_argument_relation id="s0_par1" predicate="s0_bp2" argument="s0_coref1" label="ヲ" flag="C"/></predicate_argument_relations>
+    val expected = <predicateArgumentRelations><predicateArgumentRelation id="s0_par0" predicate="s0_bp2" argument="s0_coref0" label="ガ" flag="C"/><predicateArgumentRelation id="s0_par1" predicate="s0_bp2" argument="s0_coref1" label="ヲ" flag="C"/></predicateArgumentRelations>
 
     val knp = new KNPAnnotator("knp", new Properties)
     knp.getPredicateArgumentRelations(input, "s0") should be (expected)
@@ -387,7 +387,7 @@ class KNPAnnotatorTest extends FunSuite {
                    |EOS
 """.stripMargin.split("\n").toSeq
 
-    val expected = <named_entities><named_entity id="s0_ne0" tokens="s0_tok0 s0_tok1" label="ORGANIZATION" /></named_entities>
+    val expected = <namedEntities><namedEntity id="s0_ne0" tokens="s0_tok0 s0_tok1" label="ORGANIZATION" /></namedEntities>
 
     val knp = new KNPAnnotator("knp", new Properties)
     knp.getNamedEntities(input, "s0") should be (expected)
@@ -406,19 +406,19 @@ class KNPAnnotatorTest extends FunSuite {
                    |EOS
 """.stripMargin.split("\n").toSeq
 
-    val expected = <named_entities><named_entity id="s0_ne0" tokens="s0_tok0" label="PERSON" /></named_entities>
+    val expected = <namedEntities><namedEntity id="s0_ne0" tokens="s0_tok0" label="PERSON" /></namedEntities>
 
     val knp = new KNPAnnotator("knp", new Properties)
     knp.getNamedEntities(input, "s0") should be (expected)
   }
 
   test("recovJumanOutput"){
-    val juman_tokens = <tokens><token features="&quot;人名:日本:名:45:0.00106&quot;" inflectionForm_id="0" inflectionType_id="0" pos1_id="5" pos_id="6" reading="たろう" base="太郎" inflectionForm="*" inflectionType="*" pos1="人名" pos="名詞" surf="太郎" id="s0_tok0"/><token features="NIL" inflectionForm_id="0" inflectionType_id="0" pos1_id="1" pos_id="9" reading="が" base="が" inflectionForm="*" inflectionType="*" pos1="格助詞" pos="助詞" surf="が" id="s0_tok1"/><token features="&quot;代表表記:本/ほん 漢字読み:音 カテゴリ:人工物-その他;抽象物&quot;" inflectionForm_id="0" inflectionType_id="0" pos1_id="1" pos_id="6" reading="ほん" base="本" inflectionForm="*" inflectionType="*" pos1="普通名詞" pos="名詞" surf="本" id="s0_tok2"/><token features="NIL" inflectionForm_id="0" inflectionType_id="0" pos1_id="1" pos_id="9" reading="を" base="を" inflectionForm="*" inflectionType="*" pos1="格助詞" pos="助詞" surf="を" id="s0_tok3"/><token features="&quot;代表表記:買う/かう ドメイン:家庭・暮らし;ビジネス 反義:動詞:売る/うる&quot;" inflectionForm_id="10" inflectionType_id="12" pos1_id="0" pos_id="2" reading="かった" base="買う" inflectionForm="タ形" inflectionType="子音動詞ワ行" pos1="*" pos="動詞" surf="買った" id="s0_tok4"/></tokens>
+    val jumanTokens = <tokens><token features="&quot;人名:日本:名:45:0.00106&quot;" inflectionFormId="0" inflectionTypeId="0" pos1Id="5" posId="6" reading="たろう" base="太郎" inflectionForm="*" inflectionType="*" pos1="人名" pos="名詞" surf="太郎" id="s0_tok0"/><token features="NIL" inflectionFormId="0" inflectionTypeId="0" pos1Id="1" posId="9" reading="が" base="が" inflectionForm="*" inflectionType="*" pos1="格助詞" pos="助詞" surf="が" id="s0_tok1"/><token features="&quot;代表表記:本/ほん 漢字読み:音 カテゴリ:人工物-その他;抽象物&quot;" inflectionFormId="0" inflectionTypeId="0" pos1Id="1" posId="6" reading="ほん" base="本" inflectionForm="*" inflectionType="*" pos1="普通名詞" pos="名詞" surf="本" id="s0_tok2"/><token features="NIL" inflectionFormId="0" inflectionTypeId="0" pos1Id="1" posId="9" reading="を" base="を" inflectionForm="*" inflectionType="*" pos1="格助詞" pos="助詞" surf="を" id="s0_tok3"/><token features="&quot;代表表記:買う/かう ドメイン:家庭・暮らし;ビジネス 反義:動詞:売る/うる&quot;" inflectionFormId="10" inflectionTypeId="12" pos1Id="0" posId="2" reading="かった" base="買う" inflectionForm="タ形" inflectionType="子音動詞ワ行" pos1="*" pos="動詞" surf="買った" id="s0_tok4"/></tokens>
 
     val expected = Seq("太郎 たろう 太郎 名詞 6 人名 5 * 0 * 0 \"人名:日本:名:45:0.00106\"\n", "が が が 助詞 9 格助詞 1 * 0 * 0 NIL\n", "本 ほん 本 名詞 6 普通名詞 1 * 0 * 0 \"代表表記:本/ほん 漢字読み:音 カテゴリ:人工物-その他;抽象物\"\n", "を を を 助詞 9 格助詞 1 * 0 * 0 NIL\n", "買った かった 買う 動詞 2 * 0 子音動詞ワ行 12 タ形 10 \"代表表記:買う/かう ドメイン:家庭・暮らし;ビジネス 反義:動詞:売る/うる\"\n", "EOS\n")
 
     val knp = new KNPAnnotator("knp", new Properties)
-    knp.recovJumanOutput(juman_tokens) should be (expected)
+    knp.recovJumanOutput(jumanTokens) should be (expected)
   }
 
 }
