@@ -31,7 +31,6 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
   def isEOS(knpStr:String) : Boolean = knpStr == "EOS"
   def isToken(knpStr:String) : Boolean = ! isBasicPhrase(knpStr) && ! isChunk(knpStr) && ! isDocInfo(knpStr) && ! isEOS(knpStr)
 
-
   private def tid(sindex: String, tindex: Int) = sindex + "_tok" + tindex.toString
   private def cid(sindex: String, cindex: Int) = sindex + "_chu" + cindex
   private def bpid(sindex: String, bpindex: Int) = sindex + "_bp" + bpindex.toString
@@ -341,7 +340,7 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
           (tokAlt \ "@pos1") + " " + (tokAlt \ "@pos1_id") + " " +
           (tokAlt \ "@inflectionType") + " " + (tokAlt \ "@inflectionType_id") + " " +
           (tokAlt \ "@inflectionForm") + " " + (tokAlt \ "@inflectionForm_id") + " " +
-            (tok \ "@features").text + "\n"
+            (tokAlt \ "@features").text + "\n"
         }
       }
     }.foldLeft(List() : List[String])(_ ::: _.toList).toSeq :+ "EOS\n"
