@@ -317,16 +317,14 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
     sentenceWithNamedEntity
   }
 
+  private[this] def recoverTokenStr(tokenNode: Node, alt: Boolean) = if (alt) "@ " else "" +
+  Seq("@surf", "@reading", "@base", "@pos", "@posId", "@pos1", "@pos1Id", "@inflectionType", "@inflectionTypeId", "@inflectionForm", "@inflectionFormId").map(tokenNode \ _).mkString(" ") +
+  " " + (tokenNode \ "@features").text + "\n"
+
   def recovJumanOutput(jumanTokens:Node) : Seq[String] = {
     (jumanTokens \\ "token").map{
       tok =>
-      val tokStr = (tok \ "@surf") + " " + (tok \ "@reading") + " " + (tok \ "@base") + " " +
-      (tok \ "@pos") + " " + (tok \ "@posId") + " " +
-      (tok \ "@pos1") + " " + (tok \ "@pos1Id") + " " +
-      (tok \ "@inflectionType") + " " + (tok \ "@inflectionTypeId") + " " +
-      (tok \ "@inflectionForm") + " " + (tok \ "@inflectionFormId") + " " +
-        (tok \ "@features").text + "\n"
-
+      val tokStr = recoverTokenStr(tok, false)
       val tokenAltSeq = (tok \ "tokenAlt")
 
       if (tokenAltSeq.isEmpty){
@@ -335,12 +333,7 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
       else{
         tokStr +: tokenAltSeq.map{
           tokAlt =>
-          "@ " + (tokAlt \ "@surf") + " " + (tokAlt \ "@reading") + " " + (tokAlt \ "@base") + " " +
-          (tokAlt \ "@pos") + " " + (tokAlt \ "@posId") + " " +
-          (tokAlt \ "@pos1") + " " + (tokAlt \ "@pos1Id") + " " +
-          (tokAlt \ "@inflectionType") + " " + (tokAlt \ "@inflectionTypeId") + " " +
-          (tokAlt \ "@inflectionForm") + " " + (tokAlt \ "@inflectionFormId") + " " +
-            (tokAlt \ "@features").text + "\n"
+          recoverTokenStr(tokAlt, true)
         }
       }
     }.foldLeft(List() : List[String])(_ ::: _.toList).toSeq :+ "EOS\n"
