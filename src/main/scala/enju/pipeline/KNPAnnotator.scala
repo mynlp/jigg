@@ -317,7 +317,7 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
     sentenceWithNamedEntity
   }
 
-  private[this] def recoverTokenStr(tokenNode: Node, alt: Boolean) = if (alt) "@ " else "" +
+  private[this] def recoverTokenStr(tokenNode: Node, alt: Boolean) : String = if (alt) "@ " else "" +
   Seq("@surf", "@reading", "@base", "@pos", "@posId", "@pos1", "@pos1Id", "@inflectionType", "@inflectionTypeId", "@inflectionForm", "@inflectionFormId").map(tokenNode \ _).mkString(" ") +
   " " + (tokenNode \ "@features").text + "\n"
 
