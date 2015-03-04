@@ -359,6 +359,9 @@ class KNPAnnotator(override val name: String, val props: Properties) extends Sen
     makeXml(sentence, knpResult, sindex)
   }
 
-  override def requires = Set(Annotator.JaTokenize)
-  override def requirementsSatisfied = Set(Annotator.JaChunk, Annotator.JaDependency, Annotator.NamedEntity)
+  override def requires = Set(Requirement.TokenizeWithJuman)
+  override def requirementsSatisfied = {
+    import Requirement._
+    Set(Chunk, Dependency, BasicPhrase, BasicPhraseDependency, Coreference, PredArg, NamedEntity)
+  }
 }

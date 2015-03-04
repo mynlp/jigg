@@ -94,6 +94,6 @@ class MecabAnnotator(override val name: String, val props: Properties) extends S
   }
 
 
-  override def requires = Set(Annotator.JaSentence)
-  override def requirementsSatisfied = Set(Annotator.JaTokenize)
+  override def requires = Set(Requirement.Sentence)
+  override def requirementsSatisfied = Set(Requirement.TokenizeWithIPA)
 }

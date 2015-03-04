@@ -25,13 +25,13 @@ class Pipeline(val props: Properties = new Properties) {
   def createAnnotators: List[Annotator] = {
     val annotators = annotatorNames.map { getAnnotator(_) }.toList
 
-    annotators.foldLeft(Set[Annotator.Requirement]()) { (satisfiedSofar, annotator) =>
+    annotators.foldLeft(Set[Requirement]()) { (satisfiedSofar, annotator) =>
       val requires = annotator.requires
 
       val lacked = requires &~ (requires & satisfiedSofar)
       if (!lacked.isEmpty) sys.error("annotator %s requires annotators %s" format(annotator.name, lacked.mkString(", ")))
 
-      satisfiedSofar | annotator.requirementsSatisfied
+      Requirement.add(satisfiedSofar, annotator.requirementsSatisfied)
     }
     annotators
   }

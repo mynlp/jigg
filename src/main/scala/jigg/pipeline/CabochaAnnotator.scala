@@ -112,7 +112,6 @@ class CabochaAnnotator(override val name: String, val props: Properties) extends
     convertXml(sentence, cabocha_result, sindex)
   }
 
-
-  override def requires = Set(Annotator.JaTokenize)
-  override def requirementsSatisfied = Set(Annotator.JaChunk, Annotator.JaDependency)
+  override def requires = Set(Requirement.TokenizeWithIPA)
+  override def requirementsSatisfied = Set(Requirement.Chunk, Requirement.Dependency)
 }

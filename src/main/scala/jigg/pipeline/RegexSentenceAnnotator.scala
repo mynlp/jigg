@@ -48,7 +48,7 @@ class RegexSentenceAnnotator(override val name: String, val props: Properties) e
  }
 
   override def requires = Set()
-  override def requirementsSatisfied = Set(Annotator.JaSentence)
+  override def requirementsSatisfied = Set(Requirement.Sentence)
 
 }
 

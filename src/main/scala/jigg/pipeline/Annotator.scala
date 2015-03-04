@@ -9,33 +9,8 @@ trait Annotator {
 
   def close = {} // Resource release etc; detault: do nothing
 
-  import Annotator.Requirement
   def requires = Set.empty[Requirement]
   def requirementsSatisfied = Set.empty[Requirement]
-}
-
-// abstract class Requirement
-
-// object Requirement {
-//   case object JaSentence extends Requirement
-//   case object JaTokenize extends Requirement
-//   case object JaChunk extends Requirement
-//   case object JaDependency extends Requirement
-//   case object JaCCG extends Requirement
-// }
-
-object Annotator {
-  /** Requirement is a constant (used as an enum) used to describe dependencies between
-    * annotators. The design is inspired by the Stanford CoreNLP.
-    */
-  trait Requirement
-
-  case object JaSentence extends Requirement
-  case object JaTokenize extends Requirement
-  case object JaChunk extends Requirement
-  case object JaDependency extends Requirement
-  case object JaCCG extends Requirement
-  case object NamedEntity extends Requirement
 }
 
 /** A trait for an annotator which modifies a sentence node. If an annotator is sentence-level
