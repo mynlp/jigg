@@ -6,6 +6,7 @@ import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.util.Properties
 import scala.util.matching.Regex
+import scala.collection.mutable.ArrayBuffer
 import scala.xml._
 
 class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnnotator {
@@ -264,11 +265,11 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
   def getNamedEntities(knpResult:Seq[String], sid:String) = {
     var neInd = 0
     var lastTag = "N" //for convenience, use "N" as non-tag of "B/I/E/S"
-    var tempTokens : Seq[String] = Seq()
+    val tempTokens = new ArrayBuffer[String]
     var tempLabel = ""
 
     val pattern = new Regex("""\<NE:([A-Z]+):([BIES])\>""", "reLabel", "reTag")
-    var ans = NodeSeq.Empty
+    val namedEntities = new ArrayBuffer[Node]
 
     for (tpl <- knpResult.filter(knpStr => isToken(knpStr)).zipWithIndex){
       val knpStr = tpl._1
@@ -277,28 +278,28 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
 
       if ((lastTag == "N" && reTag == "B") || (lastTag == "N" && reTag == "S")){
         lastTag = reTag
-        tempTokens = tempTokens :+ tid(sid, tokInd)
+        tempTokens += tid(sid, tokInd)
         tempLabel = reLabel
       }
       else if((lastTag == "S" && reTag == "N") || (lastTag == "B" && reTag == "N") || (lastTag == "E" && reTag == "N")){
-        ans = ans :+ <namedEntity id={neid(sid, neInd)} tokens={tempTokens.mkString(" ")} label={tempLabel} />
+        namedEntities += <namedEntity id={neid(sid, neInd)} tokens={tempTokens.mkString(" ")} label={tempLabel} />
 
         lastTag = reTag
         neInd += 1
-        tempTokens = Seq()
+        tempTokens.clear
         tempLabel = ""
       }
       else if((lastTag == "B" && reTag == "I") || (lastTag == "B" && reTag == "E") || (lastTag == "I" && reTag == "E")){
         lastTag = reTag
-        tempTokens = tempTokens :+ tid(sid, tokInd)
+        tempTokens += tid(sid, tokInd)
       }
     }
 
     if(lastTag == "S" || (lastTag == "E")){
-      ans = ans :+ <namedEntity id={neid(sid, neInd)} tokens={tempTokens.mkString(" ")} label={tempLabel} />
+      namedEntities += <namedEntity id={neid(sid, neInd)} tokens={tempTokens.mkString(" ")} label={tempLabel} />
     }
 
-    <namedEntities>{ ans }</namedEntities>
+    <namedEntities>{ namedEntities }</namedEntities>
   }
 
   def makeXml(sentence:Node, knpResult:Seq[String], sid:String): Node = {
