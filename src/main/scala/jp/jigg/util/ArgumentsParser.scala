@@ -11,7 +11,10 @@ object ArgumentsParser {
         putTrue(props, key)
         parseRecur(props, next)
       case value :: tail =>
-        props.put(key, value)
+        key match {
+          case "props" => props.load(jp.jigg.util.IOUtil.openIn(value))
+          case _ => props.put(key, value)
+        }
         parseRecur(props, tail)
       case Nil =>
         putTrue(props, key)
