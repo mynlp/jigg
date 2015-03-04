@@ -88,7 +88,7 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
     <tokens>{ nodes }</tokens>
   }
 
-  def getBasicPhrases(knpResult:Seq[String], sid:String) : NodeSeq = {
+  def getBasicPhrases(knpResult:Seq[String], sid:String) = {
     var tokIdx = -1
 
     val basicPhraseBoundaries = knpResult.zipWithIndex.filter(x=>isBasicPhrase(x._1)).map(_._2) :+ knpResult.size
@@ -103,7 +103,7 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
     <basicPhrases>{ basicPhrases }</basicPhrases>
   }
 
-  def getChunks(knpResult:Seq[String], sid:String) : NodeSeq = {
+  def getChunks(knpResult:Seq[String], sid:String) = {
     var tokIdx = -1
 
     val chunkBoundaries = knpResult.zipWithIndex.filter(x=>isChunk(x._1)).map(_._2) :+ knpResult.size
@@ -118,7 +118,7 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
     <chunks>{ chunks }</chunks>
   }
 
-  def getBasicPhraseDependencies(knpResult:Seq[String], sid:String) : NodeSeq = {
+  def getBasicPhraseDependencies(knpResult:Seq[String], sid:String) = {
     val bpdepStrs = knpResult.filter(knpStr => isBasicPhrase(knpStr))
     val bpdepNum = bpdepStrs.length
     var bpdInd = 0
@@ -140,7 +140,7 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
   }
 
 
-  def getDependencies(knpResult:Seq[String], sid:String) : NodeSeq = {
+  def getDependencies(knpResult:Seq[String], sid:String) = {
     val depStrs = knpResult.filter(knpStr => isChunk(knpStr))
     val depNum = depStrs.length
     var depInd = 0
@@ -163,7 +163,7 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
   }
 
   // "格解析結果:走る/はしる:動13:ガ/C/太郎/0/0/1;ヲ/U/-/-/-/-;ニ/U/-/-/-/-;ト/U/-/-/-/-;デ/U/-/-/-/-;カラ/U/-/-/-/-;ヨリ/U/-/-/-/-;マデ/U/-/-/-/-;時間/U/-/-/-/-;外の関係/U/-/-/-/-;ノ/U/-/-/-/-;修飾/U/-/-/-/-;トスル/U/-/-/-/-;ニオク/U/-/-/-/-;ニカンスル/U/-/-/-/-;ニヨル/U/-/-/-/-;ヲフクメル/U/-/-/-/-;ヲハジメル/U/-/-/-/-;ヲノゾク/U/-/-/-/-;ヲツウジル/U/-/-/-/-
-  def getCaseRelations(knpResult:Seq[String], tokensXml:NodeSeq, bpsXml:NodeSeq, sid:String) : NodeSeq = {
+  def getCaseRelations(knpResult:Seq[String], tokensXml:NodeSeq, bpsXml:NodeSeq, sid:String) = {
     var crInd = 0
 
     val ans = knpResult.filter(str => isBasicPhrase(str)).zipWithIndex.filter(tpl => tpl._1.contains("<格解析結果:")).map{
@@ -202,7 +202,7 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
     <caseRelations>{ ans }</caseRelations>
   }
 
-  def getCoreferences(bpXml:NodeSeq, sid:String) : Node = {
+  def getCoreferences(bpXml:NodeSeq, sid:String) = {
     val eidHash = scala.collection.mutable.LinkedHashMap[Int, String]()
 
     (bpXml \ "basicPhrase").map{
@@ -229,7 +229,7 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
     <coreferences>{ ans }</coreferences>
   }
 
-  def getPredicateArgumentRelations(knpResult:Seq[String], sid:String) : Node = {
+  def getPredicateArgumentRelations(knpResult:Seq[String], sid:String) = {
     var parInd = 0
 
     //<述語項構造:飲む/のむ:動1:ガ/N/麻生太郎/1;ヲ/C/コーヒー/2>
@@ -261,7 +261,7 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
     <predicateArgumentRelations>{ ans }</predicateArgumentRelations>
   }
 
-  def getNamedEntities(knpResult:Seq[String], sid:String) : Node = {
+  def getNamedEntities(knpResult:Seq[String], sid:String) = {
     var neInd = 0
     var lastTag = "N" //for convenience, use "N" as non-tag of "B/I/E/S"
     var tempTokens : Seq[String] = Seq()
@@ -301,20 +301,20 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
     <namedEntities>{ ans }</namedEntities>
   }
 
-  def makeXml(sentence:Node, knpResult:Seq[String], sid:String) : Node = {
+  def makeXml(sentence:Node, knpResult:Seq[String], sid:String): Node = {
     val knpTokens = getTokens(knpResult, sid)
     val sentenceWithTokens = enju.util.XMLUtil.replaceAll(sentence, "tokens")(node => knpTokens)
     val basicPhrases = getBasicPhrases(knpResult, sid)
-    val sentenceWithBps = enju.util.XMLUtil.addChild(sentenceWithTokens, basicPhrases)
-    val sentenceWithChunks = enju.util.XMLUtil.addChild(sentenceWithBps, getChunks(knpResult, sid))
-    val sentenceWithBpdeps = enju.util.XMLUtil.addChild(sentenceWithChunks, getBasicPhraseDependencies(knpResult, sid))
-    val sentenceWithDeps = enju.util.XMLUtil.addChild(sentenceWithBpdeps, getDependencies(knpResult, sid))
-    val sentenceWithCaseRelations = enju.util.XMLUtil.addChild(sentenceWithDeps, getCaseRelations(knpResult, knpTokens, basicPhrases, sid))
-    val sentenceWithCoreferences = enju.util.XMLUtil.addChild(sentenceWithCaseRelations, getCoreferences(basicPhrases, sid))
-    val sentenceWithPredicateArguments = enju.util.XMLUtil.addChild(sentenceWithCoreferences, getPredicateArgumentRelations(knpResult, sid))
-    val sentenceWithNamedEntity = enju.util.XMLUtil.addChild(sentenceWithPredicateArguments, getNamedEntities(knpResult, sid))
-
-    sentenceWithNamedEntity
+    enju.util.XMLUtil.addChild(sentenceWithTokens, Seq[Node](
+      basicPhrases,
+      getChunks(knpResult, sid),
+      getBasicPhraseDependencies(knpResult, sid),
+      getDependencies(knpResult, sid),
+      getCaseRelations(knpResult, knpTokens, basicPhrases, sid),
+      getCoreferences(basicPhrases, sid),
+      getPredicateArgumentRelations(knpResult, sid),
+      getNamedEntities(knpResult, sid)
+    ))
   }
 
   private[this] def recoverTokenStr(tokenNode: Node, alt: Boolean) : String = if (alt) "@ " else "" +
@@ -327,7 +327,7 @@ class KNPAnnotator(val name: String, val props: Properties) extends SentencesAnn
     (jumanTokens \\ "token").map{
       tok =>
       ans += recoverTokenStr(tok, false)
-      
+
       val tokenAltSeq = (tok \ "tokenAlt")
 
       if (tokenAltSeq.nonEmpty){
