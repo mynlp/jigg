@@ -4,15 +4,25 @@ import scala.xml.{Node, Elem}
 import jp.jigg.util.XMLUtil
 
 trait Annotator {
-  def name: String
+  def name: String = this.getClass.toString
   def annotate(annotation: Node): Node
 
   def close = {} // Resource release etc; detault: do nothing
 
   import Annotator.Requirement
-  def requires: Set[Requirement]
-  def requirementsSatisfied: Set[Requirement]
+  def requires = Set.empty[Requirement]
+  def requirementsSatisfied = Set.empty[Requirement]
 }
+
+// abstract class Requirement
+
+// object Requirement {
+//   case object JaSentence extends Requirement
+//   case object JaTokenize extends Requirement
+//   case object JaChunk extends Requirement
+//   case object JaDependency extends Requirement
+//   case object JaCCG extends Requirement
+// }
 
 object Annotator {
   /** Requirement is a constant (used as an enum) used to describe dependencies between

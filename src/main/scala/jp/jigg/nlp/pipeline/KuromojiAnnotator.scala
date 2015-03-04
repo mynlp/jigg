@@ -8,7 +8,7 @@ import collection.JavaConversions._
 import org.atilika.kuromoji.Token
 import org.atilika.kuromoji.Tokenizer
 
-class KuromojiAnnotator(val name: String, val props: Properties) extends SentencesAnnotator {
+class KuromojiAnnotator(override val name: String, val props: Properties) extends SentencesAnnotator {
 
   val tokenizer = Tokenizer.builder.build
 

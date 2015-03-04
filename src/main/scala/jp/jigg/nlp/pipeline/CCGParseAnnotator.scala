@@ -16,7 +16,7 @@ import scala.collection.mutable.ArrayBuffer
 /** Currently this class is ugly; it largely depends on global variables defined in jp.jigg.nlp.ccg.Options.
   * TODO: revise this class and ShiftReduceParsing class.
   */
-class CCGParseAnnotator(val name: String, val props: Properties) extends SentencesAnnotator {
+class CCGParseAnnotator(override val name: String, val props: Properties) extends SentencesAnnotator {
 
   val parsing = new JapaneseShiftReduceParsing
   configParsing

@@ -8,7 +8,7 @@ import java.io.BufferedWriter
 import java.io.OutputStreamWriter
 
 
-class MecabAnnotator(val name: String, val props: Properties) extends SentencesAnnotator {
+class MecabAnnotator(override val name: String, val props: Properties) extends SentencesAnnotator {
   val mecab_command: String = props.getProperty("mecab.command", "mecab")
 
   //TODO option

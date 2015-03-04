@@ -6,7 +6,7 @@ import scala.io.Source
 import scala.xml.{Node, Elem, Text, Atom}
 import jp.jigg.util.XMLUtil
 
-class RegexSentenceAnnotator(val name: String, val props: Properties) extends Annotator {
+class RegexSentenceAnnotator(override val name: String, val props: Properties) extends Annotator {
 
   // TODO: Reconsider how to manage this id; this is temporarily moved here to share orders across multiple calls in shell mode.
   private[this] var sentenceID: Int = 0

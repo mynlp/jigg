@@ -8,7 +8,7 @@ import java.io.BufferedWriter
 import java.io.OutputStreamWriter
 
 
-class CabochaAnnotator(val name: String, val props: Properties) extends SentencesAnnotator {
+class CabochaAnnotator(override val name: String, val props: Properties) extends SentencesAnnotator {
   val cabocha_command: String = props.getProperty("cabocha.command", "cabocha")
   // option -I1 : input tokenized file
   // option -f3 : output result as XML
