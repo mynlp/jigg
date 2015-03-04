@@ -19,6 +19,7 @@ object IOUtil {
   def openIn(path: String): BufferedReader = bufReader(inStream(path))
 
   def openStandardIn: BufferedReader = bufReader(System.in)
+  def openStandardOut: BufferedWriter = bufWriter(System.out)
 
   def inStream(path: String) = path match {
     case gzipped if gzipped.endsWith(".gz") => new GZIPInputStream(new FileInputStream(gzipped))
@@ -30,6 +31,7 @@ object IOUtil {
   }
 
   def bufReader(stream: InputStream) = new BufferedReader(new InputStreamReader(stream))
+  def bufWriter(stream: OutputStream) = new BufferedWriter(new OutputStreamWriter(stream))
 
   def openIterator(path: String): Iterator[String] = inputIterator(openIn(path))
   def openStandardIterator: Iterator[String] = inputIterator(openStandardIn)
