@@ -47,7 +47,7 @@ class Pipeline(val props: Properties = new Properties) {
     val fn = props.getProperty("file")
     val root = fn match {
       case null => sys.error("file property should be given.")
-      case fn => Pipeline.xml(jp.jigg.util.IOUtil.openIterator(fn).mkString("\n"))
+      case fn => Pipeline.rootXML(jp.jigg.util.IOUtil.openIterator(fn).mkString("\n"))
     }
 
     val xml = multipleTrack("Annotating %s with %s".format(fn, annotatorNames.mkString(", "))) {
@@ -79,7 +79,7 @@ class Pipeline(val props: Properties = new Properties) {
     }
     var in = readLine
     try while (in != "") {
-      val xml = annotate(Pipeline.xml(in), annotators)
+      val xml = annotate(Pipeline.rootXML(in), annotators)
       val printer = new scala.xml.PrettyPrinter(500, 2)
       println(printer.format(xml))
       in = readLine
@@ -87,7 +87,7 @@ class Pipeline(val props: Properties = new Properties) {
   }
 
   def annotate(root: Node): Node = annotate(root, createAnnotators)
-  def annotate(input: String): Node = annotate(Pipeline.xml(input), createAnnotators)
+  def annotate(input: String): Node = annotate(Pipeline.rootXML(input), createAnnotators)
 
   def annotate(root: Node, annotators: List[Annotator], verbose: Boolean = false): Node = {
     def annotateRecur(input: Node, unprocessed: List[Annotator]): Node = unprocessed match {
@@ -113,5 +113,5 @@ object Pipeline {
       case _ => pipeline.run
     }
   }
-  def xml(raw: String) = <root><document>{ raw }</document></root>
+  def rootXML(raw: String) = <root><document>{ raw }</document></root>
 }
