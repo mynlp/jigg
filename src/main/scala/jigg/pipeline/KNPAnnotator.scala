@@ -319,12 +319,12 @@ class KNPAnnotator(override val name: String, override val props: Properties) ex
     ))
   }
 
-  private[this] def recoverTokenStr(tokenNode: Node, alt: Boolean) : String = if (alt) "@ " else "" +
+  private[this] def recoverTokenStr(tokenNode: Node, alt: Boolean) : String = (if (alt) "@ " else "") +
   Seq("@surf", "@reading", "@base", "@pos", "@posId", "@pos1", "@pos1Id", "@inflectionType", "@inflectionTypeId", "@inflectionForm", "@inflectionFormId").map(tokenNode \ _).mkString(" ") +
   " " + (tokenNode \ "@features").text + "\n"
 
   def recovJumanOutput(jumanTokens:Node) : Seq[String] = {
-    val ans = scala.collection.mutable.ArrayBuffer.empty[String]
+    val ans = ArrayBuffer.empty[String]
 
     (jumanTokens \\ "token").map{
       tok =>
