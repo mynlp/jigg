@@ -35,17 +35,6 @@ class RegexSentenceAnnotator(override val name: String, override val props: Prop
       case Some(pattern) =>
         pattern.r
     }
-    //   props.getProperty("ssplit.pattern") match {
-    //   case null | "" =>
-    //     props.getProperty("ssplit.") match {
-    //       case "newLine" =>
-    //       case "point" => RegexSentenceAnnotator.point
-    //       case "pointAndNewLine" => RegexSentenceAnnotator.pointAndNewLine
-    //       case _ => RegexSentenceAnnotator.defaultMethod
-    //     }
-    //   case pattern: String =>
-    //     pattern.r
-    // }
 
     XMLUtil.replaceAll(annotation, "document") { e =>
       val line = e.text
