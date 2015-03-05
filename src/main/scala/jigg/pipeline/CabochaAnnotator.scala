@@ -8,8 +8,8 @@ import java.io.BufferedWriter
 import java.io.OutputStreamWriter
 
 
-class CabochaAnnotator(override val name: String, val props: Properties) extends SentencesAnnotator {
-  val cabocha_command: String = props.getProperty("cabocha.command", "cabocha")
+class CabochaAnnotator(override val name: String, override val props: Properties) extends SentencesAnnotator {
+  val cabocha_command: String = prop("cabocha.command") getOrElse ("cabocha")
   // option -I1 : input tokenized file
   // option -f3 : output result as XML
   lazy private[this] val cabocha_process = new java.lang.ProcessBuilder(cabocha_command, "-f3", "-I1").start
@@ -114,4 +114,8 @@ class CabochaAnnotator(override val name: String, val props: Properties) extends
 
   override def requires = Set(Requirement.TokenizeWithIPA)
   override def requirementsSatisfied = Set(Requirement.Chunk, Requirement.Dependency)
+}
+
+object CabochaAnnotator extends AnnotatorObject[CabochaAnnotator] {
+  override def options = Array()
 }

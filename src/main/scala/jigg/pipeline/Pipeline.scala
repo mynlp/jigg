@@ -1,7 +1,7 @@
 package jigg.pipeline
 
 import java.util.Properties
-import java.io.BufferedReader
+import java.io.{BufferedReader, PrintStream}
 import scala.annotation.tailrec
 import scala.io.Source
 import scala.xml.{XML, Node}
@@ -19,8 +19,13 @@ class Pipeline(val props: Properties = new Properties) {
     new_id
   }
 
-  // TODO: sort by resolving dependencies
   val annotatorNames = PU.safeFind("annotators", props).split("""[,\s]+""")
+
+  val customAnnotatorNameToClassPath = PU.filter(props) {
+    case (k, _) => k.startsWith("customAnnotatorClass.")
+  }.map {
+    case (k, v) => (k.drop(k.indexOf('.') + 1), v)
+  }.toMap
 
   def createAnnotators: List[Annotator] = {
     val annotators = annotatorNames.map { getAnnotator(_) }.toList
@@ -40,20 +45,61 @@ class Pipeline(val props: Properties = new Properties) {
     annotators foreach (_.close)
   }
 
-  /** User may override this method in a subclass to add more own annotators?
+  /** User may override this method in a subclass to add more own annotators.
     */
-  def getAnnotator(name: String): Annotator = name match {
-    case "ssplit" => new RegexSentenceAnnotator(name, props)
-    case "kuromoji" => new KuromojiAnnotator(name, props)
-    case "mecab" => new MecabAnnotator(name, props)
-    case "cabocha" => new CabochaAnnotator(name, props)
-    case "juman" => new JumanAnnotator(name, props)
-    case "knp" => new KNPAnnotator(name, props)
-    case "ccg" => new CCGParseAnnotator(name, props)
-    case other =>
-      // assuming other is class name?
-      // TODO: determining how users can define thier own annotators
-      Class.forName(other).getConstructor(classOf[String], classOf[Properties]).newInstance(other, props).asInstanceOf[Annotator]
+  protected val defaultAnnotatorObjectMap = Map(
+    "ssplit" -> RegexSentenceAnnotator,
+    "kuromoji" -> KuromojiAnnotator,
+    "mecab" -> MecabAnnotator,
+    "cabocha" -> CabochaAnnotator,
+    "juman" -> JumanAnnotator,
+    "knp" -> KNPAnnotator,
+    "ccg" -> CCGParseAnnotator)
+
+  def getAnnotatorObject(name: String) =
+    defaultAnnotatorObjectMap get(name) orElse {
+      customAnnotatorNameToClassPath get(name) flatMap { path =>
+        resolveAnnotatorObject(path)
+      } orElse { resolveAnnotatorObject(name) } // finally, try whether name is a direct class path
+    }
+
+  private[this] def resolveAnnotatorObject(path: String): Option[AnnotatorObject[Annotator]] =
+    try {
+      val runtimeMirror = scala.reflect.runtime.universe.runtimeMirror(getClass.getClassLoader)
+      val module = runtimeMirror.staticModule(path)
+      val obj = runtimeMirror.reflectModule(module)
+      Some(obj.instance.asInstanceOf[AnnotatorObject[Annotator]])
+    } catch { case e: Throwable => None }
+
+  private[this] def resolveAnnotatorClass(path: String, name: String): Option[Annotator] =
+    try {
+      val constructor = Class.forName(path).getConstructor(classOf[String], classOf[Properties])
+      Some(constructor.newInstance(name, props).asInstanceOf[Annotator])
+    } catch { case e: Throwable => None }
+
+  /** Or also customizable by overriding this method directory, e.g.,
+    *
+    * {{{
+    * val option = "option"
+    * val pipeline = new Pipeline(props) {
+    *   override def getAnnotator(name: String) = name match {
+    *     case "myAnnotator" => new MyAnnotator(option)
+    *     case _ => super.getAnnotator(name)
+    *   }
+    * }
+    * }}}
+    *
+    */
+  def getAnnotator(name: String): Annotator = getAnnotatorObject(name) map {
+    _.fromProps(name, props)
+  } getOrElse {
+    customAnnotatorNameToClassPath get(name) flatMap { path =>
+      resolveAnnotatorClass(path, name)
+    } getOrElse {
+      resolveAnnotatorClass(name, name) getOrElse {
+        sys.error(s"Failed to search for custom annotator class: $name")
+      }
+    }
   }
 
   def run = {
@@ -133,16 +179,46 @@ class Pipeline(val props: Properties = new Properties) {
     annotateRecur(root, annotators)
   }
   protected def rootXML(raw: String) = <root><document id={ newDocumentID() }>{ raw }</document></root>
+
+  def help(os: PrintStream) = {
+    val out = printHelp(os) _
+    os.println("Usage:")
+    out(option)
+
+    PU.findProperty("annotators", props) match {
+      case None =>
+      case Some(names) =>
+        names.split("""[,\s]+""") foreach { name =>
+          // getAnnotator(name).option
+        }
+    }
+  }
+
+  protected def option = Array(
+    "annotators", "list of annotator names, e.g., ssplit,mecab [] ssplit|kuromoji|mecab|cabocha|juman|knp|ccg",
+    "props", "property file []",
+    "file", "input file; if omitted, use stdin []",
+    "help", "print this message and descriptions of specified annotators, e.g., -help ssplit,mecab []"
+  )
+
+  private[this] def printHelp(os: PrintStream)(keyVals: Seq[String]) = keyVals.grouped(2) foreach { case Seq(k, msg) =>
+    os.println(s"  $k\t\t: $msg")
+  }
 }
 
 object Pipeline {
   def main(args: Array[String]): Unit = {
     val props = jigg.util.ArgumentsParser.parse(args.toList)
-
     val pipeline = new Pipeline(props)
-    PU.findProperty("file", props) match {
-      case None => pipeline.runFromStdin
-      case _ => pipeline.run
+
+    PU.findProperty("help", props) match {
+      case Some(help) =>
+        pipeline.help(System.out)
+      case None =>
+        PU.findProperty("file", props) match {
+          case None => pipeline.runFromStdin
+          case _ => pipeline.run
+        }
     }
   }
 }

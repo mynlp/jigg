@@ -12,11 +12,10 @@ import scala.xml._
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.ArrayBuffer
 
-
 /** Currently this class is ugly; it largely depends on global variables defined in jigg.nlp.ccg.Options.
   * TODO: revise this class and ShiftReduceParsing class.
   */
-class CCGParseAnnotator(override val name: String, val props: Properties) extends SentencesAnnotator {
+class CCGParseAnnotator(override val name: String, override val props: Properties) extends SentencesAnnotator {
 
   val parsing = new JapaneseShiftReduceParsing
   configParsing
@@ -26,17 +25,17 @@ class CCGParseAnnotator(override val name: String, val props: Properties) extend
 
   def configParsing = {
     import PropertiesUtil.findProperty
-    findProperty(name + ".model", props) foreach { InputOptions.loadModelPath = _ }
-    findProperty(name + ".beta", props) foreach { x => TaggerOptions.beta = x.toDouble }
-    findProperty(name + ".maxK", props) foreach { x => TaggerOptions.maxK = x.toInt }
-    findProperty(name + ".beam", props) foreach { x => ParserOptions.beam = x.toInt }
+    prop("model") foreach { InputOptions.loadModelPath = _ }
+    prop("beta") foreach { x => TaggerOptions.beta = x.toDouble }
+    prop("maxK") foreach { x => TaggerOptions.maxK = x.toInt }
+    prop("beam") foreach { x => ParserOptions.beam = x.toInt }
 
     System.err.println("The path of CCG parser model: " + InputOptions.loadModelPath)
     parsing.load
   }
 
-  val numKbest: Int = PropertiesUtil.findProperty(name + ".numKbest", props) map(_.toInt) getOrElse(1)
-  val preferConnected: Boolean = PropertiesUtil.getBoolean(name + ".preferConnected", props) getOrElse(false)
+  val numKbest: Int = prop("numKbest") map(_.toInt) getOrElse(1)
+  val preferConnected: Boolean = prop("preferConnected").map(_.toBoolean) getOrElse(false)
 
   override def newSentenceAnnotation(sentence: Node) = {
     val sentenceID = (sentence \ "@id").toString // s12
@@ -143,4 +142,8 @@ class CCGParseAnnotator(override val name: String, val props: Properties) extend
 
   override def requires = Set(Requirement.TokenizeWithIPA)
   override def requirementsSatisfied = Set(Requirement.CCG)
+}
+
+object CCGParseAnnotator extends AnnotatorObject[CCGParseAnnotator] {
+  override def options = Array()
 }

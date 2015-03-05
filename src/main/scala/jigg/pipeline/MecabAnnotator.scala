@@ -8,8 +8,8 @@ import java.io.BufferedWriter
 import java.io.OutputStreamWriter
 
 
-class MecabAnnotator(override val name: String, val props: Properties) extends SentencesAnnotator {
-  val mecab_command: String = props.getProperty("mecab.command", "mecab")
+class MecabAnnotator(override val name: String, override val props: Properties) extends SentencesAnnotator {
+  val mecab_command: String = prop("mecab.command") getOrElse("mecab")
 
   //TODO option
   // val mecab_options: Seq[String] = props.getProperty("mecab.options", "").split("[\t ]+").filter(_.nonEmpty)
@@ -93,7 +93,10 @@ class MecabAnnotator(override val name: String, val props: Properties) extends S
     jigg.util.XMLUtil.addChild(sentence, tokensAnnotation)
   }
 
-
   override def requires = Set(Requirement.Sentence)
   override def requirementsSatisfied = Set(Requirement.TokenizeWithIPA)
+}
+
+object MecabAnnotator extends AnnotatorObject[MecabAnnotator] {
+  override def fromProps(name: String, props: Properties) = new MecabAnnotator(name, props)
 }

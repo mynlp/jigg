@@ -10,8 +10,8 @@ import scala.collection.mutable.ArrayBuffer
 import scala.xml._
 import jigg.util.XMLUtil
 
-class KNPAnnotator(override val name: String, val props: Properties) extends SentencesAnnotator {
-  val knpCommand: String = props.getProperty("knp.command", "knp")
+class KNPAnnotator(override val name: String, override val props: Properties) extends SentencesAnnotator {
+  val knpCommand: String = prop("command") getOrElse("knp")
 
   //for KNP 4.12 (-ne option is unneed)
   lazy private[this] val knpProcess = new java.lang.ProcessBuilder(knpCommand, "-tab", "-anaphora").start
@@ -365,3 +365,5 @@ class KNPAnnotator(override val name: String, val props: Properties) extends Sen
     Set(Chunk, Dependency, BasicPhrase, BasicPhraseDependency, Coreference, PredArg, NamedEntity)
   }
 }
+
+object KNPAnnotator extends AnnotatorObject[KNPAnnotator]

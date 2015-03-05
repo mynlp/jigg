@@ -6,7 +6,12 @@ import scala.io.Source
 import scala.xml.{Node, Elem, Text, Atom}
 import jigg.util.XMLUtil
 
-class RegexSentenceAnnotator(override val name: String, val props: Properties) extends Annotator {
+class RegexSentenceAnnotator(override val name: String, override val props: Properties) extends Annotator {
+
+  def option = Array(
+    "pattern", "Regular expression to segment lines (if omitted, specified method is used)",
+    "method", "Use predefined segment pattern [pointAndNewLine] newLine|point|pointAndNewLine"
+  )
 
   // TODO: Reconsider how to manage this id; this is temporarily moved here to share orders across multiple calls in shell mode.
   private[this] var sentenceID: Int = 0
@@ -19,17 +24,28 @@ class RegexSentenceAnnotator(override val name: String, val props: Properties) e
       new_id
     }
 
-    val splitRegex = props.getProperty("ssplit.pattern") match {
-      case null | "" =>
-        props.getProperty("ssplit.method") match {
-          case "newLine" => RegexSentenceAnnotator.newLine
-          case "point" => RegexSentenceAnnotator.point
-          case "pointAndNewLine" => RegexSentenceAnnotator.pointAndNewLine
+    val splitRegex = prop("pattern") match {
+      case None | Some("") =>
+        prop("method") match {
+          case Some("newLine") => RegexSentenceAnnotator.newLine
+          case Some("point") => RegexSentenceAnnotator.point
+          case Some("pointAndNewLine") => RegexSentenceAnnotator.pointAndNewLine
           case _ => RegexSentenceAnnotator.defaultMethod
         }
-      case pattern: String =>
+      case Some(pattern) =>
         pattern.r
     }
+    //   props.getProperty("ssplit.pattern") match {
+    //   case null | "" =>
+    //     props.getProperty("ssplit.") match {
+    //       case "newLine" =>
+    //       case "point" => RegexSentenceAnnotator.point
+    //       case "pointAndNewLine" => RegexSentenceAnnotator.pointAndNewLine
+    //       case _ => RegexSentenceAnnotator.defaultMethod
+    //     }
+    //   case pattern: String =>
+    //     pattern.r
+    // }
 
     XMLUtil.replaceAll(annotation, "document") { e =>
       val line = e.text
@@ -52,10 +68,12 @@ class RegexSentenceAnnotator(override val name: String, val props: Properties) e
 
 }
 
-object RegexSentenceAnnotator {
+object RegexSentenceAnnotator extends AnnotatorObject[RegexSentenceAnnotator] {
   val newLine = """\n+""".r
   val point = """。+""".r
   val pointAndNewLine = """\n+|。\n*""".r
 
   val defaultMethod = pointAndNewLine
+
+  override def options = Array()
 }

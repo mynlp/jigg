@@ -9,8 +9,8 @@ import java.io.OutputStreamWriter
 import scala.collection.mutable.ArrayBuffer
 import jigg.util.XMLUtil
 
-class JumanAnnotator(override val name: String, val props: Properties) extends SentencesAnnotator {
-  val jumanCommand: String = props.getProperty("juman.command", "juman")
+class JumanAnnotator(override val name: String, override val props: Properties) extends SentencesAnnotator {
+  val jumanCommand: String = prop("juman.command") getOrElse("juman")
 
   lazy private[this] val jumanProcess = new java.lang.ProcessBuilder((jumanCommand)).start
   lazy private[this] val jumanIn = new BufferedReader(new InputStreamReader(jumanProcess.getInputStream, "UTF-8"))
@@ -111,4 +111,8 @@ class JumanAnnotator(override val name: String, val props: Properties) extends S
 
   override def requires = Set(Requirement.Sentence)
   override def requirementsSatisfied = Set(Requirement.TokenizeWithJuman)
+}
+
+object JumanAnnotator extends AnnotatorObject[JumanAnnotator] {
+  override def options = Array()
 }

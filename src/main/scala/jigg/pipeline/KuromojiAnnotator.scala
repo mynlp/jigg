@@ -8,7 +8,7 @@ import collection.JavaConversions._
 import org.atilika.kuromoji.Token
 import org.atilika.kuromoji.Tokenizer
 
-class KuromojiAnnotator(override val name: String, val props: Properties) extends SentencesAnnotator {
+class KuromojiAnnotator(override val name: String, override val props: Properties) extends SentencesAnnotator {
 
   val tokenizer = Tokenizer.builder.build
 
@@ -55,3 +55,5 @@ class KuromojiAnnotator(override val name: String, val props: Properties) extend
   override def requires = Set(Requirement.Sentence)
   override def requirementsSatisfied = Set(Requirement.TokenizeWithIPA)
 }
+
+object KuromojiAnnotator extends AnnotatorObject[KuromojiAnnotator]

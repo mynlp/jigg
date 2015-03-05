@@ -1,6 +1,7 @@
 package jigg.util
 
 import java.util.Properties
+import scala.collection.JavaConversions._
 
 object PropertiesUtil {
   def findProperty(key: String, props: Properties): Option[String] = props.getProperty(key) match {
@@ -14,4 +15,9 @@ object PropertiesUtil {
     case "false" => false
     case _ => sys.error(s"Property $key should be true or false")
   }
+
+  def filter(props: Properties)(f: (String, String)=>Boolean): Seq[(String, String)] =
+    props.stringPropertyNames.toSeq
+      .map { k => (k, props.getProperty(k)) }
+      .filter { case (k, v) => f(k, v) }
 }
