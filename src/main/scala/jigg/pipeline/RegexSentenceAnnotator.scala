@@ -57,12 +57,10 @@ class RegexSentenceAnnotator(override val name: String, override val props: Prop
 
 }
 
-object RegexSentenceAnnotator extends AnnotatorObject[RegexSentenceAnnotator] {
+object RegexSentenceAnnotator extends AnnotatorCompanion[RegexSentenceAnnotator] {
   val newLine = """\n+""".r
   val point = """。+""".r
   val pointAndNewLine = """\n+|。\n*""".r
 
   val defaultMethod = pointAndNewLine
-
-  override def options = Array()
 }

@@ -56,4 +56,4 @@ class KuromojiAnnotator(override val name: String, override val props: Propertie
   override def requirementsSatisfied = Set(Requirement.TokenizeWithIPA)
 }
 
-object KuromojiAnnotator extends AnnotatorObject[KuromojiAnnotator]
+object KuromojiAnnotator extends AnnotatorCompanion[KuromojiAnnotator]

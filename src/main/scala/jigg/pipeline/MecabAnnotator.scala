@@ -97,6 +97,6 @@ class MecabAnnotator(override val name: String, override val props: Properties) 
   override def requirementsSatisfied = Set(Requirement.TokenizeWithIPA)
 }
 
-object MecabAnnotator extends AnnotatorObject[MecabAnnotator] {
+object MecabAnnotator extends AnnotatorCompanion[MecabAnnotator] {
   override def fromProps(name: String, props: Properties) = new MecabAnnotator(name, props)
 }

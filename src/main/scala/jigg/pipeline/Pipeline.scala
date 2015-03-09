@@ -41,41 +41,40 @@ class Pipeline(val props: Properties = new Properties) {
     annotators
   }
 
-  def close(annotators: Seq[Annotator]) = {
-    annotators foreach (_.close)
-  }
-
   /** User may override this method in a subclass to add more own annotators.
     */
-  protected val defaultAnnotatorObjectMap = Map(
-    "ssplit" -> RegexSentenceAnnotator,
-    "kuromoji" -> KuromojiAnnotator,
-    "mecab" -> MecabAnnotator,
-    "cabocha" -> CabochaAnnotator,
-    "juman" -> JumanAnnotator,
-    "knp" -> KNPAnnotator,
-    "ccg" -> CCGParseAnnotator)
+  protected val defaultAnnotatorClassMap: Map[String, Class[_]] = Map(
+    "ssplit" -> classOf[RegexSentenceAnnotator],
+    "kuromoji" -> classOf[KuromojiAnnotator],
+    "mecab" -> classOf[MecabAnnotator],
+    "cabocha" -> classOf[CabochaAnnotator],
+    "juman" -> classOf[JumanAnnotator],
+    "knp" -> classOf[KNPAnnotator],
+    "ccg" -> classOf[CCGParseAnnotator]
+  )
 
-  def getAnnotatorObject(name: String) =
-    defaultAnnotatorObjectMap get(name) orElse {
-      customAnnotatorNameToClassPath get(name) flatMap { path =>
-        resolveAnnotatorObject(path)
-      } orElse { resolveAnnotatorObject(name) } // finally, try whether name is a direct class path
+  def getAnnotatorCompanion(name: String): Option[AnnotatorCompanion[Annotator]] = {
+    import scala.reflect.runtime.{currentMirror => cm}
+
+    defaultAnnotatorClassMap get(name) flatMap { clazz =>
+      val symbol = cm.classSymbol(clazz).companionSymbol
+      try Some(cm.reflectModule(symbol.asModule).instance.asInstanceOf[AnnotatorCompanion[Annotator]])
+      catch { case e: Throwable => None }
     }
+  }
 
-  private[this] def resolveAnnotatorObject(path: String): Option[AnnotatorObject[Annotator]] =
-    try {
-      val runtimeMirror = scala.reflect.runtime.universe.runtimeMirror(getClass.getClassLoader)
-      val module = runtimeMirror.staticModule(path)
-      val obj = runtimeMirror.reflectModule(module)
-      Some(obj.instance.asInstanceOf[AnnotatorObject[Annotator]])
-    } catch { case e: Throwable => None }
+  def getAnnotatorClass(name: String): Option[Class[_]] = {
+    defaultAnnotatorClassMap get(name) orElse {
+      customAnnotatorNameToClassPath get(name) map { path =>
+        resolveAnnotatorClass(path, name)
+      } getOrElse {
+        resolveAnnotatorClass(name, name)
+      }
+    }
+  }
 
-  private[this] def resolveAnnotatorClass(path: String, name: String): Option[Annotator] =
-    try {
-      val constructor = Class.forName(path).getConstructor(classOf[String], classOf[Properties])
-      Some(constructor.newInstance(name, props).asInstanceOf[Annotator])
-    } catch { case e: Throwable => None }
+  private[this] def resolveAnnotatorClass(path: String, name: String): Option[Class[_]] =
+    try Some(Class.forName(path)) catch { case e: Throwable => None }
 
   /** Or also customizable by overriding this method directory, e.g.,
     *
@@ -90,16 +89,12 @@ class Pipeline(val props: Properties = new Properties) {
     * }}}
     *
     */
-  def getAnnotator(name: String): Annotator = getAnnotatorObject(name) map {
+  def getAnnotator(name: String): Annotator = getAnnotatorCompanion(name) map {
     _.fromProps(name, props)
   } getOrElse {
-    customAnnotatorNameToClassPath get(name) flatMap { path =>
-      resolveAnnotatorClass(path, name)
-    } getOrElse {
-      resolveAnnotatorClass(name, name) getOrElse {
-        sys.error(s"Failed to search for custom annotator class: $name")
-      }
-    }
+    getAnnotatorClass(name) map { clazz =>
+      clazz.getConstructor(classOf[String], classOf[Properties]).newInstance(name, props).asInstanceOf[Annotator]
+    } getOrElse { sys.error(s"Failed to search for custom annotator class: $name") }
   }
 
   def run = {
@@ -137,7 +132,6 @@ class Pipeline(val props: Properties = new Properties) {
   }
 
   private[this] def shell(reader: BufferedReader) = {
-    val annotators = createAnnotators
 
     def readLine: String = {
       System.err.print("> ")
@@ -148,22 +142,30 @@ class Pipeline(val props: Properties = new Properties) {
       }
     }
     var in = readLine
-    try while (in != "") {
-      val xml = annotate(rootXML(in), annotators, false)
-      val printer = new scala.xml.PrettyPrinter(500, 2)
-      println(printer.format(xml))
-      in = readLine
-    } finally close(annotators)
+
+    process { annotators =>
+      while (in != "") {
+        val xml = annotate(rootXML(in), annotators, false)
+        val printer = new scala.xml.PrettyPrinter(500, 2)
+        println(printer.format(xml))
+        in = readLine
+      }
+    }
+  }
+
+  private[this] def process[U](f: List[Annotator]=>U) = {
+    val annotators = createAnnotators
+    annotators foreach { _.init }
+    try f(annotators)
+    finally annotators foreach { _.close }
   }
 
   def annotate(reader: BufferedReader, verbose: Boolean = false): Node =
     annotateText(IOUtil.inputIterator(reader).mkString("\n"), verbose)
 
-  def annotateText(text: String, verbose: Boolean = false): Node = {
-    val annotators = createAnnotators
+  def annotateText(text: String, verbose: Boolean = false): Node = process { annotators =>
     val root = rootXML(text) // IOUtil.inputIterator(reader).mkString("\n"))
-    try annotate(root, annotators, verbose)
-    finally close(annotators)
+    annotate(root, annotators, verbose)
   }
 
   protected def annotate(root: Node, annotators: List[Annotator], verbose: Boolean): Node = {

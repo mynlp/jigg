@@ -116,6 +116,5 @@ class CabochaAnnotator(override val name: String, override val props: Properties
   override def requirementsSatisfied = Set(Requirement.Chunk, Requirement.Dependency)
 }
 
-object CabochaAnnotator extends AnnotatorObject[CabochaAnnotator] {
-  override def options = Array()
+object CabochaAnnotator extends AnnotatorCompanion[CabochaAnnotator] {
 }

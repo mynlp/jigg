@@ -9,10 +9,13 @@ trait Annotator {
   def name: String = this.getClass.toString
   val props: Properties = new Properties
 
+  def options = Array[String]()
+
   def prop(key: String): Option[String] = jigg.util.PropertiesUtil.findProperty(name + "." + key, props)
 
   def annotate(annotation: Node): Node
 
+  def init = {}  // Called before starting annotation
   def close = {} // Resource release etc; detault: do nothing
 
   def requires = Set.empty[Requirement]
@@ -21,18 +24,20 @@ trait Annotator {
 
 /** This is the base trait for all companion object of each Annotator
   */
-class AnnotatorObject[A<:Annotator](implicit m: ClassTag[A]) {
+class AnnotatorCompanion[A<:Annotator](implicit m: ClassTag[A]) {
 
-  /** An annotator should implement constructor of type (String, Properties) if it is used in pipeline.
-    * In default, such constructor is found with reflection.
-    * This behavior is although customized by overriding this method. See MecabAnnotator for example.
+  /** User can customize how to instantiate an annotator instance from the pipeline if
+    *  1) the annotator class has an companion object which inherets AnnotatorCompaion[ThatAnnotator]; and
+    *  2) that object overrides fromProps;
+    * are satisfied.
+    *
+    * See MecabAnnotator for example, where fromProps of object MecabAnnotator selects
+    * which MecabAnnotator class to invoke, such as IPAMecabAnnotator or JumanMecabAnnotator based on
+    * the current dictionary setting of mecab.
+    *
     */
   def fromProps(name: String, props: Properties): A =
     m.runtimeClass.getConstructor(classOf[String], classOf[Properties]).newInstance(name, props).asInstanceOf[A]
-
-  // private[this] def fromPropsWithReflection(name: String, props: Properties)() = m.runtimeClass.getConstructor(classOf[String], classOf[Properties]).newInstance(name, props).asInstanceOf[A]
-
-  def options = Array[String]()
 }
 
 /** A trait for an annotator which modifies a sentence node. If an annotator is sentence-level

@@ -112,7 +112,3 @@ class JumanAnnotator(override val name: String, override val props: Properties) 
   override def requires = Set(Requirement.Sentence)
   override def requirementsSatisfied = Set(Requirement.TokenizeWithJuman)
 }
-
-object JumanAnnotator extends AnnotatorObject[JumanAnnotator] {
-  override def options = Array()
-}

@@ -2,8 +2,9 @@ package jigg.pipeline
 
 import jigg.nlp.ccg.JapaneseShiftReduceParsing
 import jigg.nlp.ccg.{InputOptions, TaggerOptions, ParserOptions}
-import jigg.nlp.ccg.lexicon.{ PoSTaggedSentence, Derivation, Point }
-import jigg.nlp.ccg.parser.KBestDecoder
+import jigg.nlp.ccg.lexicon.{PoSTaggedSentence, Derivation, Point}
+import jigg.nlp.ccg.tagger.{MaxEntMultiTagger}
+import jigg.nlp.ccg.parser.{TransitionBasedParser, KBestDecoder}
 import jigg.util.PropertiesUtil
 import jigg.util.XMLUtil
 
@@ -18,10 +19,14 @@ import scala.collection.mutable.ArrayBuffer
 class CCGParseAnnotator(override val name: String, override val props: Properties) extends SentencesAnnotator {
 
   val parsing = new JapaneseShiftReduceParsing
-  configParsing
+  var tagger: MaxEntMultiTagger = _
+  var decoder: TransitionBasedParser = _
 
-  val tagger = parsing.tagging.getTagger
-  val decoder = parsing.getPredDecoder
+  override def init = {
+    configParsing
+    tagger = parsing.tagging.getTagger
+    decoder = parsing.getPredDecoder
+  }
 
   def configParsing = {
     import PropertiesUtil.findProperty
@@ -110,6 +115,9 @@ class CCGParseAnnotator(override val name: String, override val props: Propertie
   }
 
   def getDerivations(sentence: PoSTaggedSentence): Seq[(Derivation, Double)] = {
+    val tagger = parsing.tagging.getTagger
+    val decoder = parsing.getPredDecoder
+
     val beta = TaggerOptions.beta
     val maxK = TaggerOptions.maxK
     val beam = ParserOptions.beam
@@ -142,8 +150,4 @@ class CCGParseAnnotator(override val name: String, override val props: Propertie
 
   override def requires = Set(Requirement.TokenizeWithIPA)
   override def requirementsSatisfied = Set(Requirement.CCG)
-}
-
-object CCGParseAnnotator extends AnnotatorObject[CCGParseAnnotator] {
-  override def options = Array()
 }

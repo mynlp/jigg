@@ -365,5 +365,3 @@ class KNPAnnotator(override val name: String, override val props: Properties) ex
     Set(Chunk, Dependency, BasicPhrase, BasicPhraseDependency, Coreference, PredArg, NamedEntity)
   }
 }
-
-object KNPAnnotator extends AnnotatorObject[KNPAnnotator]
