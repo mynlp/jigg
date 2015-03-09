@@ -18,6 +18,11 @@ class CategoryParserTest extends FunSuite {
     val cat2Str = "(((S[mod=adn,form=base]{I1}\\NP[case=ni,mod=nm]{I2}){I1})\\NP[case=o,mod=nm]{I3}){I1}_I1(unk,I3,I2,_)"
     val cat2 = JapaneseCategoryParser.parse(cat2Str)
     cat2.toString should equal ("(S[mod=adn,form=base]\\NP[mod=nm,case=ni])\\NP[mod=nm,case=o]")
+
+
+    val cat3Str = "(NP[case=X1,mod=X2,fin=f]{I1}/NP[case=X1,mod=X2,fin=f]{I1}){I2}_none"
+    val cat3 = JapaneseCategoryParser.parse(cat3Str)
+    cat3.toString should equal ("NP[fin=f]/NP[fin=f]")
   }
 
   // These are obsolute tests for previous version
