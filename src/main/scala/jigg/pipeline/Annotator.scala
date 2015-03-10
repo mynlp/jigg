@@ -8,20 +8,16 @@ import jigg.util.XMLUtil
 trait Annotator extends PropsHolder {
 
   def name: String = this.getClass.getSimpleName
-  val props: Properties = new Properties
 
-  def options = Array[String]()
+  override final def prefix = name // prefix is required in PropsHolder; for Annotators, it corresponds to its name.
+
+  def props: Properties = new Properties
 
   final def prop(key: String): Option[String] = jigg.util.PropertiesUtil.findProperty(name + "." + key, props)
 
   def annotate(annotation: Node): Node
 
-  final def init = { // Called before starting annotation
-    initProps
-    initSetting
-  }
-
-  protected def initSetting = {}
+  def init = {} // Called before starting annotation
 
   def close = {} // Resource release etc; detault: do nothing
 

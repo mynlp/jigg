@@ -8,10 +8,9 @@ import jigg.util.XMLUtil
 
 class RegexSentenceAnnotator(override val name: String, override val props: Properties) extends Annotator {
 
-  def option = Array(
-    "pattern", "Regular expression to segment lines (if omitted, specified method is used)",
-    "method", "Use predefined segment pattern [pointAndNewLine] newLine|point|pointAndNewLine"
-  )
+  @Prop(gloss = "Regular expression to segment lines (if omitted, specified method is used)") var pattern = ""
+  @Prop(gloss = "Use predefined segment pattern [pointAndNewLine] newLine|point|pointAndNewLine") var method = "pointAndNewLine"
+  readProps()
 
   // TODO: Reconsider how to manage this id; this is temporarily moved here to share orders across multiple calls in shell mode.
   private[this] var sentenceID: Int = 0
@@ -24,15 +23,15 @@ class RegexSentenceAnnotator(override val name: String, override val props: Prop
       new_id
     }
 
-    val splitRegex = prop("pattern") match {
-      case None | Some("") =>
-        prop("method") match {
-          case Some("newLine") => RegexSentenceAnnotator.newLine
-          case Some("point") => RegexSentenceAnnotator.point
-          case Some("pointAndNewLine") => RegexSentenceAnnotator.pointAndNewLine
-          case _ => RegexSentenceAnnotator.defaultMethod
+    val splitRegex = pattern match {
+      case "" =>
+        method match {
+          case "newLine" => RegexSentenceAnnotator.newLine
+          case "point" => RegexSentenceAnnotator.point
+          case "pointAndNewLine" => RegexSentenceAnnotator.pointAndNewLine
+          case other => sys.error(s"Unknown method in %{name}: %{method}")
         }
-      case Some(pattern) =>
+      case pattern =>
         pattern.r
     }
 
@@ -61,6 +60,4 @@ object RegexSentenceAnnotator extends AnnotatorCompanion[RegexSentenceAnnotator]
   val newLine = """\n+""".r
   val point = """。+""".r
   val pointAndNewLine = """\n+|。\n*""".r
-
-  val defaultMethod = pointAndNewLine
 }

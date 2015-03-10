@@ -9,7 +9,17 @@ import jigg.util.LogUtil.{ track, multipleTrack }
 import jigg.util.{PropertiesUtil => PU}
 import jigg.util.IOUtil
 
-class Pipeline(val props: Properties = new Properties) {
+class Pipeline(val properties: Properties = new Properties) extends PropsHolder {
+
+  def prop(key: String) = PU.findProperty(key, properties)
+
+  @Prop(gloss="List of annotator names, e.g., ssplit,mecab ssplit|kuromoji|mecab|cabocha|juman|knp|ccg", required=true) var annotators = ""
+  @Prop(gloss="Property file") var props = ""
+  @Prop(gloss="Input file; if omitted, read from stdin") var file = ""
+  @Prop(gloss="Print this message and descriptions of specified annotators, e.g., -help ssplit,mecab") var help = ""
+  @Prop(gloss="You can add an abbreviation for a custom annotator class with \"-customAnnotatorClass.xxx path.package\"") var customAnnotatorClass = ""
+
+  readProps()
 
   // TODO: should document ID be given here?  Somewhere else?
   private[this] var documentID: Int = 0
@@ -19,9 +29,9 @@ class Pipeline(val props: Properties = new Properties) {
     new_id
   }
 
-  val annotatorNames = PU.safeFind("annotators", props).split("""[,\s]+""")
+  val annotatorNames = annotators.split("""[,\s]+""") // PU.safeFind("annotators", props).split("""[,\s]+""")
 
-  val customAnnotatorNameToClassPath = PU.filter(props) {
+  val customAnnotatorNameToClassPath = PU.filter(properties) {
     case (k, _) => k.startsWith("customAnnotatorClass.")
   }.map {
     case (k, v) => (k.drop(k.indexOf('.') + 1), v)
@@ -90,18 +100,17 @@ class Pipeline(val props: Properties = new Properties) {
     *
     */
   def getAnnotator(name: String): Annotator = getAnnotatorCompanion(name) map {
-    _.fromProps(name, props)
+    _.fromProps(name, properties)
   } getOrElse {
     getAnnotatorClass(name) map { clazz =>
-      clazz.getConstructor(classOf[String], classOf[Properties]).newInstance(name, props).asInstanceOf[Annotator]
+      clazz.getConstructor(classOf[String], classOf[Properties]).newInstance(name, properties).asInstanceOf[Annotator]
     } getOrElse { sys.error(s"Failed to search for custom annotator class: $name") }
   }
 
   def run = {
-    val fn = PU.safeFind("file", props)
-    val reader = IOUtil.openIn(fn)
+    val reader = IOUtil.openIn(file)
 
-    val xml = multipleTrack("Annotating %s with %s".format(fn, annotatorNames.mkString(", "))) {
+    val xml = multipleTrack("Annotating %s with %s".format(file, annotatorNames.mkString(", "))) {
       annotate(reader, true)
     }
 
@@ -110,8 +119,8 @@ class Pipeline(val props: Properties = new Properties) {
     // XML.save(in + ".xml", xml, "UTF-8")
     val printer = new scala.xml.PrettyPrinter(500, 2)
 
-    track("Writing to %s".format(fn + ".xml... ")) {
-      XML.save(fn + ".xml", XML.loadString(printer.format(xml)), "UTF-8", true, null)
+    track("Writing to %s".format(file + ".xml... ")) {
+      XML.save(file + ".xml", XML.loadString(printer.format(xml)), "UTF-8", true, null)
     }
   }
 
@@ -182,45 +191,40 @@ class Pipeline(val props: Properties = new Properties) {
   }
   protected def rootXML(raw: String) = <root><document id={ newDocumentID() }>{ raw }</document></root>
 
-  def help(os: PrintStream) = {
-    val out = printHelp(os) _
+  def printHelp(os: PrintStream) = {
     os.println("Usage:")
-    out(option)
+    printPropertyMessage(os)
 
-    PU.findProperty("annotators", props) match {
-      case None =>
-      case Some(names) =>
-        names.split("""[,\s]+""") foreach { name =>
-          // getAnnotator(name).option
+    help match {
+      case "true" => // when "-help" is used without specified names
+      case help =>
+        val helpAnnotatorNames = help.split("""[,\s]+""")
+        helpAnnotatorNames foreach { name =>
+          os.println(s"Usage of $name:")
+          getAnnotator(name).printPropertyMessage(os)
         }
     }
-  }
-
-  protected def option = Array(
-    "annotators", "list of annotator names, e.g., ssplit,mecab [] ssplit|kuromoji|mecab|cabocha|juman|knp|ccg",
-    "props", "property file []",
-    "file", "input file; if omitted, use stdin []",
-    "help", "print this message and descriptions of specified annotators, e.g., -help ssplit,mecab []"
-  )
-
-  private[this] def printHelp(os: PrintStream)(keyVals: Seq[String]) = keyVals.grouped(2) foreach { case Seq(k, msg) =>
-    os.println(s"  $k\t\t: $msg")
   }
 }
 
 object Pipeline {
   def main(args: Array[String]): Unit = {
     val props = jigg.util.ArgumentsParser.parse(args.toList)
-    val pipeline = new Pipeline(props)
 
-    PU.findProperty("help", props) match {
-      case Some(help) =>
-        pipeline.help(System.out)
-      case None =>
-        PU.findProperty("file", props) match {
-          case None => pipeline.runFromStdin
-          case _ => pipeline.run
-        }
+    try {
+      val pipeline = new Pipeline(props)
+
+      PU.findProperty("help", props) match {
+        case Some(help) =>
+          pipeline.printHelp(System.out)
+        case None =>
+          pipeline.file match {
+            case "" => pipeline.runFromStdin
+            case _ => pipeline.run
+          }
+      }
+    } catch {
+      case MissingArgumentException => // do nothing if prop is incomplete
     }
   }
 }
