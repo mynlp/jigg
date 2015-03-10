@@ -2,20 +2,27 @@ package jigg.pipeline
 
 import java.util.Properties
 import scala.xml.{Node, Elem}
-import jigg.util.XMLUtil
 import scala.reflect.ClassTag
+import jigg.util.XMLUtil
 
-trait Annotator {
-  def name: String = this.getClass.toString
+trait Annotator extends PropsHolder {
+
+  def name: String = this.getClass.getSimpleName
   val props: Properties = new Properties
 
   def options = Array[String]()
 
-  def prop(key: String): Option[String] = jigg.util.PropertiesUtil.findProperty(name + "." + key, props)
+  final def prop(key: String): Option[String] = jigg.util.PropertiesUtil.findProperty(name + "." + key, props)
 
   def annotate(annotation: Node): Node
 
-  def init = {}  // Called before starting annotation
+  final def init = { // Called before starting annotation
+    initProps
+    initSetting
+  }
+
+  protected def initSetting = {}
+
   def close = {} // Resource release etc; detault: do nothing
 
   def requires = Set.empty[Requirement]

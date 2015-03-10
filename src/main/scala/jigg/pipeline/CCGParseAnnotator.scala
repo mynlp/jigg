@@ -22,7 +22,7 @@ class CCGParseAnnotator(override val name: String, override val props: Propertie
   var tagger: MaxEntMultiTagger = _
   var decoder: TransitionBasedParser = _
 
-  override def init = {
+  override def initSetting = {
     configParsing
     tagger = parsing.tagging.getTagger
     decoder = parsing.getPredDecoder
