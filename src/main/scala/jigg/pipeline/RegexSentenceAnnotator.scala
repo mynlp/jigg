@@ -9,7 +9,7 @@ import jigg.util.XMLUtil
 class RegexSentenceAnnotator(override val name: String, override val props: Properties) extends Annotator {
 
   @Prop(gloss = "Regular expression to segment lines (if omitted, specified method is used)") var pattern = ""
-  @Prop(gloss = "Use predefined segment pattern [pointAndNewLine] newLine|point|pointAndNewLine") var method = "pointAndNewLine"
+  @Prop(gloss = "Use predefined segment pattern newLine|point|pointAndNewLine") var method = "pointAndNewLine"
   readProps()
 
   // TODO: Reconsider how to manage this id; this is temporarily moved here to share orders across multiple calls in shell mode.
