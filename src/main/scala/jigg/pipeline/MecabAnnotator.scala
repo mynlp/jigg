@@ -11,20 +11,26 @@ import jigg.util.PropertiesUtil
 
 abstract class MecabAnnotator(override val name: String, override val props: Properties) extends SentencesAnnotator {
 
-  def dict: String
+  def dic: SystemDic
 
-  @Prop(gloss = "Use this command to launch mecab. System dictionary is selected according to information accessible with '-P' option.") var command = MecabAnnotator.defaultCommand
+  @Prop(gloss = "Use this command to launch mecab. System dictionary is selected according to the current configuration accessible with '-P' option.") var command = MecabAnnotator.defaultCommand
   readProps()
 
+
   override def description = {
-    super.description + "\n\n" +
-    Seq("  Tokenize sentence by MeCab.",
-      s"  Current dictionary is ${dict}.",
-      "  You can customize these settings by, e.g, -%s \"mecab -d /path/to/dic\"".format(makeFullName("command")),
-      "",
-      "  Original help message:",
-      MecabAnnotator.getHelp(command).map("    " + _).mkString("\n")
-    ).mkString("\n")
+
+    def keyName = makeFullName("command")
+    def helpMessage = MecabAnnotator.getHelp(command).map("    " + _).mkString("\n")
+
+    s"""
+${super.description}
+  Tokenize sentence by MeCab.
+  Current dictionary is ${dic}.
+  You can customize these settings by, e.g, -${keyName} "mecab -d /path/to/dic"
+
+  Original help message:
+${helpMessage}
+"""
   }
 
   lazy private[this] val mecab_process = new java.lang.ProcessBuilder((command)).start
@@ -110,31 +116,28 @@ abstract class MecabAnnotator(override val name: String, override val props: Pro
 }
 
 class IPAMecabAnnotator(name: String, props: Properties) extends MecabAnnotator(name, props) {
-  def dict = MecabAnnotator.ipa
+  def dic = SystemDic.ipadic
   override def requirementsSatisfied = Set(Requirement.TokenizeWithIPA)
 }
 class JumanDicMecabAnnotator(name: String, props: Properties) extends MecabAnnotator(name, props) {
-  def dict = MecabAnnotator.juman
+  def dic = SystemDic.jumandic
   override def requirementsSatisfied = Set(Requirement.TokenizeWithJuman)
 }
 class UnidicMecabAnnotator(name: String, props: Properties) extends MecabAnnotator(name, props) {
-  def dict = MecabAnnotator.unidic
+  def dic = SystemDic.unidic
   override def requirementsSatisfied = Set(Requirement.TokenizeWithUnidic)
 }
 
 object MecabAnnotator extends AnnotatorCompanion[MecabAnnotator] {
 
-  val ipa = "ipadic"
-  val juman = "jumandic"
-  val unidic = "unidic"
-
+  import SystemDic._
   override def fromProps(name: String, props: Properties) = {
     val cmd = currentCommand(name, props)
 
     currentDictionary(cmd) map {
-      case `ipa` => new IPAMecabAnnotator(name, props)
-      case `juman` => new JumanDicMecabAnnotator(name, props)
-      case `unidic` => new UnidicMecabAnnotator(name, props)
+      case SystemDic.ipadic => new IPAMecabAnnotator(name, props)
+      case SystemDic.jumandic => new JumanDicMecabAnnotator(name, props)
+      case SystemDic.unidic => new UnidicMecabAnnotator(name, props)
     } getOrElse {
       System.out.println("Failed to search dictionary with \"${cmd}\". Using IPAMecabAnnotator...")
       new IPAMecabAnnotator(name, props)
@@ -148,18 +151,17 @@ object MecabAnnotator extends AnnotatorCompanion[MecabAnnotator] {
     PropertiesUtil.findProperty(key, props) getOrElse (defaultCommand)
   }
 
-  def currentDictionary(cmd: String): Option[String] = {
-
+  def currentDictionary(cmd: String): Option[SystemDic] = {
     try {
       val config = getConfig(cmd)
       val dicdirLine = config.find(_.startsWith("dicdir:"))
 
-      dicdirLine.map { l => l.drop(l.lastIndexOf('/') + 1) }.map {
-        case dicdir if dicdir.containsSlice(ipa) => ipa
-        case dicdir if dicdir.containsSlice(juman) => juman
-        case dicdir if dicdir.containsSlice(unidic) => unidic
+      dicdirLine map { l => l.drop(l.lastIndexOf('/') + 1) } map {
+        case dicdir if dicdir.containsSlice("ipadic") => SystemDic.ipadic
+        case dicdir if dicdir.containsSlice("jumandic") => SystemDic.jumandic
+        case dicdir if dicdir.containsSlice("unidic") => SystemDic.unidic
       }
-    } // catch { case e: Throwable => None }
+    } catch { case e: Throwable => None }
   }
 
   def getConfig(cmd: String) = Process(cmd + " --dump-config").lines_!
