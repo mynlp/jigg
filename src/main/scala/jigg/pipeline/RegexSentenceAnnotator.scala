@@ -12,28 +12,21 @@ class RegexSentenceAnnotator(override val name: String, override val props: Prop
   @Prop(gloss = "Use predefined segment pattern newLine|point|pointAndNewLine") var method = "pointAndNewLine"
   readProps()
 
-  // TODO: Reconsider how to manage this id; this is temporarily moved here to share orders across multiple calls in shell mode.
-  private[this] var sentenceID: Int = 0
+  val splitRegex = pattern match {
+    case "" =>
+      method match {
+        case "newLine" => RegexSentenceAnnotator.newLine
+        case "point" => RegexSentenceAnnotator.point
+        case "pointAndNewLine" => RegexSentenceAnnotator.pointAndNewLine
+        case other => argumentError("method")
+      }
+    case pattern =>
+      pattern.r
+  }
+
+  private[this] val sentenceIDGen = jigg.util.IDGenerator("s")
 
   override def annotate(annotation: Node): Node = {
-
-    def newSentenceID(): String = {
-      val new_id = "s" + sentenceID
-      sentenceID += 1
-      new_id
-    }
-
-    val splitRegex = pattern match {
-      case "" =>
-        method match {
-          case "newLine" => RegexSentenceAnnotator.newLine
-          case "point" => RegexSentenceAnnotator.point
-          case "pointAndNewLine" => RegexSentenceAnnotator.pointAndNewLine
-          case other => argumentError("method")
-        }
-      case pattern =>
-        pattern.r
-    }
 
     XMLUtil.replaceAll(annotation, "document") { e =>
       val line = e.text
@@ -43,7 +36,7 @@ class RegexSentenceAnnotator(override val name: String, override val props: Prop
         if (sentence.isEmpty)
           None
         else {
-          Option(<sentence id={ newSentenceID() }>{ sentence }</sentence>)
+          Option(<sentence id={ sentenceIDGen.next }>{ sentence }</sentence>)
         }
       }
       val textRemoved = XMLUtil.removeText(e)

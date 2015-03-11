@@ -22,12 +22,7 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
   readProps()
 
   // TODO: should document ID be given here?  Somewhere else?
-  private[this] var documentID: Int = 0
-  def newDocumentID(): String = {
-    val new_id = "d" + documentID
-    documentID += 1
-    new_id
-  }
+  private[this] val documentIDGen = jigg.util.IDGenerator("d")
 
   val annotatorNames = annotators.split("""[,\s]+""") // PU.safeFind("annotators", props).split("""[,\s]+""")
 
@@ -190,7 +185,7 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
     }
     annotateRecur(root, annotators)
   }
-  protected def rootXML(raw: String) = <root><document id={ newDocumentID() }>{ raw }</document></root>
+  protected def rootXML(raw: String) = <root><document id={ documentIDGen.next }>{ raw }</document></root>
 
   def printHelp(os: PrintStream) = {
     os.println("Usage:")
