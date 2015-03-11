@@ -16,7 +16,6 @@ abstract class MecabAnnotator(override val name: String, override val props: Pro
   @Prop(gloss = "Use this command to launch mecab. System dictionary is selected according to the current configuration accessible with '-P' option.") var command = MecabAnnotator.defaultCommand
   readProps()
 
-
   override def description = {
 
     def keyName = makeFullName("command")
@@ -36,7 +35,6 @@ ${helpMessage}
   lazy private[this] val mecab_process = new java.lang.ProcessBuilder((command)).start
   lazy private[this] val mecab_in = new BufferedReader(new InputStreamReader(mecab_process.getInputStream, "UTF-8"))
   lazy private[this] val mecab_out = new BufferedWriter(new OutputStreamWriter(mecab_process.getOutputStream, "UTF-8"))
-
 
   /**
    * Close the external process and the interface
@@ -60,7 +58,6 @@ ${helpMessage}
 
       Iterator.continually(mecab_in.readLine()).takeWhile {line => line != null && line != "EOS"}.toSeq
     }
-
 
     def tid(sindex: String, tindex: Int) = sindex + "_tok" + tindex
 
