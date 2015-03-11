@@ -11,12 +11,14 @@ trait PropsHolder { outer =>
   def prop(key: String): Option[String]
   protected def prefix: String = ""
 
+  def makeFullName(key: String) = prefix match { case "" => key; case x => x + "." + key }
+
   // this is OptInfo specialized for Scala var; TODO: implement for Java variable (with Field).
   private[this] case class OptVarInfo(name: String, p: Prop, getMethod: Method, setMethod: Method) {
     def get = getMethod.invoke(outer)
     def set(value: String) = setMethod.invoke(outer, value)
 
-    val fullName = outer.prefix match { case "" => name; case x => x + "." + name }
+    val fullName = outer.makeFullName(name)
 
     def required = if (p.required) " (required)" else ""
 
@@ -72,9 +74,9 @@ trait PropsHolder { outer =>
     missings match {
       case Seq() =>
       case missings =>
-        System.err.println("Missing required option(s):")
-        missings foreach { System.err.println(_) }
-        throw MissingArgumentException
+        val comment = "Missing required option(s):"
+        val usage = missings map(_ + "") mkString("\n")
+        throw new ArgumentError(comment + "\n" + usage, this)
     }
   }
 
@@ -83,6 +85,16 @@ trait PropsHolder { outer =>
 
     nameToOptInfo.values foreach { os.println(_) }
   }
+
+  def argumentError(key: String, msg: String = "") = {
+    val fullName = makeFullName(key)
+    val comment = if (msg != "") msg else s"Some problem in $fullName."
+    val usage = nameToOptInfo get(key) match {
+      case Some(optInfo) => optInfo + ""
+      case None => s"$fullName is not a valid parameter name. Maybe the implementation is corrupted."
+    }
+    throw new ArgumentError(comment + "\n" + usage, this)
+  }
 }
 
-object MissingArgumentException extends RuntimeException("")
+class ArgumentError(msg: String, obj: PropsHolder) extends RuntimeException(msg)

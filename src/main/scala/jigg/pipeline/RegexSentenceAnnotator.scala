@@ -29,7 +29,7 @@ class RegexSentenceAnnotator(override val name: String, override val props: Prop
           case "newLine" => RegexSentenceAnnotator.newLine
           case "point" => RegexSentenceAnnotator.point
           case "pointAndNewLine" => RegexSentenceAnnotator.pointAndNewLine
-          case other => sys.error(s"Unknown method in %{name}: %{method}")
+          case other => argumentError("method")
         }
       case pattern =>
         pattern.r

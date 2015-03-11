@@ -224,7 +224,7 @@ object Pipeline {
           }
       }
     } catch {
-      case MissingArgumentException => // do nothing if prop is incomplete
+      case e: ArgumentError => println(e.getMessage)
     }
   }
 }

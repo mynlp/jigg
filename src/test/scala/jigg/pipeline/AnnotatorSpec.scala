@@ -31,7 +31,8 @@ class AnnotatorSpec extends FlatSpec with Matchers {
       val annotator = new NothingAnnotator("nothing", props)
       fail()
     } catch {
-      case MissingArgumentException =>
+      case e: ArgumentError =>
+      case _: Throwable => fail()
     }
   }
 }
