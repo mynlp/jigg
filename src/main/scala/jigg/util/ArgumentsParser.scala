@@ -26,8 +26,9 @@ object ArgumentsParser {
 
   object ArgKey {
     def unapply(key: String): Option[String] = key match {
+      case x if x.size > 1 && x(0) == '-' && x.drop(1).forall(x=>x.isDigit || x=='.') => None // -10.0, -1, etc are not key
       case x if x.size > 1 && x(0) == '-' && x(1) == '-' => Some(x.substring(2))
-      case x if x.size > 0 && x(0) == '-' => Some(x.substring(1))
+      case x if x.size > 1 && x(0) == '-' => Some(x.substring(1)) // we don't catch if x.size == 1, ('-' is recognized as some value)
       case _ => None
     }
   }
