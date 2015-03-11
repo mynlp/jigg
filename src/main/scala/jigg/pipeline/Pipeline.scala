@@ -200,9 +200,9 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
         helpAnnotatorNames foreach { name =>
           val annotator = getAnnotator(name)
           os.println(s"$name:")
-          os.println(annotator.description)
           os.println("  %-37s: [%s]".format("requires", annotator.requires.mkString(", ")))
           os.println("  %-37s: [%s]".format("requirementsSatisfied", annotator.requirementsSatisfied.mkString(", ")))
+          os.println(annotator.description)
           os.println()
         }
     }
