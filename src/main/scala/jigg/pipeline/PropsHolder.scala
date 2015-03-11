@@ -76,7 +76,7 @@ trait PropsHolder { outer =>
       case missings =>
         val comment = "Missing required option(s):"
         val usage = missings map(_ + "") mkString("\n")
-        throw new ArgumentError(comment + "\n" + usage, this)
+        throw new ArgumentError(comment + "\n" + usage)
     }
   }
 
@@ -93,8 +93,8 @@ trait PropsHolder { outer =>
       case Some(optInfo) => optInfo + ""
       case None => s"$fullName is not a valid parameter name. Maybe the implementation is corrupted."
     }
-    throw new ArgumentError(comment + "\n" + usage, this)
+    throw new ArgumentError(comment + "\n" + usage)
   }
 }
 
-class ArgumentError(msg: String, obj: PropsHolder) extends RuntimeException(msg)
+class ArgumentError(msg: String) extends RuntimeException(msg)

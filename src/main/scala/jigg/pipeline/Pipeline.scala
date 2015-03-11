@@ -38,13 +38,15 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
   }.toMap
 
   def createAnnotators: List[Annotator] = {
-    val annotators = annotatorNames.map { getAnnotator(_) }.toList
+    val annotators =
+      try annotatorNames.map { getAnnotator(_) }.toList
+      catch { case e: java.lang.reflect.InvocationTargetException => throw e.getCause }
 
     annotators.foldLeft(Set[Requirement]()) { (satisfiedSofar, annotator) =>
       val requires = annotator.requires
 
       val lacked = requires &~ (requires & satisfiedSofar)
-      if (!lacked.isEmpty) sys.error("annotator %s requires annotators %s" format(annotator.name, lacked.mkString(", ")))
+      if (!lacked.isEmpty) argumentError("annotators", "annotator %s requires annotators %s".format(annotator.name, lacked.mkString(", ")))
 
       Requirement.add(satisfiedSofar, annotator.requirementsSatisfied)
     }
@@ -104,7 +106,7 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
   } getOrElse {
     getAnnotatorClass(name) map { clazz =>
       clazz.getConstructor(classOf[String], classOf[Properties]).newInstance(name, properties).asInstanceOf[Annotator]
-    } getOrElse { sys.error(s"Failed to search for custom annotator class: $name") }
+    } getOrElse { argumentError("annotators", s"Failed to search for custom annotator class: $name") }
   }
 
   def run = {
@@ -150,9 +152,8 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
         case l => l
       }
     }
-    var in = readLine
-
     process { annotators =>
+      var in = readLine
       while (in != "") {
         val xml = annotate(rootXML(in), annotators, false)
         val printer = new scala.xml.PrettyPrinter(500, 2)
@@ -213,7 +214,6 @@ object Pipeline {
 
     try {
       val pipeline = new Pipeline(props)
-
       PU.findProperty("help", props) match {
         case Some(help) =>
           pipeline.printHelp(System.out)
@@ -224,7 +224,8 @@ object Pipeline {
           }
       }
     } catch {
-      case e: ArgumentError => println(e.getMessage)
+      case e: ArgumentError =>
+        System.err.println(e.getMessage)
     }
   }
 }
