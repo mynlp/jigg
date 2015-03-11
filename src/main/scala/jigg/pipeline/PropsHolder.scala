@@ -80,10 +80,12 @@ trait PropsHolder { outer =>
     }
   }
 
-  def printPropertyMessage(os: PrintStream) = {
+  def description: String = propertyMessage
+
+  def propertyMessage() = {
     if (nameToOptInfo.isEmpty) readProps
 
-    nameToOptInfo.values foreach { os.println(_) }
+    nameToOptInfo.values.map(_ + "").mkString("\n")
   }
 
   def argumentError(key: String, msg: String = "") = {

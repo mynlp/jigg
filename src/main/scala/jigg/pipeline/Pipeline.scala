@@ -189,15 +189,17 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
 
   def printHelp(os: PrintStream) = {
     os.println("Usage:")
-    printPropertyMessage(os)
+    os.println(this.description)
+    os.println()
 
     help match {
       case "true" => // when "-help" is used without specified names
       case help =>
         val helpAnnotatorNames = help.split("""[,\s]+""")
         helpAnnotatorNames foreach { name =>
-          os.println(s"Usage of $name:")
-          getAnnotator(name).printPropertyMessage(os)
+          os.println(s"$name:")
+          os.println(getAnnotator(name).description)
+          os.println()
         }
     }
   }
