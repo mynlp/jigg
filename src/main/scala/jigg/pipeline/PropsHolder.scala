@@ -118,5 +118,3 @@ trait PropsHolder { outer =>
     throw new ArgumentError(comment + "\n" + usage)
   }
 }
-
-class ArgumentError(msg: String) extends RuntimeException(msg)
