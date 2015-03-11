@@ -9,12 +9,11 @@ import java.io.OutputStreamWriter
 
 
 class MecabAnnotator(override val name: String, override val props: Properties) extends SentencesAnnotator {
-  val mecab_command: String = prop("mecab.command") getOrElse("mecab")
 
-  //TODO option
-  // val mecab_options: Seq[String] = props.getProperty("mecab.options", "").split("[\t ]+").filter(_.nonEmpty)
+  @Prop(gloss = "Use this command to launch mecab. System dictionary is selected according to information accessible with '-P' option.") var command = "mecab"
+  readProps()
 
-  lazy private[this] val mecab_process = new java.lang.ProcessBuilder((mecab_command)).start
+  lazy private[this] val mecab_process = new java.lang.ProcessBuilder((command)).start
   lazy private[this] val mecab_in = new BufferedReader(new InputStreamReader(mecab_process.getInputStream, "UTF-8"))
   lazy private[this] val mecab_out = new BufferedWriter(new OutputStreamWriter(mecab_process.getOutputStream, "UTF-8"))
 

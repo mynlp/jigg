@@ -11,10 +11,12 @@ import scala.xml._
 import jigg.util.XMLUtil
 
 class KNPAnnotator(override val name: String, override val props: Properties) extends SentencesAnnotator {
-  val knpCommand: String = prop("command") getOrElse("knp")
+
+  @Prop(gloss = "Use this command to launch KNP (-tab and -anaphora are mandatory and automatically added). Version > 4.12 is assumed.") var command = "knp"
+  readProps()
 
   //for KNP 4.12 (-ne option is unneed)
-  lazy private[this] val knpProcess = new java.lang.ProcessBuilder(knpCommand, "-tab", "-anaphora").start
+  lazy private[this] val knpProcess = new java.lang.ProcessBuilder(command, "-tab", "-anaphora").start
   lazy private[this] val knpIn = new BufferedReader(new InputStreamReader(knpProcess.getInputStream, "UTF-8"))
   lazy private[this] val knpOut = new BufferedWriter(new OutputStreamWriter(knpProcess.getOutputStream, "UTF-8"))
 

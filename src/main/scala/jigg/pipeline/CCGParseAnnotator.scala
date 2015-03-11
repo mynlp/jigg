@@ -22,6 +22,19 @@ class CCGParseAnnotator(override val name: String, override val props: Propertie
   var tagger: MaxEntMultiTagger = _
   var decoder: TransitionBasedParser = _
 
+  @Prop(gloss = "Path to the trained model (you can omit this if you load a jar which packs models)") var model = ""
+  @Prop(gloss = "Pruning parameter in supertagging") var beta = 0.001
+  @Prop(gloss = "Maximum category candidates for each by supertagging, -1 for infinity") var maxK = -1
+  @Prop(gloss = "Beam size (usually 64 is ok); Recommend to use the same beam size at training the model. This is automatically done if the model is loaded from a model jar.") var beam = 64
+  @Prop(gloss = "Outputs k-best derivations if this value > 1") var kBest = 1
+  @Prop(gloss = "Beam size (usually 64 is ok); Recommend to use the same beam size at training the model. This is automatically done if the model is loaded from a model jar.") var preferConnected = false
+  readProps()
+
+  if (model != "") InputOptions.loadModelPath = model
+  TaggerOptions.beta = beta
+  TaggerOptions.maxK = maxK
+  ParserOptions.beam = beam
+
   override def init = {
     configParsing
     tagger = parsing.tagging.getTagger
@@ -29,18 +42,9 @@ class CCGParseAnnotator(override val name: String, override val props: Propertie
   }
 
   def configParsing = {
-    import PropertiesUtil.findProperty
-    prop("model") foreach { InputOptions.loadModelPath = _ }
-    prop("beta") foreach { x => TaggerOptions.beta = x.toDouble }
-    prop("maxK") foreach { x => TaggerOptions.maxK = x.toInt }
-    prop("beam") foreach { x => ParserOptions.beam = x.toInt }
-
     System.err.println("The path of CCG parser model: " + InputOptions.loadModelPath)
     parsing.load
   }
-
-  val numKbest: Int = prop("numKbest") map(_.toInt) getOrElse(1)
-  val preferConnected: Boolean = prop("preferConnected").map(_.toBoolean) getOrElse(false)
 
   override def newSentenceAnnotation(sentence: Node) = {
     val sentenceID = (sentence \ "@id").toString // s12
@@ -125,7 +129,7 @@ class CCGParseAnnotator(override val name: String, override val props: Propertie
 
     decoder match {
       case decoder: KBestDecoder =>
-        (numKbest, preferConnected) match {
+        (kBest, preferConnected) match {
           case (1, true) => Seq(decoder.predictConnected(superTaggedSentence))
           case (1, false) => Seq(decoder.predict(superTaggedSentence))
           case (k, prefer) => decoder.predictKbest(k, superTaggedSentence, prefer)

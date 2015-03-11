@@ -9,10 +9,13 @@ import java.io.OutputStreamWriter
 
 
 class CabochaAnnotator(override val name: String, override val props: Properties) extends SentencesAnnotator {
-  val cabocha_command: String = prop("cabocha.command") getOrElse ("cabocha")
+
+  @Prop(gloss = "Use this command to launch cabocha") var command = "cabocha"
+  readProps()
+
   // option -I1 : input tokenized file
   // option -f3 : output result as XML
-  lazy private[this] val cabocha_process = new java.lang.ProcessBuilder(cabocha_command, "-f3", "-I1").start
+  lazy private[this] val cabocha_process = new java.lang.ProcessBuilder(command, "-f3", "-I1").start
   lazy private[this] val cabocha_in = new BufferedReader(new InputStreamReader(cabocha_process.getInputStream, "UTF-8"))
   lazy private[this] val cabocha_out = new BufferedWriter(new OutputStreamWriter(cabocha_process.getOutputStream, "UTF-8"))
 

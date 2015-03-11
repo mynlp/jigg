@@ -10,9 +10,11 @@ import scala.collection.mutable.ArrayBuffer
 import jigg.util.XMLUtil
 
 class JumanAnnotator(override val name: String, override val props: Properties) extends SentencesAnnotator {
-  val jumanCommand: String = prop("juman.command") getOrElse("juman")
 
-  lazy private[this] val jumanProcess = new java.lang.ProcessBuilder((jumanCommand)).start
+  @Prop(gloss = "Use this command to launch juman") var command = "juman"
+  readProps()
+
+  lazy private[this] val jumanProcess = new java.lang.ProcessBuilder((command)).start
   lazy private[this] val jumanIn = new BufferedReader(new InputStreamReader(jumanProcess.getInputStream, "UTF-8"))
   lazy private[this] val jumanOut = new BufferedWriter(new OutputStreamWriter(jumanProcess.getOutputStream, "UTF-8"))
 
