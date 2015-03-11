@@ -12,7 +12,7 @@ import jigg.util.XMLUtil
 
 class KNPAnnotator(override val name: String, override val props: Properties) extends SentencesAnnotator {
 
-  @Prop(gloss = "Use this command to launch KNP (-tab and -anaphora are mandatory and automatically added). Version > 4.12 is assumed.") var command = "knp"
+  @Prop(gloss = "Use this command to launch KNP (-tab and -anaphora are mandatory and automatically added). Version >= 4.12 is assumed.") var command = "knp"
   readProps()
 
   //for KNP 4.12 (-ne option is unneed)
