@@ -15,14 +15,34 @@ trait PropsHolder { outer =>
 
   // this is OptInfo specialized for Scala var; TODO: implement for Java variable (with Field).
   private[this] case class OptVarInfo(name: String, p: Prop, getMethod: Method, setMethod: Method) {
-    def get = getMethod.invoke(outer)
-    def set(value: String) = setMethod.invoke(outer, value)
+    def get: Any = getMethod.invoke(outer)
+    def set(value: String) = {
+      val v = castValueStr(value)
+      setMethod.invoke(outer, v.asInstanceOf[AnyRef])
+    }
 
     val fullName = outer.makeFullName(name)
 
     def required = if (p.required) " (required)" else ""
 
-    override def toString = "  %-30s: %s%s [%s]".format(fullName, p.gloss, required, this.get)
+    override def toString = "  %-30s <%4s>: %s%s [%s]".format(fullName, typeStr, p.gloss, required, this.get)
+
+    lazy val typeStr = get match {
+      case v: Int => "int"
+      case v: Double => "dble"
+      case v: Short => "shrt"
+      case v: String => "str"
+      case v: Boolean => "bool"
+      case v => "unk"
+    }
+
+    def castValueStr(str: String) = try typeStr match {
+      case "int" => str.toInt
+      case "dble" => str.toDouble
+      case "shrt" => str.toShort
+      case "str" => str
+      case "bool" => str.toBoolean
+    } catch { case e: Throwable => argumentError(name) }
   }
 
   private[this] val nameToOptInfo = new HashMap[String, OptVarInfo]
@@ -90,7 +110,7 @@ trait PropsHolder { outer =>
 
   def argumentError(key: String, msg: String = "") = {
     val fullName = makeFullName(key)
-    val comment = if (msg != "") msg else s"Some problem in $fullName."
+    val comment = if (msg != "") msg else s"Some problem detected in $fullName."
     val usage = nameToOptInfo get(key) match {
       case Some(optInfo) => optInfo + ""
       case None => s"$fullName is not a valid parameter name. Maybe the implementation is corrupted."

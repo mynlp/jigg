@@ -34,8 +34,7 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
 
   def createAnnotators: List[Annotator] = {
     val annotators =
-      try annotatorNames.map { getAnnotator(_) }.toList
-      catch { case e: java.lang.reflect.InvocationTargetException => throw e.getCause }
+      annotatorNames.map { getAnnotator(_) }.toList
 
     annotators.foldLeft(Set[Requirement]()) { (satisfiedSofar, annotator) =>
       val requires = annotator.requires
@@ -96,13 +95,15 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
     * }}}
     *
     */
-  def getAnnotator(name: String): Annotator = getAnnotatorCompanion(name) map {
-    _.fromProps(name, properties)
-  } getOrElse {
-    getAnnotatorClass(name) map { clazz =>
-      clazz.getConstructor(classOf[String], classOf[Properties]).newInstance(name, properties).asInstanceOf[Annotator]
-    } getOrElse { argumentError("annotators", s"Failed to search for custom annotator class: $name") }
-  }
+  def getAnnotator(name: String): Annotator = try {
+    getAnnotatorCompanion(name) map {
+      _.fromProps(name, properties)
+    } getOrElse {
+      getAnnotatorClass(name) map { clazz =>
+        clazz.getConstructor(classOf[String], classOf[Properties]).newInstance(name, properties).asInstanceOf[Annotator]
+      } getOrElse { argumentError("annotators", s"Failed to search for custom annotator class: $name") }
+    }
+  } catch { case e: java.lang.reflect.InvocationTargetException => throw e.getCause }
 
   def run = {
     val reader = IOUtil.openIn(file)
