@@ -3,6 +3,7 @@ package jigg.pipeline
 import java.util.Properties
 import scala.xml.{Node, Elem}
 import scala.reflect.ClassTag
+import scala.collection.JavaConverters._
 import jigg.util.XMLUtil
 
 trait Annotator extends PropsHolder {
@@ -20,6 +21,8 @@ trait Annotator extends PropsHolder {
   def init = {} // Called before starting annotation
 
   def close = {} // Resource release etc; detault: do nothing
+
+  def buildCommand(cmd: String, args: String*): java.util.List[String] = (cmd.split("\\s+") ++ args).toSeq.asJava
 
   def requires = Set.empty[Requirement]
   def requirementsSatisfied = Set.empty[Requirement]
