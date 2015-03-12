@@ -1,17 +1,51 @@
 package jigg.pipeline
 
 import java.util.Properties
-import scala.xml._
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.io.BufferedWriter
 import java.io.OutputStreamWriter
+import scala.xml._
+import scala.sys.process.Process
 
+abstract class CabochaAnnotator(override val name: String, override val props: Properties) extends SentencesAnnotator {
 
-class CabochaAnnotator(override val name: String, override val props: Properties) extends SentencesAnnotator {
+  def dic: SystemDic
 
-  @Prop(gloss = "Use this command to launch cabocha") var command = "cabocha"
+  @Prop(gloss = "Use this command to launch cabocha. Do not set -f and -I options. -f3 -I1 are always automatically added.") var command = CabochaAnnotator.defaultCommand
   readProps()
+
+  override def description = {
+
+    def keyName = makeFullName("command")
+    def helpMessage = CabochaAnnotator.getHelp(command).map("    " + _).mkString("\n")
+
+    s"""
+${super.description}
+
+  Annotate chunks (bunsetsu) and dependencies on chunks.
+
+  Note about system dictionary:
+    Dictionary settings of mecab and cabocha should be consistent (the same), but the pipeline
+    does not try to fix it even if there is some inconsistency, e.g., when mecab uses ipadic
+    while cabocha uses unidic.
+
+    What the pipeline does is stopping annotation when such inconsistency is detected and
+    it is user's responsibility to make the dictionary setting consistent acorss annotators in
+    the pipeline.
+
+    Please customize ${keyName} as -${keyName} "cabocha -P JUMAN" (or IPA or UNIDIC)
+    when you want to change the dictionary used in cabocha. The pipeline works if this
+    setting is consistent with the dictionary of mecab. Note that the pipeline does *NOT*
+    check the "mecabrc" file, which also allows to modify the dictionary setting of cabocha.
+    In other words, even if you have modified the mecabrc to change the used posset, the
+    pipeline requires specifying that setting in -${keyName} as "-P" option. Without this,
+    the pipeline recognizes the current posset is the default setting (commonly IPA).
+
+  Original help message:
+${helpMessage}
+"""
+  }
 
   // option -I1 : input tokenized file
   // option -f3 : output result as XML
@@ -31,7 +65,6 @@ class CabochaAnnotator(override val name: String, override val props: Properties
   private def tid(sindex: String, tindex: String) = sindex + "_tok" + tindex
   private def cid(sindex: String, cindex: String) = sindex + "_chu" + cindex
   private def did(sindex: String, dindex: String) = sindex + "_dep" + dindex
-
 
   //ununsed
   def getTokens(xml:Node, sid:String) : NodeSeq = {
@@ -115,9 +148,31 @@ class CabochaAnnotator(override val name: String, override val props: Properties
     convertXml(sentence, cabocha_result, sindex)
   }
 
-  override def requires = Set(Requirement.TokenizeWithIPA)
   override def requirementsSatisfied = Set(Requirement.Chunk, Requirement.Dependency)
 }
 
+class IPACabochaAnnotator(name: String, props: Properties) extends CabochaAnnotator(name, props) {
+  def dic = SystemDic.ipadic
+  override def requires = Set(Requirement.TokenizeWithIPA)
+}
+
+class JumanDicCabochaAnnotator(name: String, props: Properties) extends CabochaAnnotator(name, props) {
+  def dic = SystemDic.jumandic
+  override def requires = Set(Requirement.TokenizeWithJuman)
+}
+
+class UnidicCabochaAnnotator(name: String, props: Properties) extends CabochaAnnotator(name, props) {
+  def dic = SystemDic.jumandic
+  override def requires = Set(Requirement.TokenizeWithUnidic)
+}
+
 object CabochaAnnotator extends AnnotatorCompanion[CabochaAnnotator] {
+
+  def defaultCommand = "cabocha"
+
+  override def fromProps(name: String, props: Properties) = {
+    new IPACabochaAnnotator(name, props)
+  }
+
+  def getHelp(cmd: String) = Process(cmd + " --help").lines_!
 }
