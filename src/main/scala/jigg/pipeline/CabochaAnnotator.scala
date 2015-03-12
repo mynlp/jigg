@@ -39,7 +39,8 @@ abstract class CabochaAnnotator(override val name: String, override val props: P
     check the "mecabrc" file, which also allows to modify the dictionary setting of cabocha.
     In other words, even if you have modified the mecabrc to change the used posset, the
     pipeline requires specifying that setting in -${keyName} as "-P" option. Without this,
-    the pipeline recognizes the current posset is the default setting (commonly IPA).
+    the pipeline recognizes the current posset is the default setting (commonly IPA), which
+    may causes some unintended errors.
 
   Original help message:
 ${helpMessage}
