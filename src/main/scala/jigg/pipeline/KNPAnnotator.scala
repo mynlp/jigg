@@ -351,7 +351,10 @@ class KNPAnnotator(override val name: String, override val props: Properties) ex
       knpOut.write(recovJumanOutput(jumanTokens).mkString)
       knpOut.flush()
 
-      Iterator.continually(knpIn.readLine()).takeWhile(_ != "EOS").toSeq :+ "EOS"
+      Stream.continually(knpIn.readLine()) match {
+        case strm @ (begin #:: _) if begin.startsWith("# S-ID") => strm.takeWhile(_ != "EOS").toSeq :+ "EOS"
+        case other #:: _ => argumentError("command", s"Something wrong in $name\n$other\n...")
+      }
     }
 
     val sindex = (sentence \ "@id").toString
