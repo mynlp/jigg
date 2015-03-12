@@ -20,8 +20,7 @@ abstract class CabochaAnnotator(override val name: String, override val props: P
     def keyName = makeFullName("command")
     def helpMessage = CabochaAnnotator.getHelp(command).map("    " + _).mkString("\n")
 
-    s"""
-${super.description}
+    s"""${super.description}
 
   Annotate chunks (bunsetsu) and dependencies on chunks.
 

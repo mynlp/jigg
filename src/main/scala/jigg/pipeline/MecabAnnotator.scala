@@ -21,8 +21,7 @@ abstract class MecabAnnotator(override val name: String, override val props: Pro
     def keyName = makeFullName("command")
     def helpMessage = MecabAnnotator.getHelp(command).map("    " + _).mkString("\n")
 
-    s"""
-${super.description}
+    s"""${super.description}
 
   Tokenize sentence by MeCab.
   Current dictionary is ${dic}.

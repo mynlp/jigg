@@ -202,6 +202,7 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
           os.println(s"$name:")
           os.println("  %-37s: [%s]".format("requires", annotator.requires.mkString(", ")))
           os.println("  %-37s: [%s]".format("requirementsSatisfied", annotator.requirementsSatisfied.mkString(", ")))
+          os.println()
           os.println(annotator.description)
           os.println()
         }
