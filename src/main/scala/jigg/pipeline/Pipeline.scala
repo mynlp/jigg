@@ -56,7 +56,7 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
       val requires = annotator.requires
 
       val lacked = requires &~ (requires & satisfiedSofar)
-      if (!lacked.isEmpty) argumentError("annotators", "annotator %s requires annotators %s".format(annotator.name, lacked.mkString(", ")))
+      if (!lacked.isEmpty) argumentError("annotators", "annotator %s requires %s".format(annotator.name, lacked.mkString(", ")))
 
       Requirement.add(satisfiedSofar, annotator.requirementsSatisfied)
     }
