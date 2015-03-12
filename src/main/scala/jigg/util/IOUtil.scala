@@ -17,6 +17,7 @@ object IOUtil {
     new ObjectOutputStream(new BufferedOutputStream(outStream(path)))
 
   def openIn(path: String): BufferedReader = bufReader(inStream(path))
+  def openOut(path: String): BufferedWriter = bufWriter(outStream(path))
 
   def openStandardIn: BufferedReader = bufReader(System.in)
   def openStandardOut: BufferedWriter = bufWriter(System.out)

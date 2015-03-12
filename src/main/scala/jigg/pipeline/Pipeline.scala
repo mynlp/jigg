@@ -1,7 +1,7 @@
 package jigg.pipeline
 
 import java.util.Properties
-import java.io.{BufferedReader, PrintStream}
+import java.io.{BufferedReader, BufferedWriter, PrintStream}
 import scala.annotation.tailrec
 import scala.io.Source
 import scala.xml.{XML, Node}
@@ -16,9 +16,9 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
   @Prop(gloss="List of annotator names, e.g., ssplit,mecab ssplit|kuromoji|mecab|cabocha|juman|knp|ccg", required=true) var annotators = ""
   @Prop(gloss="Property file") var props = ""
   @Prop(gloss="Input file; if omitted, read from stdin") var file = ""
+  @Prop(gloss="Output file; if omitted, `file`.xml is used. Gzipped if suffix is .gz") var output = ""
   @Prop(gloss="Print this message and descriptions of specified annotators, e.g., -help ssplit,mecab") var help = ""
   @Prop(gloss="You can add an abbreviation for a custom annotator class with \"-customAnnotatorClass.xxx path.package\"") var customAnnotatorClass = ""
-
   readProps()
 
   // TODO: should document ID be given here?  Somewhere else?
@@ -59,29 +59,6 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
     "ccg" -> classOf[CCGParseAnnotator]
   )
 
-  def getAnnotatorCompanion(name: String): Option[AnnotatorCompanion[Annotator]] = {
-    import scala.reflect.runtime.{currentMirror => cm}
-
-    defaultAnnotatorClassMap get(name) flatMap { clazz =>
-      val symbol = cm.classSymbol(clazz).companionSymbol
-      try Some(cm.reflectModule(symbol.asModule).instance.asInstanceOf[AnnotatorCompanion[Annotator]])
-      catch { case e: Throwable => None }
-    }
-  }
-
-  def getAnnotatorClass(name: String): Option[Class[_]] = {
-    defaultAnnotatorClassMap get(name) orElse {
-      customAnnotatorNameToClassPath get(name) map { path =>
-        resolveAnnotatorClass(path, name)
-      } getOrElse {
-        resolveAnnotatorClass(name, name)
-      }
-    }
-  }
-
-  private[this] def resolveAnnotatorClass(path: String, name: String): Option[Class[_]] =
-    try Some(Class.forName(path)) catch { case e: Throwable => None }
-
   /** Or also customizable by overriding this method directory, e.g.,
     *
     * {{{
@@ -105,6 +82,29 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
     }
   } catch { case e: java.lang.reflect.InvocationTargetException => throw e.getCause }
 
+  def getAnnotatorCompanion(name: String): Option[AnnotatorCompanion[Annotator]] = {
+    import scala.reflect.runtime.{currentMirror => cm}
+
+    defaultAnnotatorClassMap get(name) flatMap { clazz =>
+      val symbol = cm.classSymbol(clazz).companionSymbol
+      try Some(cm.reflectModule(symbol.asModule).instance.asInstanceOf[AnnotatorCompanion[Annotator]])
+      catch { case e: Throwable => None }
+    }
+  }
+
+  def getAnnotatorClass(name: String): Option[Class[_]] = {
+    defaultAnnotatorClassMap get(name) orElse {
+      customAnnotatorNameToClassPath get(name) map { path =>
+        resolveAnnotatorClass(path, name)
+      } getOrElse {
+        resolveAnnotatorClass(name, name)
+      }
+    }
+  }
+
+  private[this] def resolveAnnotatorClass(path: String, name: String): Option[Class[_]] =
+    try Some(Class.forName(path)) catch { case e: Throwable => None }
+
   def run = {
     val reader = IOUtil.openIn(file)
 
@@ -117,9 +117,22 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
     // XML.save(in + ".xml", xml, "UTF-8")
     val printer = new scala.xml.PrettyPrinter(500, 2)
 
-    track("Writing to %s".format(file + ".xml... ")) {
-      XML.save(file + ".xml", XML.loadString(printer.format(xml)), "UTF-8", true, null)
+    val outputPath = output match {
+      case "" => file + ".xml"
+      case _ => output
     }
+
+    track("Writing to %s".format(outputPath + "... ")) {
+      val os = IOUtil.openOut(outputPath)
+      writeTo(os, xml)
+      os.close
+    }
+  }
+  def writeTo(os: BufferedWriter, xml: Node) = {
+    val printer = new scala.xml.PrettyPrinter(500, 2)
+    val size = (xml \\ "sentences").map(_.child.size).sum
+    val outputXML = if (size > 100) xml else XML.loadString(printer.format(xml))
+    XML.write(os, outputXML, "UTF-8", true, null)
   }
 
   def runFromStdin = {
@@ -130,10 +143,11 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
 
       case true =>
         val xml = annotate(reader, false)
-        val printer = new scala.xml.PrettyPrinter(500, 2)
-
-        val writer = IOUtil.openStandardOut
-        XML.write(writer, XML.loadString(printer.format(xml)), "UTF-8", true, null)
+        val writer = output match {
+          case "" => IOUtil.openStandardOut
+          case _ => IOUtil.openOut(output)
+        }
+        writeTo(writer, xml)
         writer.close
     }
   }
