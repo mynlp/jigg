@@ -35,6 +35,14 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
   @Prop(gloss="Output file; if omitted, `file`.xml is used. Gzipped if suffix is .gz") var output = ""
   @Prop(gloss="Print this message and descriptions of specified annotators, e.g., -help ssplit,mecab") var help = ""
   @Prop(gloss="You can add an abbreviation for a custom annotator class with \"-customAnnotatorClass.xxx path.package\"") var customAnnotatorClass = ""
+
+  // A hack to prevent throwing an exception when -help is given but -annotators is not given.
+  // annotators is required prop so it has to be non-empty, but it is difficult to tell that if -help is given it is not necessary.
+  (prop("annotators"), prop("help")) match {
+    case (None, Some(_)) => properties.put("annotators", "")
+    case _ =>
+  }
+
   readProps()
 
   // TODO: should document ID be given here?  Somewhere else?
@@ -56,7 +64,7 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
       val requires = annotator.requires
 
       val lacked = requires &~ (requires & satisfiedSofar)
-      if (!lacked.isEmpty) argumentError("annotators", "annotator %s requires %s".format(annotator.name, lacked.mkString(", ")))
+      if (!lacked.isEmpty) argumentError("annotators", "annotator %s requires annotators %s".format(annotator.name, lacked.mkString(", ")))
 
       Requirement.add(satisfiedSofar, annotator.requirementsSatisfied)
     }
