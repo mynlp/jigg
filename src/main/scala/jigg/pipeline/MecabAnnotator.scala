@@ -32,7 +32,7 @@ ${helpMessage}
 """
   }
 
-  lazy private[this] val mecab_process = new java.lang.ProcessBuilder((command)).start
+  lazy private[this] val mecab_process = new java.lang.ProcessBuilder(buildCommand(command)).start
   lazy private[this] val mecab_in = new BufferedReader(new InputStreamReader(mecab_process.getInputStream, "UTF-8"))
   lazy private[this] val mecab_out = new BufferedWriter(new OutputStreamWriter(mecab_process.getOutputStream, "UTF-8"))
 
@@ -56,7 +56,14 @@ ${helpMessage}
       mecab_out.newLine()
       mecab_out.flush()
 
-      Iterator.continually(mecab_in.readLine()).takeWhile {line => line != null && line != "EOS"}.toSeq
+      val strm = Stream.continually(mecab_in.readLine())
+
+      strm.takeWhile {
+        case null => // it returns null if the process terminates with some (bad) reason
+          argumentError("command", s"Something wrong in $name?\n" + strm.takeWhile(_ != null).mkString("\n"))
+        case "EOS" => false
+        case _ => true
+      }.toSeq
     }
 
     def tid(sindex: String, tindex: Int) = sindex + "_tok" + tindex
