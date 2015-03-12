@@ -7,12 +7,13 @@ import java.io.BufferedWriter
 import java.io.OutputStreamWriter
 import scala.xml._
 import scala.sys.process.Process
+import jigg.util.PropertiesUtil
 
 abstract class CabochaAnnotator(override val name: String, override val props: Properties) extends SentencesAnnotator {
 
   def dic: SystemDic
 
-  @Prop(gloss = "Use this command to launch cabocha. Do not set -f and -I options. -f3 -I1 are always automatically added.") var command = CabochaAnnotator.defaultCommand
+  @Prop(gloss = "Use this command to launch cabocha. Do not touch -f and -I options. -f3 -I1 are always automatically added.") var command = CabochaAnnotator.defaultCommand
   readProps()
 
   override def description = {
@@ -33,14 +34,12 @@ abstract class CabochaAnnotator(override val name: String, override val props: P
     it is user's responsibility to make the dictionary setting consistent acorss annotators in
     the pipeline.
 
-    Please customize ${keyName} as -${keyName} "cabocha -P JUMAN" (or IPA or UNIDIC)
-    when you want to change the dictionary used in cabocha. The pipeline works if this
-    setting is consistent with the dictionary of mecab. Note that the pipeline does *NOT*
-    check the "mecabrc" file, which also allows to modify the dictionary setting of cabocha.
-    In other words, even if you have modified the mecabrc to change the used posset, the
-    pipeline requires specifying that setting in -${keyName} as "-P" option. Without this,
-    the pipeline recognizes the current posset is the default setting (commonly IPA), which
-    may causes some unintended errors.
+    The pipeline try to find the current dic (posset) in the following way:
+      1) If ${keyName} is customized as, e.g., -${keyName} "cabocha -P JUMAN" (or IPA or UNIDIC),
+         it assumes that specified dic is used.
+      2) Otherwise, it tries to find the cabocharc file and read the setting.
+      3) If 2 is faild, it try to read the default setting (that depends on the system) from the
+         help message of the current command.
 
   Original help message:
 ${helpMessage}
@@ -49,7 +48,7 @@ ${helpMessage}
 
   // option -I1 : input tokenized file
   // option -f3 : output result as XML
-  lazy private[this] val cabocha_process = new java.lang.ProcessBuilder(command, "-f3", "-I1").start
+  lazy private[this] val cabocha_process = new java.lang.ProcessBuilder(buildCommand(command, "-f3", "-I1")).start
   lazy private[this] val cabocha_in = new BufferedReader(new InputStreamReader(cabocha_process.getInputStream, "UTF-8"))
   lazy private[this] val cabocha_out = new BufferedWriter(new OutputStreamWriter(cabocha_process.getOutputStream, "UTF-8"))
 
@@ -137,7 +136,10 @@ ${helpMessage}
       cabocha_out.write(toks.mkString)
       cabocha_out.flush()
 
-      Iterator.continually(cabocha_in.readLine()).takeWhile(_ != "</sentence>").toSeq :+ "</sentence>"
+      Stream.continually(cabocha_in.readLine()) match {
+        case strm @ ("<sentence>" #:: _) => strm.takeWhile(_ != "</sentence>").toSeq :+ "</sentence>"
+        case other #:: _ => argumentError("command", s"Something wrong in $name\n$other\n...")
+      }
     }
 
     val text = sentence.text
@@ -169,10 +171,81 @@ class UnidicCabochaAnnotator(name: String, props: Properties) extends CabochaAnn
 object CabochaAnnotator extends AnnotatorCompanion[CabochaAnnotator] {
 
   def defaultCommand = "cabocha"
+  def defaultDic = SystemDic.ipadic
 
   override def fromProps(name: String, props: Properties) = {
-    new IPACabochaAnnotator(name, props)
+    val selector = new CabochaSelector(name, props)
+    selector.select
   }
 
   def getHelp(cmd: String) = Process(cmd + " --help").lines_!
+
+  private class CabochaSelector(name: String, props: Properties) {
+    val cmdKey = name + ".command"
+    val cmd = PropertiesUtil.findProperty(cmdKey, props) getOrElse (defaultCommand)
+    val cmdList = cmd.split("\\s+")
+
+    def select(): CabochaAnnotator = {
+      def dicFromCommand: Option[SystemDic] = readFromCommand() flatMap { toSystemDic(_) }
+      def dicFromCabocharc: Option[SystemDic] = readFromCabocharc() flatMap { toSystemDic(_) }
+      def dicFromHelp: SystemDic = {
+        import System.out.{ println => p }
+        p(s"WARNING: Failed to find cabocharc from the current command. Please check cabocha-config exists on the same path as cabocha.")
+        readDefaultFromHelp() map { foundDefault =>
+          p(s"Assume the default posset is used (${foundDefault}).")
+          foundDefault
+        } getOrElse {
+          p(s"Failed to get default posset with --help command. Probably the given cabocha command is broken? Assume ${defaultDic} is used.")
+          defaultDic
+        }
+      }
+      val dic = dicFromCommand orElse(dicFromCabocharc) getOrElse(dicFromHelp)
+      create(dic)
+    }
+
+    def readFromCommand(): Option[String] = cmdList.zipWithIndex.find(_._1 == "-P") map {
+      case (p, idx) => cmdList(idx + 1)
+    } orElse {
+      cmdList.zipWithIndex.find(_._1.startsWith("--posset=")) map {
+        case (p, _) => p.drop(p.indexOf("=") + 1)
+      }
+    }
+
+    def readFromCabocharc(): Option[String] = tryToFindCabocharc() flatMap { path =>
+      try jigg.util.IOUtil.openIterator(path).toSeq.filter(_.startsWith("posset")) match {
+        case head :+ last => Some(last.drop(last.lastIndexOf(' ') + 1).trim)
+        case _ => None
+      } catch { case e: Throwable => None }
+    }
+
+    def tryToFindCabocharc(): Option[String] = {
+      val configCommand = cmdList(0) + "-config --sysconfdir"
+      Process(configCommand).lines_!.toSeq match {
+        case Seq(directoryPath) => Some(directoryPath + "/cabocharc")
+        case _ => None
+      }
+    }
+
+    def readDefaultFromHelp(): Option[SystemDic] = try {
+      val help = getHelp(cmd)
+      val possetLine = help.find(_.startsWith("-P,"))
+
+      possetLine map { l => l.slice(l.lastIndexOf(' ') + 1, l.size - 1) } flatMap { // ... (default IPA) -> IPA
+        toSystemDic(_)
+      }
+    } catch { case e: Throwable => None }
+
+    def toSystemDic(posset: String): Option[SystemDic] = posset match {
+      case "IPA" => Some(SystemDic.ipadic)
+      case "JUMAN" => Some(SystemDic.jumandic)
+      case "UNIDIC" => Some(SystemDic.unidic)
+      case _ => None
+    }
+
+    def create(dic: SystemDic): CabochaAnnotator = dic match {
+      case SystemDic.ipadic => new IPACabochaAnnotator(name, props)
+      case SystemDic.jumandic => new JumanDicCabochaAnnotator(name, props)
+      case SystemDic.unidic => new UnidicCabochaAnnotator(name, props)
+    }
+  }
 }
