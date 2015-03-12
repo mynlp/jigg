@@ -23,6 +23,7 @@ abstract class MecabAnnotator(override val name: String, override val props: Pro
 
     s"""
 ${super.description}
+
   Tokenize sentence by MeCab.
   Current dictionary is ${dic}.
   You can customize these settings by, e.g, -${keyName} "mecab -d /path/to/dic"
