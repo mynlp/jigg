@@ -21,6 +21,10 @@ import org.scalatest.FunSuite
 import org.scalatest.Matchers._
 
 class CabochaAnnotatorTest extends FunSuite {
+
+  def newCabocha(p: Properties = new Properties) = try Some(new IPACabochaAnnotator("cabocha -P IPA", new Properties))
+  catch { case e: Throwable => None }
+
   test("extract tokens and chunks (no dependency)") {
     val input = <sentence><chunk id="0" link="-1" rel="D" score="0.000000" head="0" func="0"><tok id="0" feature="名詞,一般,*,*,*,*,日本語,ニホンゴ,ニホンゴ">日本語</tok></chunk></sentence>
 
@@ -38,11 +42,11 @@ class CabochaAnnotatorTest extends FunSuite {
     val expected_tokens = <tokens><tok id="s0_tok0" feature="名詞,一般,*,*,*,*,日本語,ニホンゴ,ニホンゴ">日本語</tok></tokens>
     val expected_chunks = <chunks><chunk id="s0_chu0" tokens="s0_tok0" head="s0_tok0" func="s0_tok0"/></chunks>
 
-    val cabocha = new IPACabochaAnnotator("cabocha -P IPA", new Properties)
-
-    cabocha.getTokens(input, "s0") should be(expected_tokens)
-    cabocha.getChunks(input, "s0") should be(expected_chunks)
-    cabocha.getDependencies(input, "s0") should be(None)
+    newCabocha() foreach { cabocha =>
+      cabocha.getTokens(input, "s0") should be(expected_tokens)
+      cabocha.getChunks(input, "s0") should be(expected_chunks)
+      cabocha.getDependencies(input, "s0") should be(None)
+    }
   }
 
 
@@ -65,11 +69,11 @@ class CabochaAnnotatorTest extends FunSuite {
     val expected_chunks = <chunks><chunk id="s0_chu0" tokens="s0_tok0 s0_tok1" head="s0_tok0" func="s0_tok1"/><chunk id="s0_chu1" tokens="s0_tok2" head="s0_tok2" func="s0_tok2"/></chunks>
     val expected_dependencies = Some(<dependencies><dependency id="s0_dep0" head="s0_chu1" dependent="s0_chu0" label="D"/></dependencies>)
 
-    val cabocha = new IPACabochaAnnotator("cabocha -P IPA", new Properties)
-
-    cabocha.getTokens(input, "s0") should be(expected_tokens)
-    cabocha.getChunks(input, "s0") should be(expected_chunks)
-    cabocha.getDependencies(input, "s0") should be(expected_dependencies)
+    newCabocha() foreach { cabocha =>
+      cabocha.getTokens(input, "s0") should be(expected_tokens)
+      cabocha.getChunks(input, "s0") should be(expected_chunks)
+      cabocha.getDependencies(input, "s0") should be(expected_dependencies)
+    }
 
   }
 
@@ -100,11 +104,11 @@ class CabochaAnnotatorTest extends FunSuite {
     val expected_chunks = <chunks><chunk id="s0_chu0" tokens="s0_tok0 s0_tok1" head="s0_tok0" func="s0_tok1" /><chunk id="s0_chu1" tokens="s0_tok2 s0_tok3" head="s0_tok2" func="s0_tok3"/><chunk id="s0_chu2" tokens="s0_tok4" head="s0_tok4" func="s0_tok4"/><chunk id="s0_chu3" tokens="s0_tok5" head="s0_tok5" func="s0_tok5"/></chunks>
     val expected_dependencies = Some(<dependencies><dependency id="s0_dep0" head="s0_chu1" dependent="s0_chu0" label="D" /><dependency id="s0_dep1" head="s0_chu3" dependent="s0_chu1" label="D" /><dependency id="s0_dep2" head="s0_chu3" dependent="s0_chu2" label="D" /></dependencies>)
 
-    val cabocha = new IPACabochaAnnotator("cabocha -P IPA", new Properties)
-
-    cabocha.getTokens(input, "s0") should be(expected_tokens)
-    cabocha.getChunks(input, "s0") should be(expected_chunks)
-    cabocha.getDependencies(input, "s0") should be(expected_dependencies)
+    newCabocha() foreach { cabocha =>
+      cabocha.getTokens(input, "s0") should be(expected_tokens)
+      cabocha.getChunks(input, "s0") should be(expected_chunks)
+      cabocha.getDependencies(input, "s0") should be(expected_dependencies)
+    }
   }
 
 
