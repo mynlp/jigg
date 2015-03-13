@@ -22,6 +22,11 @@ import scala.sys.process.Process
 import fig.exec.Execution
 import lexicon._
 
+/** Creates Cabocha-formatted CCGBank sentences.
+  *
+  * The output of this is required when evaluating bunsetsu-dependency of CCG parser.
+  * When new CCGBank is released, currently, we have to manually run this class to get the correct data.
+  */
 object CCGBankToMecabFormat {
 
   object Opt extends Options {
