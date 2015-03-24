@@ -74,6 +74,7 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
   /** User may override this method in a subclass to add more own annotators.
     */
   protected val defaultAnnotatorClassMap: Map[String, Class[_]] = Map(
+    "dsplit" -> classOf[RegexDocumentAnnotator],
     "ssplit" -> classOf[RegexSentenceAnnotator],
     "kuromoji" -> classOf[KuromojiAnnotator],
     "mecab" -> classOf[MecabAnnotator],
@@ -209,7 +210,7 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
 
   def annotateText(text: String, verbose: Boolean = false): Node = process { annotators =>
     val root = rootXML(text) // IOUtil.inputIterator(reader).mkString("\n"))
-    annotate(root, annotators, verbose)
+      annotate(root, annotators, verbose)
   }
 
   protected def annotate(root: Node, annotators: List[Annotator], verbose: Boolean): Node = {

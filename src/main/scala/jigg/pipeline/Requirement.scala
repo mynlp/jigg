@@ -28,6 +28,8 @@ object Requirement {
 
   case object Tokenize extends Requirement
 
+  case object Document extends Requirement
+
   trait TokenizeChild extends Requirement {
     override def parent = Some(Tokenize)
   }
