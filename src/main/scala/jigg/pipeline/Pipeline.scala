@@ -74,6 +74,7 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
   /** User may override this method in a subclass to add more own annotators.
     */
   protected val defaultAnnotatorClassMap: Map[String, Class[_]] = Map(
+    "dsplit" -> classOf[RegexDocumentAnnotator],
     "ssplit" -> classOf[RegexSentenceAnnotator],
     "kuromoji" -> classOf[KuromojiAnnotator],
     "mecab" -> classOf[MecabAnnotator],
