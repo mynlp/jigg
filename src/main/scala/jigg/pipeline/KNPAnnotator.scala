@@ -26,25 +26,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.xml._
 import jigg.util.XMLUtil
 
-class KNPAnnotator(override val name: String, override val props: Properties) extends SentencesAnnotator {
-
-  @Prop(gloss = "Use this command to launch KNP (-tab and -anaphora are mandatory and automatically added). Version >= 4.12 is assumed.") var command = "knp"
-  readProps()
-
-  //for KNP 4.12 (-ne option is unneed)
-  lazy private[this] val knpProcess = new java.lang.ProcessBuilder(command, "-tab", "-anaphora").start
-  lazy private[this] val knpIn = new BufferedReader(new InputStreamReader(knpProcess.getInputStream, "UTF-8"))
-  lazy private[this] val knpOut = new BufferedWriter(new OutputStreamWriter(knpProcess.getOutputStream, "UTF-8"))
-
-  /**
-    * Close the external process and the interface
-    */
-  override def close() {
-    knpOut.close()
-    knpIn.close()
-    knpProcess.destroy()
-  }
-
+trait KNPAnnotator{
   def isBasicPhrase(knpStr:String) : Boolean = knpStr(0) == '+'
   def isChunk(knpStr:String) : Boolean = knpStr(0) == '*'
   def isDocInfo(knpStr:String) : Boolean = knpStr(0) == '#'
@@ -360,29 +342,5 @@ class KNPAnnotator(override val name: String, override val props: Properties) ex
 
     ans += "EOS\n"
     ans.toSeq
-  }
-
-  override def newSentenceAnnotation(sentence: Node): Node = {
-    def runKNP(jumanTokens:Node): Seq[String] = {
-      knpOut.write(recovJumanOutput(jumanTokens).mkString)
-      knpOut.flush()
-
-      Stream.continually(knpIn.readLine()) match {
-        case strm @ (begin #:: _) if begin.startsWith("# S-ID") => strm.takeWhile(_ != "EOS").toSeq :+ "EOS"
-        case other #:: _ => argumentError("command", s"Something wrong in $name\n$other\n...")
-      }
-    }
-
-    val sindex = (sentence \ "@id").toString
-    val jumanTokens = (sentence \ "tokens").head
-    val knpResult = runKNP(jumanTokens)
-
-    makeXml(sentence, knpResult, sindex)
-  }
-
-  override def requires = Set(Requirement.TokenizeWithJuman)
-  override def requirementsSatisfied = {
-    import Requirement._
-    Set(Chunk, Dependency, BasicPhrase, BasicPhraseDependency, Coreference, PredArg, NamedEntity)
   }
 }

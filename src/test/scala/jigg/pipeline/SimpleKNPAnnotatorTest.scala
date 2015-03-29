@@ -20,9 +20,9 @@ import java.util.Properties
 import org.scalatest.FunSuite
 import org.scalatest.Matchers._
 
-class KNPAnnotatorTest extends FunSuite {
+class SimpleKNPAnnotatorTest extends FunSuite {
 
-  def newKNP(p: Properties = new Properties) = try Some(new KNPAnnotator("knp", p))
+  def newKNP(p: Properties = new Properties) = try Some(new SimpleKNPAnnotator("knp", p))
   catch { case e: Throwable => None }
 
   test("getTokens") {

@@ -80,7 +80,7 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
     "mecab" -> classOf[MecabAnnotator],
     "cabocha" -> classOf[CabochaAnnotator],
     "juman" -> classOf[JumanAnnotator],
-    "knp" -> classOf[KNPAnnotator],
+    "knp" -> classOf[SimpleKNPAnnotator],
     "ccg" -> classOf[CCGParseAnnotator]
   )
 
