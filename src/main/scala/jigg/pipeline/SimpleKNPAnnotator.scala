@@ -21,10 +21,7 @@ import java.io.BufferedWriter
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.util.Properties
-import scala.util.matching.Regex
-import scala.collection.mutable.ArrayBuffer
 import scala.xml._
-import jigg.util.XMLUtil
 
 class SimpleKNPAnnotator(override val name: String, override val props: Properties) extends SentencesAnnotator with KNPAnnotator{
   @Prop(gloss = "Use this command to launch KNP (-tab and -anaphora are mandatory and automatically added). Version >= 4.12 is assumed.") var command = "knp"

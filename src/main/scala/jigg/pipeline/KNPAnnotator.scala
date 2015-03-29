@@ -16,11 +16,6 @@ package jigg.pipeline
  limitations under the License.
 */
 
-import java.io.BufferedReader
-import java.io.BufferedWriter
-import java.io.InputStreamReader
-import java.io.OutputStreamWriter
-import java.util.Properties
 import scala.util.matching.Regex
 import scala.collection.mutable.ArrayBuffer
 import scala.xml._
