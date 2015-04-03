@@ -212,6 +212,8 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
     annotate(root, annotators, verbose)
   }
 
+  def annotate(text: String) = annotateText(text)
+
   protected def annotate(root: Node, annotators: List[Annotator], verbose: Boolean): Node = {
     def annotateRecur(input: Node, unprocessed: List[Annotator]): Node = unprocessed match {
       case annotator :: tail =>
