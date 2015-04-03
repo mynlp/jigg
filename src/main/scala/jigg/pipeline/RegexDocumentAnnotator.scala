@@ -5,19 +5,13 @@ import scala.xml.Node
 
 class RegexDocumentAnnotator(override val name: String, override val props: Properties) extends Annotator {
 
-  @Prop(gloss = "Regular expression to segment documents (if omitted, specified regular expression is used)") var pattern = ""
+  @Prop(gloss = "Regular expression to segment documents") var pattern = """\n{2,}"""
   readProps()
-
-  val defaultPattern = """\n{2,}"""
-  val splitRegex = pattern match{
-    case "" => defaultPattern
-    case pattern => pattern
-  }
 
   private[this] val documentIDGen = jigg.util.IDGenerator("d")
   override def annotate(annotation: Node): Node = {
     val raw = annotation.text
-    val documents = raw.split(splitRegex).map {
+    val documents = raw.split(pattern).map {
       str =>
       <document id={ documentIDGen.next }>{ str }</document>
     }
