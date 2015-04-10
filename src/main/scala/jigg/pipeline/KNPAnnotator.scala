@@ -22,11 +22,11 @@ import scala.xml._
 import jigg.util.XMLUtil
 
 trait KNPAnnotator{
-  def isBasicPhrase(knpStr:String) : Boolean = knpStr(0) == '+'
-  def isChunk(knpStr:String) : Boolean = knpStr(0) == '*'
   def isDocInfo(knpStr:String) : Boolean = knpStr(0) == '#'
+  def isChunk(knpStr:String) : Boolean = knpStr(0) == '*'
+  def isBasicPhrase(knpStr:String) : Boolean = knpStr(0) == '+'
   def isEOS(knpStr:String) : Boolean = knpStr == "EOS"
-  def isToken(knpStr:String) : Boolean = ! isBasicPhrase(knpStr) && ! isChunk(knpStr) && ! isDocInfo(knpStr) && ! isEOS(knpStr)
+  def isToken(knpStr:String) : Boolean = ! isDocInfo(knpStr) && ! isChunk(knpStr) && ! isBasicPhrase(knpStr) && ! isEOS(knpStr)
 
   private def tid(sindex: String, tindex: Int) = sindex + "_tok" + tindex.toString
   private def cid(sindex: String, cindex: Int) = sindex + "_chu" + cindex
@@ -39,7 +39,7 @@ trait KNPAnnotator{
   def getTokens(knpResult:Seq[String], sid:String) : Node = {
     var tokenIndex = 0
 
-    val nodes = knpResult.filter(s =>  s(0) != '#' && s(0) != '*' && s(0) != '+' && s != "EOS").map{
+    val nodes = knpResult.filter(s => isToken(s)).map{
       s =>
       val tok = s.split(' ')
 
