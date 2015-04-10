@@ -56,7 +56,7 @@ class SimpleKNPAnnotator(override val name: String, override val props: Properti
     val jumanTokens = (sentence \ "tokens").head
     val knpResult = runKNP(jumanTokens)
 
-    makeXml(sentence, knpResult, sindex)
+    annotateSentenceNode(sentence, knpResult, sindex)
   }
 
   override def requires = Set(Requirement.TokenizeWithJuman)

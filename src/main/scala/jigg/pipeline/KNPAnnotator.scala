@@ -237,7 +237,7 @@ trait KNPAnnotator{
     <namedEntities>{ namedEntities }</namedEntities>
   }
 
-  def makeXml(sentence:Node, knpResult:Seq[String], sid:String): Node = {
+  def annotateSentenceNode(sentence:Node, knpResult:Seq[String], sid:String): Node = {
     val knpTokens = getTokens(knpResult, sid)
     val sentenceWithTokens = XMLUtil.replaceAll(sentence, "tokens")(node => knpTokens)
     val basicPhrases = getBasicPhrases(knpResult, sid)
