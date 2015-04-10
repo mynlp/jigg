@@ -34,8 +34,6 @@ trait KNPAnnotator{
   private def bpdid(sindex: String, bpdindex: Int) = sindex + "_bpdep" + bpdindex.toString
   private def depid(sindex: String, depindex: Int) = sindex + "_dep" + depindex.toString
   private def crid(sindex: String, crindex:Int) = sindex + "_cr" + crindex.toString
-  private def corefid(sindex: String, corefindex:Int) = sindex + "_coref" + corefindex.toString
-  private def parid(sindex: String, parindex:Int) = sindex + "_par" + parindex.toString
   private def neid(sindex: String, neindex:Int) = sindex + "_ne" + neindex.toString
 
   def getTokens(knpResult:Seq[String], sid:String) : Node = {
@@ -199,65 +197,6 @@ trait KNPAnnotator{
     <caseRelations>{ ans }</caseRelations>
   }
 
-  def getCoreferences(bpXml:NodeSeq, sid:String) = {
-    val eidHash = scala.collection.mutable.LinkedHashMap[Int, String]()
-
-    (bpXml \ "basicPhrase").map{
-      bp =>
-      val bpid = (bp \ "@id").toString
-      val feature : String = (bp \ "@features").text
-
-      val pattern = new Regex("""\<EID:(\d+)\>""", "eid")
-      val eid = pattern.findFirstMatchIn(feature).map(m => m.group("eid").toInt).getOrElse(-1)
-
-      if (eidHash.contains(eid)){
-        eidHash(eid) = eidHash(eid) + " " + bpid
-      }
-      else{
-        eidHash(eid) = bpid
-      }
-    }
-
-    val ans = eidHash.map{
-      case (eid, bps) =>
-        <coreference id={corefid(sid, eid)} basicPhrases={bps} />
-    }
-
-    <coreferences>{ ans }</coreferences>
-  }
-
-  def getPredicateArgumentRelations(knpResult:Seq[String], sid:String) = {
-    var parInd = 0
-
-    //<述語項構造:飲む/のむ:動1:ガ/N/麻生太郎/1;ヲ/C/コーヒー/2>
-    val pattern = new Regex("""\<述語項構造:[^:]+:[^:]+:(.+)\>""", "args")
-
-    val ans = knpResult.filter(knpStr => isBasicPhrase(knpStr)).zipWithIndex.filter(tpl => tpl._1.contains("<述語項構造:")).map{
-      tpl =>
-      val knpStr = tpl._1
-      val bpInd = tpl._2
-
-      val argsOpt = pattern.findFirstMatchIn(knpStr).map(m => m.group("args"))
-      argsOpt.map{
-        args =>
-        args.split(";").map{
-          arg =>
-          val sp = arg.split("/")
-          val label = sp(0)
-          val flag = sp(1)
-          //val name = sp(2)
-          val eid = sp(3).toInt
-
-          val ans = <predicateArgumentRelation id={parid(sid, parInd)} predicate={bpid(sid, bpInd)} argument={corefid(sid, eid)} label={label} flag={flag} />
-          parInd += 1
-          ans
-        }
-      }.getOrElse(NodeSeq.Empty)
-    }
-
-    <predicateArgumentRelations>{ ans }</predicateArgumentRelations>
-  }
-
   def getNamedEntities(knpResult:Seq[String], sid:String) = {
     var neInd = 0
     var lastTag = "N" //for convenience, use "N" as non-tag of "B/I/E/S"
@@ -308,11 +247,10 @@ trait KNPAnnotator{
       getBasicPhraseDependencies(knpResult, sid),
       getDependencies(knpResult, sid),
       getCaseRelations(knpResult, knpTokens, basicPhrases, sid),
-      getCoreferences(basicPhrases, sid),
-      getPredicateArgumentRelations(knpResult, sid),
       getNamedEntities(knpResult, sid)
     ))
   }
+
 
   private[this] def recoverTokenStr(tokenNode: Node, alt: Boolean) : String = (if (alt) "@ " else "") +
   Seq("@surf", "@reading", "@base", "@pos", "@posId", "@pos1", "@pos1Id", "@inflectionType", "@inflectionTypeId", "@inflectionForm", "@inflectionFormId").map(tokenNode \ _).mkString(" ") +

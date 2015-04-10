@@ -59,10 +59,9 @@ class SimpleKNPAnnotator(override val name: String, override val props: Properti
     makeXml(sentence, knpResult, sindex)
   }
 
-
   override def requires = Set(Requirement.TokenizeWithJuman)
   override def requirementsSatisfied = {
     import Requirement._
-    Set(Chunk, Dependency, BasicPhrase, BasicPhraseDependency, Coreference, PredArg, NamedEntity)
+    Set(Chunk, Dependency, BasicPhrase, BasicPhraseDependency, NamedEntity)
   }
 }
