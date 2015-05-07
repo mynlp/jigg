@@ -46,8 +46,8 @@ class DocumentKNPAnnotator(override val name: String, override val props: Proper
     knpProcess.destroy()
   }
 
-  private def corefid(sindex: String, corefindex:Int) = sindex + "_coref" + corefindex.toString
-  private def parid(sindex: String, parindex:Int) = sindex + "_par" + parindex.toString
+  private def corefid(did: String, corefindex:Int) = did + "_coref" + corefindex.toString
+  private def parid(sid: String, parindex:Int) = sid + "_par" + parindex.toString
 
   def recovJumanOutputWithDocId(jumanTokens:Node, did:String, sid:String) : Seq[String] = {
     val docIdInfo = "# S-ID:" + did + "-" + sid + " JUMAN:7.01" + "\n" //FIXME
@@ -84,7 +84,7 @@ class DocumentKNPAnnotator(override val name: String, override val props: Proper
     //predArgをアノテート
     //corefをアノテート
 
-    val dindex = (document \ "@id").text
+    val did = (document \ "@id").text
     val sentenceNodes = (document \ "sentences" \ "sentence")
 
     val knpResults = sentenceNodes.map{
@@ -92,7 +92,7 @@ class DocumentKNPAnnotator(override val name: String, override val props: Proper
       val sindex = (sentenceNode \ "@id").text
       val jumanTokens = (sentenceNode \ "tokens").head
 
-      val jumanStr = recovJumanOutputWithDocId(jumanTokens, dindex, sindex).mkString
+      val jumanStr = recovJumanOutputWithDocId(jumanTokens, did, sindex).mkString
 
       runKNP(jumanStr)
     }
@@ -106,42 +106,45 @@ class DocumentKNPAnnotator(override val name: String, override val props: Proper
       annotateSentenceNode(sentenceNode, knpResult, sid)
     }
 
-    val ans = annotatedNodes.foldLeft(document){
+    val temp = annotatedNodes.foldLeft(document){
       (temp, annotatedNode) =>
       XMLUtil.replaceAll(temp, "sentence")(sentenceNode =>
         if ((sentenceNode \ "@id").text == (annotatedNode \ "@id").text)
           annotatedNode else sentenceNode)
     }
 
+    val ans = XMLUtil.addChild(temp, getCoreferences(temp))
     ans
   }
 
-  // def getCoreferences(bpXml:NodeSeq, sid:String) = {
-  //   val eidHash = scala.collection.mutable.LinkedHashMap[Int, String]()
+  def getCoreferences(docNode:NodeSeq) = {
+    val eidHash = scala.collection.mutable.LinkedHashMap[Int, String]()
 
-  //   (bpXml \ "basicPhrase").map{
-  //     bp =>
-  //     val bpid = (bp \ "@id").toString
-  //     val feature : String = (bp \ "@features").text
+    (docNode \\ "basicPhrase").map{
+      bp =>
+      val bpid = (bp \ "@id").text
+      val feature : String = (bp \ "@features").text
+      val pattern = new Regex("""\<EID:(\d+)\>""", "eid")
+      val eid = pattern.findFirstMatchIn(feature).map(m => m.group("eid").toInt).getOrElse(-1)
 
-  //     val pattern = new Regex("""\<EID:(\d+)\>""", "eid")
-  //     val eid = pattern.findFirstMatchIn(feature).map(m => m.group("eid").toInt).getOrElse(-1)
+      if (eidHash.contains(eid)){
+        eidHash(eid) = eidHash(eid) + " " + bpid
+      }
+      else{
+        eidHash(eid) = bpid
+      }
+    }
 
-  //     if (eidHash.contains(eid)){
-  //       eidHash(eid) = eidHash(eid) + " " + bpid
-  //     }
-  //     else{
-  //       eidHash(eid) = bpid
-  //     }
-  //   }
+    val did = (docNode \ "@id").text
+    val ans = eidHash.map{
+      case (eid, bps) =>
+        <coreference id={corefid(did, eid)} basicPhrases={bps} />
+    }
 
-  //   val ans = eidHash.map{
-  //     case (eid, bps) =>
-  //       <coreference id={corefid(sid, eid)} basicPhrases={bps} />
-  //   }
+    <coreferences>{ ans }</coreferences>
+  }
 
-  //   <coreferences>{ ans }</coreferences>
-  // }
+
 
   // def getPredicateArgumentRelations(knpResult:Seq[String], sid:String) = {
   //   var parInd = 0
