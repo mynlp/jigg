@@ -45,6 +45,10 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
 
   readProps()
 
+  lazy val annotatorList = createAnnotatorList
+
+  def close = annotatorList foreach { _.close }
+
   // TODO: should document ID be given here?  Somewhere else?
   private[this] val documentIDGen = jigg.util.IDGenerator("d")
 
@@ -56,11 +60,11 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
     case (k, v) => (k.drop(k.indexOf('.') + 1), v)
   }.toMap
 
-  def createAnnotators: List[Annotator] = {
-    val annotators =
+  def createAnnotatorList: List[Annotator] = {
+    val annotatorList =
       annotatorNames.map { getAnnotator(_) }.toList
 
-    annotators.foldLeft(Set[Requirement]()) { (satisfiedSofar, annotator) =>
+    annotatorList.foldLeft(Set[Requirement]()) { (satisfiedSofar, annotator) =>
       val requires = annotator.requires
 
       val lacked = requires &~ (requires & satisfiedSofar)
@@ -68,7 +72,8 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
 
       Requirement.add(satisfiedSofar, annotator.requirementsSatisfied)
     }
-    annotators
+    annotatorList foreach(_.init)
+    annotatorList
   }
 
   /** User may override this method in a subclass to add more own annotators.
@@ -199,10 +204,11 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
   }
 
   private[this] def process[U](f: List[Annotator]=>U) = {
-    val annotators = createAnnotators
-    annotators foreach { _.init }
-    try f(annotators)
-    finally annotators foreach { _.close }
+    f(annotatorList)
+    // val annotators = createAnnotators
+    // annotators foreach { _.init }
+    // try f(annotators)
+    // finally annotators foreach { _.close }
   }
 
   def annotate(reader: BufferedReader, verbose: Boolean = false): Node =
