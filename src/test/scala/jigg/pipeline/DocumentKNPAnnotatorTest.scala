@@ -17,4 +17,26 @@ class DocumentKNPAnnotatorTest extends FunSuite {
       knp.getCoreferences(docNode) should be (expected)
     }
   }
+
+  test("getPredicateArgumentRelations 1"){
+    val sentenceNode = <sentence id="s0">太郎が走る。<basicPhrases><basicPhrase features="&lt;文頭&gt;&lt;人名&gt;&lt;ガ&gt;&lt;助詞&gt;&lt;体言&gt;&lt;係:ガ格&gt;&lt;区切:0-0&gt;&lt;格要素&gt;&lt;連用要素&gt;&lt;名詞項候補&gt;&lt;先行詞候補&gt;&lt;SM-人&gt;&lt;SM-主体&gt;&lt;正規化代表表記:太郎/たろう&gt;&lt;NE:PERSON:太郎&gt;&lt;照応詞候補:太郎&gt;&lt;解析格:ガ&gt;&lt;EID:0&gt;" tokens="s0_tok0 s0_tok1" id="s0_bp0"/><basicPhrase features="&lt;文末&gt;&lt;句点&gt;&lt;用言:動&gt;&lt;レベル:C&gt;&lt;区切:5-5&gt;&lt;ID:（文末）&gt;&lt;係:文末&gt;&lt;提題受:30&gt;&lt;主節&gt;&lt;格要素&gt;&lt;連用要素&gt;&lt;動態述語&gt;&lt;正規化代表表記:走る/はしる&gt;&lt;用言代表表記:走る/はしる&gt;&lt;時制-未来&gt;&lt;主題格:一人称優位&gt;&lt;格関係0:ガ:太郎&gt;&lt;格解析結果:走る/はしる:動13:ガ/C/太郎/0/0/d0-s0;ヲ/U/-/-/-/-;ニ/U/-/-/-/-;ト/U/-/-/-/-;デ/U/-/-/-/-;カラ/U/-/-/-/-;ヨリ/U/-/-/-/-;マデ/U/-/-/-/-;時間/U/-/-/-/-;外の関係/U/-/-/-/-;ノ/U/-/-/-/-;修飾/U/-/-/-/-;トスル/U/-/-/-/-;ニオク/U/-/-/-/-;ニカンスル/U/-/-/-/-;ニヨル/U/-/-/-/-;ヲフクメル/U/-/-/-/-;ヲハジメル/U/-/-/-/-;ヲノゾク/U/-/-/-/-;ヲツウジル/U/-/-/-/-&gt;&lt;EID:1&gt;&lt;述語項構造:走る/はしる:動13:ガ/C/太郎/0&gt;" tokens="s0_tok2 s0_tok3" id="s0_bp1" /></basicPhrases></sentence>
+
+    val expected = <predicateArgumentRelations><predicateArgumentRelation id="s0_par0" predicate="s0_bp1" argument="d0_coref0" label="ガ" flag="C"/></predicateArgumentRelations>
+
+    newKNP() foreach { knp =>
+      knp.getPredicateArgumentRelations(sentenceNode, "d0") should be (expected)
+    }
+  }
+
+  test("getPredicateArgumentRelations 2"){
+    val sentenceNode = <sentence id="s0">麻生太郎がコーヒーを飲んだ。<basicPhrases><basicPhrase features="&lt;文節内&gt;&lt;係:文節内&gt;&lt;文頭&gt;&lt;人名疑&gt;&lt;地名疑&gt;&lt;体言&gt;&lt;名詞項候補&gt;&lt;先行詞候補&gt;&lt;正規化代表表記:麻生/あそう?麻生/あさお&gt;&lt;NE内:PERSON&gt;&lt;EID:0&gt;" tokens="s0_tok0" id="s0_bp0"/><basicPhrase features="&lt;人名&gt;&lt;ガ&gt;&lt;助詞&gt;&lt;体言&gt;&lt;係:ガ格&gt;&lt;区切:0-0&gt;&lt;格要素&gt;&lt;連用要素&gt;&lt;名詞項候補&gt;&lt;先行詞候補&gt;&lt;SM-人&gt;&lt;SM-主体&gt;&lt;正規化代表表記:太郎/たろう&gt;&lt;NE:PERSON:麻生太郎&gt;&lt;Wikipedia上位語:政治家&gt;&lt;Wikipediaエントリ:麻生太郎&gt;&lt;照応詞候補:麻生太郎&gt;&lt;解析格:ガ&gt;&lt;EID:1&gt;" tokens="s0_tok1 s0_tok2" id="s0_bp1"/><basicPhrase features="&lt;ヲ&gt;&lt;助詞&gt;&lt;体言&gt;&lt;係:ヲ格&gt;&lt;区切:0-0&gt;&lt;格要素&gt;&lt;連用要素&gt;&lt;名詞項候補&gt;&lt;先行詞候補&gt;&lt;正規化代表表記:珈琲/こーひー&gt;&lt;照応詞候補:コーヒー&gt;&lt;解析格:ヲ&gt;&lt;EID:2&gt;" tokens="s0_tok3 s0_tok4" id="s0_bp2"/><basicPhrase features="&lt;文末&gt;&lt;時制-過去&gt;&lt;句点&gt;&lt;用言:動&gt;&lt;レベル:C&gt;&lt;区切:5-5&gt;&lt;ID:（文末）&gt;&lt;係:文末&gt;&lt;提題受:30&gt;&lt;主節&gt;&lt;格要素&gt;&lt;連用要素&gt;&lt;動態述語&gt;&lt;正規化代表表記:飲む/のむ&gt;&lt;用言代表表記:飲む/のむ&gt;&lt;主題格:一人称優位&gt;&lt;格関係1:ガ:太郎&gt;&lt;格関係2:ヲ:コーヒー&gt;&lt;格解析結果:飲む/のむ:動1:ガ/C/太郎/1/0/d0-s0;ヲ/C/コーヒー/2/0/d0-s0;ニ/U/-/-/-/-;ト/U/-/-/-/-;デ/U/-/-/-/-;カラ/U/-/-/-/-;ヨリ/U/-/-/-/-;マデ/U/-/-/-/-;ヘ/U/-/-/-/-;時間/U/-/-/-/-;外の関係/U/-/-/-/-;修飾/U/-/-/-/-;ノ/U/-/-/-/-;トスル/U/-/-/-/-;ニヨル/U/-/-/-/-;ニツク/U/-/-/-/-;ニアワセル/U/-/-/-/-;トイウ/U/-/-/-/-;ニクワエル/U/-/-/-/-;ヲツウジル/U/-/-/-/-&gt;&lt;EID:3&gt;&lt;述語項構造:飲む/のむ:動1:ガ/C/麻生太郎/1;ヲ/C/コーヒー/2&gt;" tokens="s0_tok5 s0_tok6" id="s0_bp3"></basicPhrase></basicPhrases></sentence>
+
+    //<述語項構造:飲む/のむ:動1:ガ/C/麻生太郎/1;ヲ/C/コーヒー/2>
+
+    val expected = <predicateArgumentRelations><predicateArgumentRelation id="s0_par0" predicate="s0_bp3" argument="d0_coref1" label="ガ" flag="C"/><predicateArgumentRelation id="s0_par1" predicate="s0_bp3" argument="d0_coref2" label="ヲ" flag="C"/></predicateArgumentRelations>
+
+    newKNP() foreach { knp =>
+      knp.getPredicateArgumentRelations(sentenceNode, "d0") should be (expected)
+    }
+  }
 }

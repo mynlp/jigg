@@ -61,28 +61,13 @@ class DocumentKNPAnnotator(override val name: String, override val props: Proper
       knpOut.write(jumanTokens)
       knpOut.flush()
 
-      //FIXME なぜか元の制約だと動かない
+      //FIXME somehow, original constraint doesn't work
       Stream.continually(knpIn.readLine()) match {
         case strm  => strm.takeWhile(_ != "EOS").toSeq :+ "EOS"
           // case strm @ (begin #:: _) if begin.startsWith("# S-ID") => strm.takeWhile(_ != "EOS").toSeq :+ "EOS"
           // case other #:: _ => argumentError("command", s"Something wrong in $name\n$other\n...")
       }
     }
-
-    //recovJumanOutput : <tokens>ノードを受けとり、Seq[String]を返す
-
-    //Documentノードを受けとる
-    //Documentの中のsentenceノードの文字列をjumanの出力に直す(その際、# S-ID: did-sidをつける)
-    //出力を1つの文字列として結合
-    //jumanの出力をKNPに食わせる → knpResult
-    //knpResultを「文ごとの解析結果」に分割する
-    //knpResult
-    //「文単位のアノテートをしてNodeを返すメソッド」により、各sentenceノードをアノテート
-
-    // ------------- ここまでOK -----------------
-
-    //predArgをアノテート
-    //corefをアノテート
 
     val did = (document \ "@id").text
     val sentenceNodes = (document \ "sentences" \ "sentence")
@@ -97,6 +82,7 @@ class DocumentKNPAnnotator(override val name: String, override val props: Proper
       runKNP(jumanStr)
     }
 
+    //sentence-level annotation
     val annotatedNodes = sentenceNodes.zip(knpResults).map{
       pair =>
       val sentenceNode = pair._1
@@ -106,14 +92,19 @@ class DocumentKNPAnnotator(override val name: String, override val props: Proper
       annotateSentenceNode(sentenceNode, knpResult, sid)
     }
 
-    val temp = annotatedNodes.foldLeft(document){
-      (temp, annotatedNode) =>
-      XMLUtil.replaceAll(temp, "sentence")(sentenceNode =>
+    val annotatedDocNode = annotatedNodes.foldLeft(document){
+      (node, annotatedNode) =>
+      XMLUtil.replaceAll(node, "sentence")(sentenceNode =>
         if ((sentenceNode \ "@id").text == (annotatedNode \ "@id").text)
           annotatedNode else sentenceNode)
     }
 
-    val ans = XMLUtil.addChild(temp, getCoreferences(temp))
+    val docNodeWithCoref = XMLUtil.addChild(annotatedDocNode, getCoreferences(annotatedDocNode))
+    val ans = XMLUtil.replaceAll(docNodeWithCoref, "sentence"){
+      sentenceNode =>
+      XMLUtil.addChild(sentenceNode, getPredicateArgumentRelations(sentenceNode, did))
+    }
+
     ans
   }
 
@@ -144,49 +135,34 @@ class DocumentKNPAnnotator(override val name: String, override val props: Proper
     <coreferences>{ ans }</coreferences>
   }
 
+  def getPredicateArgumentRelations(sentenceNode:NodeSeq, did:String) = {
+    var parInd = 0
 
+    //<述語項構造:飲む/のむ:動1:ガ/N/麻生太郎/1;ヲ/C/コーヒー/2>
+    val pattern = new Regex("""\<述語項構造:[^:]+:[^:]+:(.+)\>""", "args")
+    val sid = (sentenceNode \ "@id").text
 
-  // def getPredicateArgumentRelations(knpResult:Seq[String], sid:String) = {
-  //   var parInd = 0
+    val predArgNodes = (sentenceNode \\ "basicPhrase").filter(node => (node \ "@features").text.contains("<述語項構造:")).map{
+      bpNode =>
+      val bpid = (bpNode \ "@id").text
+      val featureStr = (bpNode \ "@features").text
+      val args = pattern.findFirstMatchIn(featureStr).map(m => m.group("args")).getOrElse("")
 
-  //   //<述語項構造:飲む/のむ:動1:ガ/N/麻生太郎/1;ヲ/C/コーヒー/2>
-  //   val pattern = new Regex("""\<述語項構造:[^:]+:[^:]+:(.+)\>""", "args")
+      args.split(";").map{
+        arg =>
+        val sp = arg.split("/")
+        val label = sp(0)
+        val flag = sp(1)
+        //val name = sp(2)
+        val eid = sp(3).toInt
 
-  //   val ans = knpResult.filter(knpStr => isBasicPhrase(knpStr)).zipWithIndex.filter(tpl => tpl._1.contains("<述語項構造:")).map{
-  //     tpl =>
-  //     val knpStr = tpl._1
-  //     val bpInd = tpl._2
-
-  //     val argsOpt = pattern.findFirstMatchIn(knpStr).map(m => m.group("args"))
-  //     argsOpt.map{
-  //       args =>
-  //       args.split(";").map{
-  //         arg =>
-  //         val sp = arg.split("/")
-  //         val label = sp(0)
-  //         val flag = sp(1)
-  //         //val name = sp(2)
-  //         val eid = sp(3).toInt
-
-  //         val ans = <predicateArgumentRelation id={parid(sid, parInd)} predicate={bpid(sid, bpInd)} argument={corefid(sid, eid)} label={label} flag={flag} />
-  //         parInd += 1
-  //         ans
-  //       }
-  //     }.getOrElse(NodeSeq.Empty)
-  //   }
-
-  //   <predicateArgumentRelations>{ ans }</predicateArgumentRelations>
-  // }
-
-  // def makeXml(sentence:Node, knpResult:Seq[String], sid:String): Node = {
-  //   val knpTokens = getTokens(knpResult, sid)
-  //   val sentenceWithTokens = XMLUtil.replaceAll(sentence, "tokens")(node => knpTokens)
-  //   val basicPhrases = getBasicPhrases(knpResult, sid)
-  //   XMLUtil.addChild(sentenceWithTokens, Seq[Node](
-  //     getCoreferences(basicPhrases, sid),
-  //     getPredicateArgumentRelations(knpResult, sid)
-  //   ))
-  // }
+        val ans = <predicateArgumentRelation id={parid(sid, parInd)} predicate={bpid} argument={corefid(did, eid)} label={label} flag={flag} />
+        parInd += 1
+        ans
+      }
+    }
+    <predicateArgumentRelations>{ predArgNodes }</predicateArgumentRelations>
+  }
 
   override def requires = Set(Requirement.TokenizeWithJuman)
   override def requirementsSatisfied = {
