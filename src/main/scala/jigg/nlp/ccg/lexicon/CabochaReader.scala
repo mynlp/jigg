@@ -20,7 +20,7 @@ import scala.io.Source
 
 class CabochaReader[S<:TaggedSentence](ccgSentences: Seq[S]) {
   def readSentences(path: String): Seq[ParsedBunsetsuSentence] = {
-    val bunsetsuStart = """\* (\d+) (-?\d+)[A-Z]""".r
+    val bunsetsuStart = """\* (\d+) (-?\d+)[A-Z].*""".r
     def addBunsetsuTo(curSent: List[(String, Int)], curBunsetsu: List[String]) = curBunsetsu.reverse match {
       case Nil => curSent
       case headIdx :: tail => (tail.mkString(""), headIdx.toInt) :: curSent
