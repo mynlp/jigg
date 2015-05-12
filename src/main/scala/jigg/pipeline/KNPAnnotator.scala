@@ -168,7 +168,7 @@ trait KNPAnnotator{
 
       val pattern1 = "<格解析結果:[^>]+>".r
       val sp = pattern1.findFirstIn(str).getOrElse("<>").init.tail.split(":")
-      val caseResults = sp(3)  //  ガ/C/太郎/0/0/1;ヲ/ ...
+      val caseResults = sp(3)  //  ガ/C/太郎/0/0/1;ヲ/ ... or ガ/C/太郎/0/0/d0-s0;ヲ/ ...
       val hd = bpid(sid, bpInd)
 
       caseResults.split(";").map{
