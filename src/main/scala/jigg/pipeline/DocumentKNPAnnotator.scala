@@ -61,11 +61,9 @@ class DocumentKNPAnnotator(override val name: String, override val props: Proper
       knpOut.write(jumanTokens)
       knpOut.flush()
 
-      //FIXME somehow, original constraint doesn't work
       Stream.continually(knpIn.readLine()) match {
-        case strm  => strm.takeWhile(_ != "EOS").toSeq :+ "EOS"
-          // case strm @ (begin #:: _) if begin.startsWith("# S-ID") => strm.takeWhile(_ != "EOS").toSeq :+ "EOS"
-          // case other #:: _ => argumentError("command", s"Something wrong in $name\n$other\n...")
+        case strm @ (begin #:: _) if begin.startsWith("# S-ID") => strm.takeWhile(_ != "EOS").toIndexedSeq :+ "EOS"
+        case other #:: _ => argumentError("command", s"Something wrong in $name\n$other\n...")
       }
     }
 
