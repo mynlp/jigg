@@ -18,6 +18,15 @@ class DocumentKNPAnnotatorTest extends FunSuite {
     }
   }
 
+  test("getCoreferences 2"){
+    val docNode = <document id="d0"><sentences><sentence id="s0">太郎は太郎だ<basicPhrases><basicPhrase features="&lt;文頭&gt;&lt;人名&gt;&lt;ハ&gt;&lt;助詞&gt;&lt;体言&gt;&lt;係:未格&gt;&lt;提題&gt;&lt;区切:3-5&gt;&lt;主題表現&gt;&lt;格要素&gt;&lt;連用要素&gt;&lt;名詞項候補&gt;&lt;先行詞候補&gt;&lt;SM-人&gt;&lt;SM-主体&gt;&lt;正規化代表表記:太郎/たろう&gt;&lt;NE:PERSON:太郎&gt;&lt;照応詞候補:太郎&gt;&lt;解析格:ガ&gt;&lt;COREFER_ID:1&gt;&lt;EID:0&gt;" tokens="s0_tok0 s0_tok1" id="s0_bp0"/><basicPhrase features="&lt;文末&gt;&lt;人名&gt;&lt;体言&gt;&lt;用言:判&gt;&lt;レベル:C&gt;&lt;区切:5-5&gt;&lt;ID:（文末）&gt;&lt;提題受:30&gt;&lt;主節&gt;&lt;状態述語&gt;&lt;判定詞&gt;&lt;名詞項候補&gt;&lt;先行詞候補&gt;&lt;SM-人&gt;&lt;SM-主体&gt;&lt;正規化代表表記:太郎/たろう&gt;&lt;用言代表表記:太郎/たろう&gt;&lt;NE:PERSON:太郎&gt;&lt;時制-現在&gt;&lt;時制-無時制&gt;&lt;照応詞候補:太郎&gt;&lt;格関係0:ガ:太郎&gt;&lt;格解析結果:太郎/たろう:判13:ガ/N/太郎/0/0/d0-s0;外の関係/U/-/-/-/-&gt;&lt;C用;【太郎】;=;0;0;9.99:d0-s0(同一文):0文節&gt;&lt;共参照&gt;&lt;COREFER_ID:1&gt;&lt;EID:0&gt;" tokens="s0_tok2 s0_tok3" id="s0_bp1"></basicPhrase></basicPhrases></sentence></sentences></document>
+    val expected = <coreferences><coreference id="d0_coref0" basicPhrases="s0_bp0 s0_bp1" /></coreferences>
+
+    newKNP() foreach { knp =>
+      knp.getCoreferences(docNode) should be (expected)
+    }
+  }
+
   test("getPredicateArgumentRelations 1"){
     val sentenceNode = <sentence id="s0">太郎が走る。<basicPhrases><basicPhrase features="&lt;文頭&gt;&lt;人名&gt;&lt;ガ&gt;&lt;助詞&gt;&lt;体言&gt;&lt;係:ガ格&gt;&lt;区切:0-0&gt;&lt;格要素&gt;&lt;連用要素&gt;&lt;名詞項候補&gt;&lt;先行詞候補&gt;&lt;SM-人&gt;&lt;SM-主体&gt;&lt;正規化代表表記:太郎/たろう&gt;&lt;NE:PERSON:太郎&gt;&lt;照応詞候補:太郎&gt;&lt;解析格:ガ&gt;&lt;EID:0&gt;" tokens="s0_tok0 s0_tok1" id="s0_bp0"/><basicPhrase features="&lt;文末&gt;&lt;句点&gt;&lt;用言:動&gt;&lt;レベル:C&gt;&lt;区切:5-5&gt;&lt;ID:（文末）&gt;&lt;係:文末&gt;&lt;提題受:30&gt;&lt;主節&gt;&lt;格要素&gt;&lt;連用要素&gt;&lt;動態述語&gt;&lt;正規化代表表記:走る/はしる&gt;&lt;用言代表表記:走る/はしる&gt;&lt;時制-未来&gt;&lt;主題格:一人称優位&gt;&lt;格関係0:ガ:太郎&gt;&lt;格解析結果:走る/はしる:動13:ガ/C/太郎/0/0/d0-s0;ヲ/U/-/-/-/-;ニ/U/-/-/-/-;ト/U/-/-/-/-;デ/U/-/-/-/-;カラ/U/-/-/-/-;ヨリ/U/-/-/-/-;マデ/U/-/-/-/-;時間/U/-/-/-/-;外の関係/U/-/-/-/-;ノ/U/-/-/-/-;修飾/U/-/-/-/-;トスル/U/-/-/-/-;ニオク/U/-/-/-/-;ニカンスル/U/-/-/-/-;ニヨル/U/-/-/-/-;ヲフクメル/U/-/-/-/-;ヲハジメル/U/-/-/-/-;ヲノゾク/U/-/-/-/-;ヲツウジル/U/-/-/-/-&gt;&lt;EID:1&gt;&lt;述語項構造:走る/はしる:動13:ガ/C/太郎/0&gt;" tokens="s0_tok2 s0_tok3" id="s0_bp1" /></basicPhrases></sentence>
 
@@ -39,4 +48,20 @@ class DocumentKNPAnnotatorTest extends FunSuite {
       knp.getPredicateArgumentRelations(sentenceNode, "d0") should be (expected)
     }
   }
+
+  test("getPredicateArgumentRelations 3"){
+    //「りんごはおいしかったけれど、値段が少し高かった」
+    val sentenceNode = <sentence id="s0">りんごはおいしかったけれど、値段が少し高かった<basicPhrases><basicPhrase features="&lt;文頭&gt;&lt;ハ&gt;&lt;助詞&gt;&lt;体言&gt;&lt;係:未格&gt;&lt;提題&gt;&lt;区切:3-5&gt;&lt;主題表現&gt;&lt;格要素&gt;&lt;連用要素&gt;&lt;名詞項候補&gt;&lt;先行詞候補&gt;&lt;正規化代表表記:林檎/りんご&gt;&lt;照応詞候補:りんご&gt;&lt;解析格:ガ&gt;&lt;EID:0&gt;" tokens="s0_tok0 s0_tok1" id="s0_bp0"/><basicPhrase features="&lt;時制-過去&gt;&lt;読点&gt;&lt;助詞&gt;&lt;用言:形&gt;&lt;係:連用&gt;&lt;レベル:C&gt;&lt;並キ:述:&amp;ST:3.0&amp;&amp;&amp;レベル:B&gt;&lt;区切:3-5&gt;&lt;ID:〜けれども&gt;&lt;提題受:25&gt;&lt;連用要素&gt;&lt;連用節&gt;&lt;状態述語&gt;&lt;正規化代表表記:美味しい/おいしい&gt;&lt;用言代表表記:美味しい/おいしい&gt;&lt;主題格:一人称優位&gt;&lt;格関係0:ガ:りんご&gt;&lt;格解析結果:美味しい/おいしい:形18:ガ/N/りんご/0/0/d0-s0;ニ/U/-/-/-/-;ヨリ/U/-/-/-/-;外の関係/U/-/-/-/-;修飾/U/-/-/-/-&gt;&lt;EID:1&gt;&lt;述語項構造:美味しい/おいしい:形18:ガ/N/りんご/0&gt;" tokens="s0_tok2 s0_tok3 s0_tok4" id="s0_bp1"/><basicPhrase features="&lt;ガ&gt;&lt;助詞&gt;&lt;体言&gt;&lt;係:ガ格&gt;&lt;区切:0-0&gt;&lt;格要素&gt;&lt;連用要素&gt;&lt;名詞項候補&gt;&lt;先行詞候補&gt;&lt;正規化代表表記:値段/ねだん&gt;&lt;照応詞候補:値段&gt;&lt;解析格:ガ&gt;&lt;EID:2&gt;&lt;述語項構造:値段/ねだん:名1:ノ/O/りんご/0&gt;" tokens="s0_tok5 s0_tok6" id="s0_bp2"/><basicPhrase features="&lt;相対名詞修飾&gt;&lt;用言弱修飾&gt;&lt;数量&gt;&lt;副詞&gt;&lt;修飾&gt;&lt;係:連用&gt;&lt;区切:0-4&gt;&lt;連用要素&gt;&lt;連用節&gt;&lt;省略解析なし&gt;&lt;正規化代表表記:少し/すこし&gt;&lt;解析格:修飾&gt;&lt;EID:3&gt;" tokens="s0_tok7" id="s0_bp3"/><basicPhrase features="&lt;文末&gt;&lt;時制-過去&gt;&lt;用言:形&gt;&lt;レベル:C&gt;&lt;区切:5-5&gt;&lt;ID:（文末）&gt;&lt;提題受:30&gt;&lt;主節&gt;&lt;状態述語&gt;&lt;正規化代表表記:高い/たかい&gt;&lt;用言代表表記:高い/たかい&gt;&lt;主題格:一人称優位&gt;&lt;格関係2:ガ:値段&gt;&lt;格関係3:修飾:少し&gt;&lt;格解析結果:高い/たかい:形5:ガ/C/値段/2/0/d0-s0;ニ/U/-/-/-/-;ト/U/-/-/-/-;デ/U/-/-/-/-;カラ/U/-/-/-/-;ヨリ/U/-/-/-/-;マデ/U/-/-/-/-;時間/U/-/-/-/-;外の関係/U/-/-/-/-;修飾/C/少し/3/0/d0-s0;ノ/U/-/-/-/-;ガ２/U/-/-/-/-;ニクラベル/U/-/-/-/-;トスル/U/-/-/-/-;ニタイスル/U/-/-/-/-;ニトル/U/-/-/-/-;トイウ/U/-/-/-/-;ニヨル/U/-/-/-/-;ニツク/U/-/-/-/-;ニオク/U/-/-/-/-&gt;&lt;EID:4&gt;&lt;述語項構造:高い/たかい:形5:ガ/C/値段/2;修飾/C/少し/3&gt;" tokens="s0_tok8" id="s0_bp4"></basicPhrase></basicPhrases></sentence>
+
+    // <述語項構造:美味しい/おいしい:形18:ガ/N/りんご/0>
+    // <述語項構造:値段/ねだん:名1:ノ/O/りんご/0>
+    // <述語項構造:高い/たかい:形5:ガ/C/値段/2;修飾/C/少し/3>
+
+    val expected = <predicateArgumentRelations><predicateArgumentRelation id="s0_par0" predicate="s0_bp1" argument="d0_coref0" label="ガ" flag="N"/><predicateArgumentRelation id="s0_par1" predicate="s0_bp2" argument="d0_coref0" label="ノ" flag="O"/><predicateArgumentRelation id="s0_par2" predicate="s0_bp4" argument="d0_coref2" label="ガ" flag="C"/><predicateArgumentRelation id="s0_par3" predicate="s0_bp4" argument="d0_coref3" label="修飾" flag="C"/></predicateArgumentRelations>
+
+    newKNP() foreach { knp =>
+      knp.getPredicateArgumentRelations(sentenceNode, "d0") should be (expected)
+    }
+  }
+
 }
