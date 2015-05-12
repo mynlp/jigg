@@ -211,6 +211,29 @@ class SimpleKNPAnnotatorTest extends FunSuite {
     }
   }
 
+  //S-ID:d1-s0 (not S-ID:1) is fine
+  test("getCaseRelations 3; S-ID:d1-s0"){
+    val input = """|# S-ID:d1-s0 JUMAN:7.01 KNP:4.12-CF1.1 DATE:2015/05/12 SCORE:-7.16850
+                   |* 1D <文頭><人名><ガ><助詞><体言><係:ガ格><区切:0-0><格要素><連用要素><正規化代表表記:太郎/たろう><主辞代表表記:太郎/たろう>
+                   |+ 1D <文頭><人名><ガ><助詞><体言><係:ガ格><区切:0-0><格要素><連用要素><名詞項候補><先行詞候補><SM-人><SM-主体><正規化代表表記:太郎/たろう><NE:PERSON:太郎><解析格:ガ>
+                   |太郎 たろう 太郎 名詞 6 人名 5 * 0 * 0 "人名:日本:名:45:0.00106 疑似代表表記 代表表記:太郎/たろう" <人名:日本:名:45:0.00106><疑似代表表記><代表表記:太郎/たろう><正規化代表表記:太郎/たろう><文頭><漢字><かな漢字><名詞相当語><自立><内容語><タグ単位始><文節始><固有キー><文節主辞><係:ガ格><NE:PERSON:S>
+                   |が が が 助詞 9 格助詞 1 * 0 * 0 NIL <かな漢字><ひらがな><付属>
+                   |* -1D <文末><句点><用言:動><レベル:C><区切:5-5><ID:（文末）><係:文末><提題受:30><主節><格要素><連用要素><動態述語><正規化代表表記:走る/はしる><主辞代表表記:走る/はしる>
+                   |+ -1D <文末><句点><用言:動><レベル:C><区切:5-5><ID:（文末）><係:文末><提題受:30><主節><格要素><連用要素><動態述語><正規化代表表記:走る/はしる><用言代表表記:走る/はしる><時制-未来><主題格:一人称優位><格関係0:ガ:太郎><格解析結果:走る/はしる:動13:ガ/C/太郎/0/0/d1-s0;ヲ/U/-/-/-/-;ニ/U/-/-/-/-;ト/U/-/-/-/-;デ/U/-/-/-/-;カラ/U/-/-/-/-;ヨリ/U/-/-/-/-;マデ/U/-/-/-/-;時間/U/-/-/-/-;外の関係/U/-/-/-/-;ノ/U/-/-/-/-;修飾/U/-/-/-/-;トスル/U/-/-/-/-;ニオク/U/-/-/-/-;ニカンスル/U/-/-/-/-;ニヨル/U/-/-/-/-;ヲフクメル/U/-/-/-/-;ヲハジメル/U/-/-/-/-;ヲノゾク/U/-/-/-/-;ヲツウジル/U/-/-/-/->
+                   |走る はしる 走る 動詞 2 * 0 子音動詞ラ行 10 基本形 2 "代表表記:走る/はしる" <代表表記:走る/はしる><正規化代表表記:走る/はしる><表現文末><かな漢字><活用語><自立><内容語><タグ単位始><文節始><文節主辞>
+                   |。 。 。 特殊 1 句点 1 * 0 * 0 NIL <文末><英記号><記号><付属>
+                   |EOS
+""".stripMargin.split("\n").toSeq
+
+    val expected = <caseRelations><caseRelation flag="C" label="ガ" depend="s0_tok0" head="s0_bp1" id="s0_cr0"/><caseRelation flag="U" label="ヲ" depend="unk" head="s0_bp1" id="s0_cr1"/><caseRelation flag="U" label="ニ" depend="unk" head="s0_bp1" id="s0_cr2"/><caseRelation flag="U" label="ト" depend="unk" head="s0_bp1" id="s0_cr3"/><caseRelation flag="U" label="デ" depend="unk" head="s0_bp1" id="s0_cr4"/><caseRelation flag="U" label="カラ" depend="unk" head="s0_bp1" id="s0_cr5"/><caseRelation flag="U" label="ヨリ" depend="unk" head="s0_bp1" id="s0_cr6"/><caseRelation flag="U" label="マデ" depend="unk" head="s0_bp1" id="s0_cr7"/><caseRelation flag="U" label="時間" depend="unk" head="s0_bp1" id="s0_cr8"/><caseRelation flag="U" label="外の関係" depend="unk" head="s0_bp1" id="s0_cr9"/><caseRelation flag="U" label="ノ" depend="unk" head="s0_bp1" id="s0_cr10"/><caseRelation flag="U" label="修飾" depend="unk" head="s0_bp1" id="s0_cr11"/><caseRelation flag="U" label="トスル" depend="unk" head="s0_bp1" id="s0_cr12"/><caseRelation flag="U" label="ニオク" depend="unk" head="s0_bp1" id="s0_cr13"/><caseRelation flag="U" label="ニカンスル" depend="unk" head="s0_bp1" id="s0_cr14"/><caseRelation flag="U" label="ニヨル" depend="unk" head="s0_bp1" id="s0_cr15"/><caseRelation flag="U" label="ヲフクメル" depend="unk" head="s0_bp1" id="s0_cr16"/><caseRelation flag="U" label="ヲハジメル" depend="unk" head="s0_bp1" id="s0_cr17"/><caseRelation flag="U" label="ヲノゾク" depend="unk" head="s0_bp1" id="s0_cr18"/><caseRelation flag="U" label="ヲツウジル" depend="unk" head="s0_bp1" id="s0_cr19"/></caseRelations>
+
+    newKNP() foreach { knp =>
+      val tokens = knp.getTokens(input, "s0")
+      val bps = knp.getBasicPhrases(input, "s0")
+      knp.getCaseRelations(input, tokens, bps, "s0") should be (expected)
+    }
+  }
+
   test("getNamedEntities"){
     val input = """|# S-ID:1 KNP:4.12-CF1.1 DATE:2015/01/17 SCORE:-22.46564
                    |* 1D <文頭><サ変><組織名疑><ガ><助詞><体言><係:ガ格><区切:0-0><格要素><連用要素><正規化代表表記:国際/こくさい+連合/れんごう><主辞代表表記:連合/れんごう>
@@ -263,5 +286,4 @@ class SimpleKNPAnnotatorTest extends FunSuite {
       knp.recovJumanOutput(jumanTokens) should be (expected)
     }
   }
-
 }
