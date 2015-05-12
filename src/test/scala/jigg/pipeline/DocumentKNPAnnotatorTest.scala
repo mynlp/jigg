@@ -64,4 +64,16 @@ class DocumentKNPAnnotatorTest extends FunSuite {
     }
   }
 
+  test("getPredicateArgumentRelations 4"){
+    //「紅茶」
+    val sentenceNode = <sentence id="s0">紅茶<basicPhrases><basicPhrase features="&lt;文頭&gt;&lt;文末&gt;&lt;体言&gt;&lt;用言:判&gt;&lt;体言止&gt;&lt;レベル:C&gt;&lt;区切:5-5&gt;&lt;ID:（文末）&gt;&lt;裸名詞&gt;&lt;提題受:30&gt;&lt;主節&gt;&lt;状態述語&gt;&lt;判定詞&gt;&lt;名詞項候補&gt;&lt;先行詞候補&gt;&lt;正規化代表表記:紅茶/こうちゃ&gt;&lt;用言代表表記:紅茶/こうちゃ&gt;&lt;時制-無時制&gt;&lt;照応詞候補:紅茶&gt;&lt;格解析結果:紅茶/こうちゃ:判0:ガ/U/-/-/-/-;ヲ/U/-/-/-/-;ニ/U/-/-/-/-;デ/U/-/-/-/-;ヨリ/U/-/-/-/-;時間/U/-/-/-/-;外の関係/U/-/-/-/-;ノ/U/-/-/-/-;修飾/U/-/-/-/-;ガ２/U/-/-/-/-&gt;&lt;EID:0&gt;&lt;述語項構造:紅茶/こうちゃ:名1&gt;" tokens="s0_tok0" id="s0_bp0"/></basicPhrases></sentence>
+
+    //<述語項構造:紅茶/こうちゃ:名1>
+
+    val expected = <predicateArgumentRelations></predicateArgumentRelations>
+
+    newKNP() foreach { knp =>
+      knp.getPredicateArgumentRelations(sentenceNode, "d0") should be (expected)
+    }
+  }
 }

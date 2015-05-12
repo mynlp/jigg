@@ -137,6 +137,8 @@ class DocumentKNPAnnotator(override val name: String, override val props: Proper
     var parInd = 0
 
     //<述語項構造:飲む/のむ:動1:ガ/N/麻生太郎/1;ヲ/C/コーヒー/2>
+    //<述語項構造:紅茶/こうちゃ:名1>
+
     val pattern = new Regex("""\<述語項構造:[^:]+:[^:]+:(.+)\>""", "args")
     val sid = (sentenceNode \ "@id").text
 
@@ -144,20 +146,25 @@ class DocumentKNPAnnotator(override val name: String, override val props: Proper
       bpNode =>
       val bpid = (bpNode \ "@id").text
       val featureStr = (bpNode \ "@features").text
-      val args = pattern.findFirstMatchIn(featureStr).map(m => m.group("args")).getOrElse("")
+      val args = pattern.findFirstMatchIn(featureStr).map(m => m.group("args")) //.getOrElse("")
 
-      args.split(";").map{
-        arg =>
-        val sp = arg.split("/")
-        val label = sp(0)
-        val flag = sp(1)
-        //val name = sp(2)
-        val eid = sp(3).toInt
+      val ans = args match {
+        case Some(args_str) =>
+          args_str.split(";").map{
+            arg =>
+            val sp = arg.split("/")
+            val label = sp(0)
+            val flag = sp(1)
+            //val name = sp(2)
+            val eid = sp(3).toInt
 
-        val ans = <predicateArgumentRelation id={parid(sid, parInd)} predicate={bpid} argument={corefid(did, eid)} label={label} flag={flag} />
-        parInd += 1
-        ans
+            val par_ans = <predicateArgumentRelation id={parid(sid, parInd)} predicate={bpid} argument={corefid(did, eid)} label={label} flag={flag} />
+            parInd += 1
+            par_ans
+          }
+        case None => scala.xml.Null
       }
+      ans
     }
     <predicateArgumentRelations>{ predArgNodes }</predicateArgumentRelations>
   }
