@@ -38,6 +38,16 @@ class DocumentKNPAnnotator(override val name: String, override val props: Proper
     knpProcess.destroy()
   }
 
+  def runKNP(jumanTokens:String): Seq[String] = {
+    knpOut.write(jumanTokens)
+    knpOut.flush()
+
+    Stream.continually(knpIn.readLine()) match {
+      case strm @ (begin #:: _) if begin.startsWith("# S-ID") => strm.takeWhile(_ != "EOS").toIndexedSeq :+ "EOS"
+      case other #:: _ => argumentError("command", s"Something wrong in $name\n$other\n...")
+    }
+  }
+
   private def corefid(did: String, corefindex:Int) = did + "_coref" + corefindex.toString
   private def parid(sid: String, parindex:Int) = sid + "_par" + parindex.toString
 
@@ -49,16 +59,6 @@ class DocumentKNPAnnotator(override val name: String, override val props: Proper
 
 
   override def newDocumentAnnotation(document: Node): Node = {
-    def runKNP(jumanTokens:String): Seq[String] = {
-      knpOut.write(jumanTokens)
-      knpOut.flush()
-
-      Stream.continually(knpIn.readLine()) match {
-        case strm @ (begin #:: _) if begin.startsWith("# S-ID") => strm.takeWhile(_ != "EOS").toIndexedSeq :+ "EOS"
-        case other #:: _ => argumentError("command", s"Something wrong in $name\n$other\n...")
-      }
-    }
-
     val did = (document \ "@id").text
     val sentenceNodes = (document \ "sentences" \ "sentence")
 

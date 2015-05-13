@@ -30,7 +30,6 @@ trait KNPAnnotator{
   lazy val knpIn = new BufferedReader(new InputStreamReader(knpProcess.getInputStream, "UTF-8"))
   lazy val knpOut = new BufferedWriter(new OutputStreamWriter(knpProcess.getOutputStream, "UTF-8"))
 
-
   def isDocInfo(knpStr:String) : Boolean = knpStr(0) == '#'
   def isChunk(knpStr:String) : Boolean = knpStr(0) == '*'
   def isBasicPhrase(knpStr:String) : Boolean = knpStr(0) == '+'
