@@ -16,12 +16,21 @@ package jigg.pipeline
  limitations under the License.
 */
 
-import scala.util.matching.Regex
+import java.io.BufferedReader
+import java.io.BufferedWriter
+import java.io.InputStreamReader
+import java.io.OutputStreamWriter
 import scala.collection.mutable.ArrayBuffer
+import scala.util.matching.Regex
 import scala.xml._
 import jigg.util.XMLUtil
 
 trait KNPAnnotator{
+  val knpProcess : java.lang.Process
+  lazy val knpIn = new BufferedReader(new InputStreamReader(knpProcess.getInputStream, "UTF-8"))
+  lazy val knpOut = new BufferedWriter(new OutputStreamWriter(knpProcess.getOutputStream, "UTF-8"))
+
+
   def isDocInfo(knpStr:String) : Boolean = knpStr(0) == '#'
   def isChunk(knpStr:String) : Boolean = knpStr(0) == '*'
   def isBasicPhrase(knpStr:String) : Boolean = knpStr(0) == '+'

@@ -16,10 +16,6 @@ package jigg.pipeline
  limitations under the License.
 */
 
-import java.io.BufferedReader
-import java.io.BufferedWriter
-import java.io.InputStreamReader
-import java.io.OutputStreamWriter
 import java.util.Properties
 import scala.xml._
 
@@ -27,10 +23,7 @@ class SimpleKNPAnnotator(override val name: String, override val props: Properti
   @Prop(gloss = "Use this command to launch KNP (-tab and -anaphora are mandatory and automatically added). Version >= 4.12 is assumed.") var command = "knp"
   readProps()
 
-  //for KNP 4.12 (-ne option is unneed)
-  lazy private[this] val knpProcess = new java.lang.ProcessBuilder(command, "-tab", "-anaphora").start
-  lazy private[this] val knpIn = new BufferedReader(new InputStreamReader(knpProcess.getInputStream, "UTF-8"))
-  lazy private[this] val knpOut = new BufferedWriter(new OutputStreamWriter(knpProcess.getOutputStream, "UTF-8"))
+  lazy val knpProcess = new java.lang.ProcessBuilder(command, "-tab").start
 
   /**
     * Close the external process and the interface
