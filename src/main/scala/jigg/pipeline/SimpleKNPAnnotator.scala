@@ -34,17 +34,6 @@ class SimpleKNPAnnotator(override val name: String, override val props: Properti
     knpProcess.destroy()
   }
 
-  def runKNP(jumanTokens:String): Seq[String] = {
-    knpOut.write(jumanTokens)
-    knpOut.flush()
-
-    Stream.continually(knpIn.readLine()) match {
-      case strm @ (begin #:: _) if begin.startsWith("# S-ID") => strm.takeWhile(_ != "EOS").toIndexedSeq :+ "EOS"
-      case other #:: _ => argumentError("command", s"Something wrong in $name\n$other\n...")
-    }
-  }
-
-
   override def newSentenceAnnotation(sentence: Node): Node = {
     val sindex = (sentence \ "@id").toString
     val jumanTokens = (sentence \ "tokens").head

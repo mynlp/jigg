@@ -25,10 +25,20 @@ import scala.util.matching.Regex
 import scala.xml._
 import jigg.util.XMLUtil
 
-trait KNPAnnotator{
+trait KNPAnnotator extends Annotator{
   val knpProcess : java.lang.Process
   lazy val knpIn = new BufferedReader(new InputStreamReader(knpProcess.getInputStream, "UTF-8"))
   lazy val knpOut = new BufferedWriter(new OutputStreamWriter(knpProcess.getOutputStream, "UTF-8"))
+
+  def runKNP(jumanTokens:String): Seq[String] = {
+    knpOut.write(jumanTokens)
+    knpOut.flush()
+
+    Stream.continually(knpIn.readLine()) match {
+      case strm @ (begin #:: _) if begin.startsWith("# S-ID") => strm.takeWhile(_ != "EOS").toIndexedSeq :+ "EOS"
+      case other #:: _ => argumentError("command", s"Something wrong in $name\n$other\n...")
+    }
+  }
 
   def isDocInfo(knpStr:String) : Boolean = knpStr(0) == '#'
   def isChunk(knpStr:String) : Boolean = knpStr(0) == '*'
