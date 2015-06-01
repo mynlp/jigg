@@ -48,15 +48,19 @@ ${helpMessage}
 """
   }
 
-  private [this] var mecab_process : java.lang.Process = null
-  try{
-    mecab_process = new java.lang.ProcessBuilder(buildCommand(command)).start
+  private [this] val mecab_process = try {
+    new java.lang.ProcessBuilder(buildCommand(command)).start
   }
   catch{
     case e: Exception =>
-      println("Failed to start MeCab. Check environment variable $PATH.")
-      println("You can get MeCab at https://taku910.github.io/mecab/")
-      System.exit(1)
+      val command_name = makeFullName("command")
+      val error_mes = s"""Failed to start MeCab. Check environment variable PATH
+  You can get MeCab at https://taku910.github.io/mecab/
+  If you have MeCab out of your PATH, set ${command_name} option as follows
+    -${command_name} /PATH/TO/MECAB/mecab
+"""
+
+      argumentError("command", error_mes)
   }
   lazy private[this] val mecab_in = new BufferedReader(new InputStreamReader(mecab_process.getInputStream, "UTF-8"))
   lazy private[this] val mecab_out = new BufferedWriter(new OutputStreamWriter(mecab_process.getOutputStream, "UTF-8"))
