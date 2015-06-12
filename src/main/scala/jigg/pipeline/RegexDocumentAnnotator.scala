@@ -3,6 +3,10 @@ package jigg.pipeline
 import java.util.Properties
 import scala.xml.Node
 
+/**
+ Copyright 2013-2015 Takafumi Sakakibara and Hiroshi Noji
+  */
+
 class RegexDocumentAnnotator(override val name: String, override val props: Properties) extends Annotator {
 
   @Prop(gloss = "Regular expression to segment documents") var pattern = """\n{2,}"""

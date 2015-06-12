@@ -4,6 +4,10 @@ import java.util.Properties
 import org.scalatest.FunSuite
 import org.scalatest.Matchers._
 
+/**
+  Copyright 2013-2015 Takafumi Sakakibara and Hiroshi Noji
+  */
+
 class DocumentKNPAnnotatorTest extends FunSuite {
   def newKNP(p: Properties = new Properties) = try Some(new DocumentKNPAnnotator("knp", p))
   catch { case e: Throwable => None }

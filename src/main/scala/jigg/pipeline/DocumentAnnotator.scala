@@ -3,6 +3,10 @@ package jigg.pipeline
 import jigg.util.XMLUtil
 import scala.xml.Node
 
+/*
+ Copyright 2013-2015 Takafumi Sakakibara and Hiroshi Noji
+ */
+
 /** A trait for an annotator which modifies a document node. If an annotator is docuement-level
   * annotator such as a coreference resolution, it should extend this trait and usually what you
   * should do is only to implement newDocumentAnnotation method, which rewrites a document
