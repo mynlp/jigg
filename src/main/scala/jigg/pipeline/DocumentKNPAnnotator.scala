@@ -87,25 +87,19 @@ class DocumentKNPAnnotator(override val name: String, override val props: Proper
   }
 
   def getCoreferences(docNode:NodeSeq) = {
-    val eidHash = scala.collection.mutable.LinkedHashMap[Int, String]()
-
-    (docNode \\ "basicPhrase").map{
-      bp =>
+    val eidToBpids = (docNode \\ "basicPhrase").map{ bp =>
       val bpid = (bp \ "@id").text
       val feature : String = (bp \ "@features").text
       val pattern = new Regex("""\<EID:(\d+)\>""", "eid")
       val eid = pattern.findFirstMatchIn(feature).map(m => m.group("eid").toInt).getOrElse(-1)
-
-      if (eidHash.contains(eid)){
-        eidHash(eid) = eidHash(eid) + " " + bpid
-      }
-      else{
-        eidHash(eid) = bpid
-      }
-    }
+      (eid, bpid)
+    }.groupBy(_._1) // Map[Int, Seq[Int]]
+      .toSeq               // Seq[(Int, Seq[Int])]
+      .sortBy(_._1)
+      .map { case (eid, lst) => (eid, lst.map(_._2).mkString(" ")) } // Seq[Int, String]
 
     val did = (docNode \ "@id").text
-    val ans = eidHash.map{
+    val ans = eidToBpids.map{
       case (eid, bps) =>
         <coreference id={corefid(did, eid)} basicPhrases={bps} />
     }
