@@ -80,12 +80,10 @@ class DocumentKNPAnnotator(override val name: String, override val props: Proper
     }
 
     val docNodeWithCoref = XMLUtil.addChild(annotatedDocNode, getCoreferences(annotatedDocNode))
-    val ans = XMLUtil.replaceAll(docNodeWithCoref, "sentence"){
+    XMLUtil.replaceAll(docNodeWithCoref, "sentence"){
       sentenceNode =>
       XMLUtil.addChild(sentenceNode, getPredicateArgumentRelations(sentenceNode, did))
     }
-
-    ans
   }
 
   def getCoreferences(docNode:NodeSeq) = {
