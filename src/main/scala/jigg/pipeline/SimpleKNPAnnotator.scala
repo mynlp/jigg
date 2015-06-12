@@ -20,7 +20,7 @@ import java.util.Properties
 import scala.xml._
 
 class SimpleKNPAnnotator(override val name: String, override val props: Properties) extends SentencesAnnotator with KNPAnnotator{
-  @Prop(gloss = "Use this command to launch KNP (-tab and -anaphora are mandatory and automatically added). Version >= 4.12 is assumed.") var command = "knp"
+  @Prop(gloss = "Use this command to launch KNP (-tab is automatically added. -anaphora is not compatible with this annotator. In that case, use knpDoc instead). Version >= 4.12 is assumed.") var command = "knp"
   readProps()
 
   lazy val knpProcess = new java.lang.ProcessBuilder(command, "-tab").start
