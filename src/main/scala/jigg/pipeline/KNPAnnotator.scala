@@ -1,7 +1,7 @@
 package jigg.pipeline
 
 /*
- Copyright 2013-2015 Hiroshi Noji
+ Copyright 2013-2015 Takafumi Sakakibara and Hiroshi Noji
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -20,36 +20,31 @@ import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
-import java.util.Properties
-import scala.util.matching.Regex
 import scala.collection.mutable.ArrayBuffer
+import scala.util.matching.Regex
 import scala.xml._
 import jigg.util.XMLUtil
 
-class KNPAnnotator(override val name: String, override val props: Properties) extends SentencesAnnotator {
+trait KNPAnnotator extends Annotator{
+  val knpProcess : java.lang.Process
+  lazy val knpIn = new BufferedReader(new InputStreamReader(knpProcess.getInputStream, "UTF-8"))
+  lazy val knpOut = new BufferedWriter(new OutputStreamWriter(knpProcess.getOutputStream, "UTF-8"))
 
-  @Prop(gloss = "Use this command to launch KNP (-tab and -anaphora are mandatory and automatically added). Version >= 4.12 is assumed.") var command = "knp"
-  readProps()
+  def runKNP(jumanTokens:String): Seq[String] = {
+    knpOut.write(jumanTokens)
+    knpOut.flush()
 
-  //for KNP 4.12 (-ne option is unneed)
-  lazy private[this] val knpProcess = new java.lang.ProcessBuilder(command, "-tab", "-anaphora").start
-  lazy private[this] val knpIn = new BufferedReader(new InputStreamReader(knpProcess.getInputStream, "UTF-8"))
-  lazy private[this] val knpOut = new BufferedWriter(new OutputStreamWriter(knpProcess.getOutputStream, "UTF-8"))
-
-  /**
-    * Close the external process and the interface
-    */
-  override def close() {
-    knpOut.close()
-    knpIn.close()
-    knpProcess.destroy()
+    Stream.continually(knpIn.readLine()) match {
+      case strm @ (begin #:: _) if begin.startsWith("# S-ID") => strm.takeWhile(_ != "EOS").toIndexedSeq :+ "EOS"
+      case other #:: _ => argumentError("command", s"Something wrong in $name\n$other\n...")
+    }
   }
 
-  def isBasicPhrase(knpStr:String) : Boolean = knpStr(0) == '+'
-  def isChunk(knpStr:String) : Boolean = knpStr(0) == '*'
   def isDocInfo(knpStr:String) : Boolean = knpStr(0) == '#'
+  def isChunk(knpStr:String) : Boolean = knpStr(0) == '*'
+  def isBasicPhrase(knpStr:String) : Boolean = knpStr(0) == '+'
   def isEOS(knpStr:String) : Boolean = knpStr == "EOS"
-  def isToken(knpStr:String) : Boolean = ! isBasicPhrase(knpStr) && ! isChunk(knpStr) && ! isDocInfo(knpStr) && ! isEOS(knpStr)
+  def isToken(knpStr:String) : Boolean = ! isDocInfo(knpStr) && ! isChunk(knpStr) && ! isBasicPhrase(knpStr) && ! isEOS(knpStr)
 
   private def tid(sindex: String, tindex: Int) = sindex + "_tok" + tindex.toString
   private def cid(sindex: String, cindex: Int) = sindex + "_chu" + cindex
@@ -57,14 +52,12 @@ class KNPAnnotator(override val name: String, override val props: Properties) ex
   private def bpdid(sindex: String, bpdindex: Int) = sindex + "_bpdep" + bpdindex.toString
   private def depid(sindex: String, depindex: Int) = sindex + "_dep" + depindex.toString
   private def crid(sindex: String, crindex:Int) = sindex + "_cr" + crindex.toString
-  private def corefid(sindex: String, corefindex:Int) = sindex + "_coref" + corefindex.toString
-  private def parid(sindex: String, parindex:Int) = sindex + "_par" + parindex.toString
   private def neid(sindex: String, neindex:Int) = sindex + "_ne" + neindex.toString
 
   def getTokens(knpResult:Seq[String], sid:String) : Node = {
     var tokenIndex = 0
 
-    val nodes = knpResult.filter(s =>  s(0) != '#' && s(0) != '*' && s(0) != '+' && s != "EOS").map{
+    val nodes = knpResult.filter(s => isToken(s)).map{
       s =>
       val tok = s.split(' ')
 
@@ -193,7 +186,7 @@ class KNPAnnotator(override val name: String, override val props: Properties) ex
 
       val pattern1 = "<格解析結果:[^>]+>".r
       val sp = pattern1.findFirstIn(str).getOrElse("<>").init.tail.split(":")
-      val caseResults = sp(3)  //  ガ/C/太郎/0/0/1;ヲ/ ...
+      val caseResults = sp(3)  //  ガ/C/太郎/0/0/1;ヲ/ ... or ガ/C/太郎/0/0/d0-s0;ヲ/ ...
       val hd = bpid(sid, bpInd)
 
       caseResults.split(";").map{
@@ -220,65 +213,6 @@ class KNPAnnotator(override val name: String, override val props: Properties) ex
     }.flatten
 
     <caseRelations>{ ans }</caseRelations>
-  }
-
-  def getCoreferences(bpXml:NodeSeq, sid:String) = {
-    val eidHash = scala.collection.mutable.LinkedHashMap[Int, String]()
-
-    (bpXml \ "basicPhrase").map{
-      bp =>
-      val bpid = (bp \ "@id").toString
-      val feature : String = (bp \ "@features").text
-
-      val pattern = new Regex("""\<EID:(\d+)\>""", "eid")
-      val eid = pattern.findFirstMatchIn(feature).map(m => m.group("eid").toInt).getOrElse(-1)
-
-      if (eidHash.contains(eid)){
-        eidHash(eid) = eidHash(eid) + " " + bpid
-      }
-      else{
-        eidHash(eid) = bpid
-      }
-    }
-
-    val ans = eidHash.map{
-      case (eid, bps) =>
-        <coreference id={corefid(sid, eid)} basicPhrases={bps} />
-    }
-
-    <coreferences>{ ans }</coreferences>
-  }
-
-  def getPredicateArgumentRelations(knpResult:Seq[String], sid:String) = {
-    var parInd = 0
-
-    //<述語項構造:飲む/のむ:動1:ガ/N/麻生太郎/1;ヲ/C/コーヒー/2>
-    val pattern = new Regex("""\<述語項構造:[^:]+:[^:]+:(.+)\>""", "args")
-
-    val ans = knpResult.filter(knpStr => isBasicPhrase(knpStr)).zipWithIndex.filter(tpl => tpl._1.contains("<述語項構造:")).map{
-      tpl =>
-      val knpStr = tpl._1
-      val bpInd = tpl._2
-
-      val argsOpt = pattern.findFirstMatchIn(knpStr).map(m => m.group("args"))
-      argsOpt.map{
-        args =>
-        args.split(";").map{
-          arg =>
-          val sp = arg.split("/")
-          val label = sp(0)
-          val flag = sp(1)
-          //val name = sp(2)
-          val eid = sp(3).toInt
-
-          val ans = <predicateArgumentRelation id={parid(sid, parInd)} predicate={bpid(sid, bpInd)} argument={corefid(sid, eid)} label={label} flag={flag} />
-          parInd += 1
-          ans
-        }
-      }.getOrElse(NodeSeq.Empty)
-    }
-
-    <predicateArgumentRelations>{ ans }</predicateArgumentRelations>
   }
 
   def getNamedEntities(knpResult:Seq[String], sid:String) = {
@@ -321,7 +255,7 @@ class KNPAnnotator(override val name: String, override val props: Properties) ex
     <namedEntities>{ namedEntities }</namedEntities>
   }
 
-  def makeXml(sentence:Node, knpResult:Seq[String], sid:String): Node = {
+  def annotateSentenceNode(sentence:Node, knpResult:Seq[String], sid:String): Node = {
     val knpTokens = getTokens(knpResult, sid)
     val sentenceWithTokens = XMLUtil.replaceAll(sentence, "tokens")(node => knpTokens)
     val basicPhrases = getBasicPhrases(knpResult, sid)
@@ -331,11 +265,10 @@ class KNPAnnotator(override val name: String, override val props: Properties) ex
       getBasicPhraseDependencies(knpResult, sid),
       getDependencies(knpResult, sid),
       getCaseRelations(knpResult, knpTokens, basicPhrases, sid),
-      getCoreferences(basicPhrases, sid),
-      getPredicateArgumentRelations(knpResult, sid),
       getNamedEntities(knpResult, sid)
     ))
   }
+
 
   private[this] def recoverTokenStr(tokenNode: Node, alt: Boolean) : String = (if (alt) "@ " else "") +
   Seq("@surf", "@reading", "@base", "@pos", "@posId", "@pos1", "@pos1Id", "@inflectionType", "@inflectionTypeId", "@inflectionForm", "@inflectionFormId").map(tokenNode \ _).mkString(" ") +
@@ -360,29 +293,5 @@ class KNPAnnotator(override val name: String, override val props: Properties) ex
 
     ans += "EOS\n"
     ans.toSeq
-  }
-
-  override def newSentenceAnnotation(sentence: Node): Node = {
-    def runKNP(jumanTokens:Node): Seq[String] = {
-      knpOut.write(recovJumanOutput(jumanTokens).mkString)
-      knpOut.flush()
-
-      Stream.continually(knpIn.readLine()) match {
-        case strm @ (begin #:: _) if begin.startsWith("# S-ID") => strm.takeWhile(_ != "EOS").toSeq :+ "EOS"
-        case other #:: _ => argumentError("command", s"Something wrong in $name\n$other\n...")
-      }
-    }
-
-    val sindex = (sentence \ "@id").toString
-    val jumanTokens = (sentence \ "tokens").head
-    val knpResult = runKNP(jumanTokens)
-
-    makeXml(sentence, knpResult, sindex)
-  }
-
-  override def requires = Set(Requirement.TokenizeWithJuman)
-  override def requirementsSatisfied = {
-    import Requirement._
-    Set(Chunk, Dependency, BasicPhrase, BasicPhraseDependency, Coreference, PredArg, NamedEntity)
   }
 }
