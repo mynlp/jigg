@@ -30,10 +30,22 @@ class JumanAnnotator(override val name: String, override val props: Properties) 
   @Prop(gloss = "Use this command to launch juman") var command = "juman"
   readProps()
 
-  lazy private[this] val jumanProcess = new java.lang.ProcessBuilder((command)).start
+  private[this] val jumanProcess = try {
+    new java.lang.ProcessBuilder((command)).start
+  }
+  catch {
+    case e: Exception =>
+      val command_name = makeFullName("command")
+      val error_mes = s"""Failed to start Juman. Check environment variable PATH
+  You can get Juman at http://nlp.ist.i.kyoto-u.ac.jp/index.php?JUMAN
+  If you have Juman out of your PATH, set ${command_name} option as follows
+    -${command_name} /PATH/TO/JUMAN/juman
+"""
+
+      argumentError("command", error_mes)
+  }
   lazy private[this] val jumanIn = new BufferedReader(new InputStreamReader(jumanProcess.getInputStream, "UTF-8"))
   lazy private[this] val jumanOut = new BufferedWriter(new OutputStreamWriter(jumanProcess.getOutputStream, "UTF-8"))
-
 
   /**
     * Close the external process and the interface
