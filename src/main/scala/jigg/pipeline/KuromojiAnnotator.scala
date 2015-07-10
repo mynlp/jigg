@@ -1,7 +1,7 @@
 package jigg.pipeline
 
 /*
- Copyright 2013-2015 Hiroshi Noji
+ Copyright 2013-2015 Takafumi Sakakibara and Hiroshi Noji
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import collection.JavaConversions._
 import org.atilika.kuromoji.Token
 import org.atilika.kuromoji.Tokenizer
 
-class KuromojiAnnotator(override val name: String, override val props: Properties) extends SentencesAnnotator {
+abstract class KuromojiAnnotator(override val name: String, override val props: Properties) extends SentencesAnnotator {
 
   val tokenizer = Tokenizer.builder.build
 
@@ -69,7 +69,14 @@ class KuromojiAnnotator(override val name: String, override val props: Propertie
   }
 
   override def requires = Set(Requirement.Sentence)
+}
+
+class IPAKuromojiAnnotator(name: String, props: Properties) extends KuromojiAnnotator(name, props) {
   override def requirementsSatisfied = Set(Requirement.TokenizeWithIPA)
 }
 
-object KuromojiAnnotator extends AnnotatorCompanion[KuromojiAnnotator]
+object KuromojiAnnotator extends AnnotatorCompanion[KuromojiAnnotator] {
+  override def fromProps(name: String, props: Properties) = {
+    new IPAKuromojiAnnotator(name, props)
+  }
+}
