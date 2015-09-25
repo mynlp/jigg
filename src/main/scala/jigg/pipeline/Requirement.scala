@@ -24,6 +24,8 @@ trait Requirement {
 
 object Requirement {
 
+  case object Document extends Requirement
+
   case object Sentence extends Requirement
 
   case object Tokenize extends Requirement

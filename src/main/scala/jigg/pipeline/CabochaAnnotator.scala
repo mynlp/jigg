@@ -1,7 +1,7 @@
 package jigg.pipeline
 
 /*
- Copyright 2013-2015 Hiroshi Noji
+ Copyright 2013-2015 Takafumi Sakakibara and Hiroshi Noji
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -64,13 +64,27 @@ ${helpMessage}
 
   // option -I1 : input tokenized file
   // option -f3 : output result as XML
-  lazy private[this] val cabocha_process = new java.lang.ProcessBuilder(buildCommand(command, "-f3", "-I1")).start
+  private[this] val cabocha_process = try {
+    new java.lang.ProcessBuilder(buildCommand(command, "-f3", "-I1")).start
+  }
+  catch {
+    case e: Exception =>
+      val command_name = makeFullName("command")
+      val error_mes = s"""Failed to start CaboCha. Check environment variable PATH
+  You can get CaboCha at http://taku910.github.io/cabocha/
+  If you have CaboCha out of your PATH, set ${command_name} option as follows
+    -${command_name} /PATH/TO/CABOCHA/cabocha
+"""
+
+      argumentError("command", error_mes)
+  }
+
   lazy private[this] val cabocha_in = new BufferedReader(new InputStreamReader(cabocha_process.getInputStream, "UTF-8"))
   lazy private[this] val cabocha_out = new BufferedWriter(new OutputStreamWriter(cabocha_process.getOutputStream, "UTF-8"))
 
   /**
-   * Close the external process and the interface
-   */
+    * Close the external process and the interface
+    */
   override def close() {
     cabocha_out.close()
     cabocha_in.close()
@@ -236,7 +250,7 @@ object CabochaAnnotator extends AnnotatorCompanion[CabochaAnnotator] {
 
     def tryToFindCabocharc(): Option[String] = {
       val configCommand = cmdList(0) + "-config --sysconfdir"
-      Process(configCommand).lines_!.toSeq match {
+      safeProcess(configCommand) match {
         case Seq(directoryPath) => Some(directoryPath + "/cabocharc")
         case _ => None
       }
@@ -263,5 +277,11 @@ object CabochaAnnotator extends AnnotatorCompanion[CabochaAnnotator] {
       case SystemDic.jumandic => new JumanDicCabochaAnnotator(name, props)
       case SystemDic.unidic => new UnidicCabochaAnnotator(name, props)
     }
+
+    def safeProcess(cmd:String): Option[Seq[String]] = {
+      try { Some(Process(cmd).lines_!.toSeq) }
+      catch { case e : Throwable => None }
+    }
+
   }
 }
