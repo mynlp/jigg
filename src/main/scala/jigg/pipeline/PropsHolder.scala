@@ -78,23 +78,12 @@ trait PropsHolder { outer =>
   private[this] def getNameToGetterSetter = {
     val nameToGetterSetter = new HashMap[String, (Method, Method)]
 
-    val methods = this.getClass.getMethods
-    try {
-      methods foreach { method =>
-        method.getAnnotation(classOf[Prop]).asInstanceOf[Prop] match {
-          case null =>
-          case ann => nameToGetterSetter += (method.getName -> (method, null))
-        }
+    val methods = this.getClass.getMethods()
+    methods foreach { method =>
+      method.getAnnotation(classOf[Prop]).asInstanceOf[Prop] match {
+        case null =>
+        case ann => nameToGetterSetter += (method.getName -> (method, null))
       }
-    }
-    catch {
-      case e: UnsupportedClassVersionError =>
-        val command_name = makeFullName("command")
-        val error_mes = s"""Failed to start Jigg. Check your Java version.
-This software requires Java version >= 1.7
-You can get Java at https://java.com/en/download/
-"""
-        argumentError("command", error_mes)
     }
 
     methods foreach {

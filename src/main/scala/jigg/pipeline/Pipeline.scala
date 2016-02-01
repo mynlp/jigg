@@ -276,6 +276,8 @@ object Pipeline {
     } catch {
       case e: ArgumentError =>
         System.err.println(e.getMessage)
+      case e: UnsupportedClassVersionError =>
+        System.err.println(s"Failed to start jigg due to incompatibility of Java version. Installing the latest version of Java would resolve the problem.\n${e.getMessage()}")
     }
   }
 }

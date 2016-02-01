@@ -18,7 +18,7 @@ crossPaths := false
 
 mainClass in assembly := Some("jp.jigg.nlp.pipeline.Pipeline")
 
-javacOptions ++= Seq("-Xlint:all")
+javacOptions ++= Seq("-Xlint:all", "-source", "1.6", "-target", "1.6")
 
 scalacOptions ++= Seq("-deprecation", "-feature")
 
