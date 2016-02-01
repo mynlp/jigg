@@ -64,11 +64,10 @@ class CCGParseAnnotator(override val name: String, override val props: Propertie
     }
     catch{
       case e: Exception =>
-        val command_name = makeFullName("command")
-        val error_mes = s"""Failed to start CCG parser. Make sure the model file of CCG is already installed. If not, execute the following command in jigg directory.
+        val errorMsg = s"""Failed to start CCG parser. Make sure the model file of CCG is already installed. If not, execute the following command in jigg directory:
   ./script/download_ccg_model.sh
 """
-        argumentError("command", error_mes)
+        argumentError("command", errorMsg)
     }
   }
 

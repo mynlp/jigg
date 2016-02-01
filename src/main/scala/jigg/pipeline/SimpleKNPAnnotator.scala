@@ -23,20 +23,10 @@ class SimpleKNPAnnotator(override val name: String, override val props: Properti
   @Prop(gloss = "Use this command to launch KNP (-tab is automatically added. -anaphora is not compatible with this annotator. In that case, use knpDoc instead). Version >= 4.12 is assumed.") var command = "knp"
   readProps()
 
-  lazy val knpProcess = try {
-new java.lang.ProcessBuilder(command, "-tab").start
-  }
-  catch {
-    case e: Exception =>
-      val command_name = makeFullName("command")
-      val error_mes = s"""Failed to start KNP. Check environment variable PATH
-  You can get KNP at http://nlp.ist.i.kyoto-u.ac.jp/index.php?KNP
-  If you have KNP out of your PATH, set ${command_name} option as follows
-    -${command_name} /PATH/TO/KNP/knp
-"""
-
-      argumentError("command", error_mes)
-  }
+  lazy val knpProcess = startExternalProcess(
+    command,
+    Seq("-tab"),
+    "http://nlp.ist.i.kyoto-u.ac.jp/index.php?KNP")
 
   /**
     * Close the external process and the interface

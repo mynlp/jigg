@@ -16,6 +16,8 @@ package jigg.pipeline
  limitations under the License.
 */
 
+import java.io.IOException
+import java.lang.{Process, ProcessBuilder}
 import java.util.Properties
 import scala.xml.{Node, Elem}
 import scala.reflect.ClassTag
@@ -39,6 +41,22 @@ trait Annotator extends PropsHolder {
   def close = {} // Resource release etc; detault: do nothing
 
   def buildCommand(cmd: String, args: String*): java.util.List[String] = (cmd.split("\\s+") ++ args).toSeq.asJava
+
+  /** A useful method to start process of external command with an error messages (pointing to
+    * the homepage of the software), which is thrown when the process is failed to be launched.
+    */
+  def startExternalProcess(cmd: String, args: Seq[String], software_url: String): Process =
+    try new ProcessBuilder(buildCommand(cmd, args:_*)).start
+    catch { case e: IOException =>
+      val commandName = makeFullName("command")
+      val errorMsg = s"""Failed to start $name. Check environment variable PATH.
+  You can get $prefix at ${software_url}.
+  If you have $prefix out of your PATH, set ${commandName} option as follows:
+    -${commandName} /PATH/TO/${prefix.toUpperCase}/$prefix
+"""
+
+      argumentError("command", errorMsg)
+    }
 
   def requires = Set.empty[Requirement]
   def requirementsSatisfied = Set.empty[Requirement]

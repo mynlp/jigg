@@ -64,31 +64,21 @@ ${helpMessage}
 
   // option -I1 : input tokenized file
   // option -f3 : output result as XML
-  private[this] val cabocha_process = try {
-    new java.lang.ProcessBuilder(buildCommand(command, "-f3", "-I1")).start
-  }
-  catch {
-    case e: Exception =>
-      val command_name = makeFullName("command")
-      val error_mes = s"""Failed to start CaboCha. Check environment variable PATH
-  You can get CaboCha at http://taku910.github.io/cabocha/
-  If you have CaboCha out of your PATH, set ${command_name} option as follows
-    -${command_name} /PATH/TO/CABOCHA/cabocha
-"""
+  private[this] val cabochaProcess = startExternalProcess(
+    command,
+    Seq("-f3", "-I1"),
+    "http://taku910.github.io/cabocha/")
 
-      argumentError("command", error_mes)
-  }
-
-  lazy private[this] val cabocha_in = new BufferedReader(new InputStreamReader(cabocha_process.getInputStream, "UTF-8"))
-  lazy private[this] val cabocha_out = new BufferedWriter(new OutputStreamWriter(cabocha_process.getOutputStream, "UTF-8"))
+  lazy private[this] val cabochaIn = new BufferedReader(new InputStreamReader(cabochaProcess.getInputStream, "UTF-8"))
+  lazy private[this] val cabochaOut = new BufferedWriter(new OutputStreamWriter(cabochaProcess.getOutputStream, "UTF-8"))
 
   /**
     * Close the external process and the interface
     */
   override def close() {
-    cabocha_out.close()
-    cabocha_in.close()
-    cabocha_process.destroy()
+    cabochaOut.close()
+    cabochaIn.close()
+    cabochaProcess.destroy()
   }
 
   private def tid(sindex: String, tindex: String) = sindex + "_tok" + tindex
@@ -163,10 +153,10 @@ ${helpMessage}
         tok.attribute("pronounce").map(","+_).getOrElse("") + "\n"
       } :+ "EOS\n"
 
-      cabocha_out.write(toks.mkString)
-      cabocha_out.flush()
+      cabochaOut.write(toks.mkString)
+      cabochaOut.flush()
 
-      Stream.continually(cabocha_in.readLine()) match {
+      Stream.continually(cabochaIn.readLine()) match {
         case strm @ ("<sentence>" #:: _) => strm.takeWhile(_ != "</sentence>").toSeq :+ "</sentence>"
         case other #:: _ => argumentError("command", s"Something wrong in $name\n$other\n...")
       }

@@ -41,37 +41,28 @@ abstract class MecabAnnotator(override val name: String, override val props: Pro
 
   Tokenize sentence by MeCab.
   Current dictionary is ${dic}.
-  You can customize these settings by, e.g, -${keyName} "mecab -d /path/to/dic"
+  You can customize these settings by, e.g, -${keyName} "mecab -d /path/to/dic".
 
   Original help message:
 ${helpMessage}
 """
   }
 
-  private [this] val mecab_process = try {
-    new java.lang.ProcessBuilder(buildCommand(command)).start
-  }
-  catch{
-    case e: Exception =>
-      val command_name = makeFullName("command")
-      val error_mes = s"""Failed to start MeCab. Check environment variable PATH
-  You can get MeCab at https://taku910.github.io/mecab/
-  If you have MeCab out of your PATH, set ${command_name} option as follows
-    -${command_name} /PATH/TO/MECAB/mecab
-"""
+  private [this] val mecabProcess = startExternalProcess(
+    command,
+    Seq(),
+    "https://taku910.github.io/mecab/")
 
-      argumentError("command", error_mes)
-  }
-  lazy private[this] val mecab_in = new BufferedReader(new InputStreamReader(mecab_process.getInputStream, "UTF-8"))
-  lazy private[this] val mecab_out = new BufferedWriter(new OutputStreamWriter(mecab_process.getOutputStream, "UTF-8"))
+  lazy private[this] val mecabIn = new BufferedReader(new InputStreamReader(mecabProcess.getInputStream, "UTF-8"))
+  lazy private[this] val mecabOut = new BufferedWriter(new OutputStreamWriter(mecabProcess.getOutputStream, "UTF-8"))
 
   /**
     * Close the external process and the interface
     */
   override def close() {
-    mecab_out.close()
-    mecab_in.close()
-    mecab_process.destroy()
+    mecabOut.close()
+    mecabIn.close()
+    mecabProcess.destroy()
   }
 
   override def newSentenceAnnotation(sentence: Node): Node = {
@@ -81,11 +72,11 @@ ${helpMessage}
       * @return output of Mecab
       */
     def runMecab(text: String): Seq[String] = {
-      mecab_out.write(text)
-      mecab_out.newLine()
-      mecab_out.flush()
+      mecabOut.write(text)
+      mecabOut.newLine()
+      mecabOut.flush()
 
-      val strm = Stream.continually(mecab_in.readLine())
+      val strm = Stream.continually(mecabIn.readLine())
 
       strm.takeWhile {
         case null => // it returns null if the process terminates with some (bad) reason
