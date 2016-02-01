@@ -172,7 +172,7 @@ object MecabAnnotator extends AnnotatorCompanion[MecabAnnotator] {
       case SystemDic.jumandic => new JumanDicMecabAnnotator(name, props)
       case SystemDic.unidic => new UnidicMecabAnnotator(name, props)
     } getOrElse {
-      System.out.println("Failed to search dictionary with \"${cmd}\". Using IPAMecabAnnotator...")
+      System.out.println(s"Failed to search dictionary file from the current mecab path: ${cmd}. Assume ipadic is used...")
       new IPAMecabAnnotator(name, props)
     }
   }
@@ -190,7 +190,7 @@ object MecabAnnotator extends AnnotatorCompanion[MecabAnnotator] {
       val dicdirLine = config.find(_.startsWith("dicdir:"))
 
       dicdirLine map { l => l.drop(l.lastIndexOf('/') + 1) } map {
-        case dicdir if dicdir.containsSlice("ipadic") => SystemDic.ipadic
+        case dicdir if dicdir.containsSlice("ipadic") => SystemDic.ipadic // NOTE: we use slice to pick up a variant of ipadic, e.g., mecab-ipadic-neologd
         case dicdir if dicdir.containsSlice("jumandic") => SystemDic.jumandic
         case dicdir if dicdir.containsSlice("unidic") => SystemDic.unidic
       }
