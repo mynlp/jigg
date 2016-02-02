@@ -181,7 +181,10 @@ object MecabAnnotator extends AnnotatorCompanion[MecabAnnotator] {
       val dicdirLine = config.find(_.startsWith("dicdir:"))
 
       dicdirLine map { l => l.drop(l.lastIndexOf('/') + 1) } map {
-        case dicdir if dicdir.containsSlice("ipadic") => SystemDic.ipadic // NOTE: we use slice to pick up a variant of ipadic, e.g., mecab-ipadic-neologd
+        // NOTE: we use slice to pick up a variant of ipadic, e.g., mecab-ipadic-neologd.
+        // We also assume naist-jdic is a variant of ipadic.
+        case dicdir if dicdir.containsSlice("ipadic") || dicdir.containsSlice("naist-jdic") =>
+          SystemDic.ipadic
         case dicdir if dicdir.containsSlice("jumandic") => SystemDic.jumandic
         case dicdir if dicdir.containsSlice("unidic") => SystemDic.unidic
       }
