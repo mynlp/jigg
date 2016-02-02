@@ -22,12 +22,10 @@ javacOptions ++= Seq("-Xlint:all", "-source", "1.6", "-target", "1.6")
 
 scalacOptions ++= Seq("-deprecation", "-feature")
 
-resolvers ++= Seq(
-  "Atilika Open Source repository" at "http://www.atilika.org/nexus/content/repositories/atilika"
-)
-
 libraryDependencies ++= Seq(
   "com.novocode" % "junit-interface" % "0.10-M4" % "test->default",
   "org.scalatest" % "scalatest_2.10" % "2.0" % "test",
   "org.scala-lang" % "scala-reflect" % "2.10.2",
-  "org.atilika.kuromoji" % "kuromoji" % "0.7.7")
+  "com.atilika.kuromoji" % "kuromoji-ipadic" % "0.9.0",
+  "com.atilika.kuromoji" % "kuromoji-jumandic" % "0.9.0",
+  "com.atilika.kuromoji" % "kuromoji-unidic" % "0.9.0")
