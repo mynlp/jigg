@@ -32,7 +32,7 @@ abstract class KuromojiAnnotator(override val name: String, override val props: 
 
   type T <: TokenBase
 
-  @Prop(gloss = "Which dictionary do you use? Currently supported: ipa|juman|unidic") var dict = KuromojiAnnotator.defaultDict
+  @Prop(gloss = "Which dictionary do you use? Currently supported: ipa|juman|unidic") var dic = KuromojiAnnotator.defaultDic
 
   readProps()
 
@@ -155,17 +155,17 @@ class UnidicKuromojiAnnotator(name: String, props: Properties)
 
 object KuromojiAnnotator extends AnnotatorCompanion[KuromojiAnnotator] {
 
-  def defaultDict = "ipa"
+  def defaultDic = "ipa"
 
   override def fromProps(name: String, props: Properties) = {
-    val key = name + ".dict"
-    val dict = PropertiesUtil.findProperty(key, props) getOrElse defaultDict
-    dict match {
+    val key = name + ".dic"
+    val dic = PropertiesUtil.findProperty(key, props) getOrElse defaultDic
+    dic match {
       case "ipa" => new IPAKuromojiAnnotator(name, props)
       case "juman" => new JumanKuromojiAnnotator(name, props)
       case "unidic" => new UnidicKuromojiAnnotator(name, props)
       case _ =>
-        System.out.println(s"WARNING: Dictionary ${dict} is unsupported in kuromoji. Use ipadic...")
+        System.out.println(s"WARNING: Dictionary ${dic} is unsupported in kuromoji. Use ipadic...")
         new IPAKuromojiAnnotator(name, props)
     }
   }
