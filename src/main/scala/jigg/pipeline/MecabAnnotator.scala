@@ -26,7 +26,6 @@ import scala.sys.process.Process
 import jigg.util.PropertiesUtil
 
 abstract class MecabAnnotator(override val name: String, override val props: Properties) extends SentencesAnnotator {
-
   def dic: SystemDic
 
   @Prop(gloss = "Use this command to launch mecab. System dictionary is selected according to the current configuration accessible with '-P' option.") var command = MecabAnnotator.defaultCommand
@@ -65,74 +64,43 @@ ${helpMessage}
     mecabProcess.destroy()
   }
 
+  protected def tokenToNodes(token: Seq[String], id: String): Node
+
   override def newSentenceAnnotation(sentence: Node): Node = {
     /**
       * Input a text into the mecab process and obtain output
       * @param text text to tokenize
       * @return output of Mecab
       */
-    def runMecab(text: String): Seq[String] = {
+    def runMecab(text: String): Iterator[String] = {
       mecabOut.write(text)
       mecabOut.newLine()
       mecabOut.flush()
 
-      val strm = Stream.continually(mecabIn.readLine())
-
-      strm.takeWhile {
-        case null => // it returns null if the process terminates with some (bad) reason
-          argumentError("command", s"Something wrong in $name?\n" + strm.takeWhile(_ != null).mkString("\n"))
-        case "EOS" => false
-        case _ => true
-      }.toSeq
+      val iter = Iterator.continually(mecabIn.readLine())
+      iter.takeWhile {
+        case null =>
+          argumentError("command", s"Error: Something wrong in $name?\n" +
+            iter.takeWhile(_ != null).mkString("\n"))
+        case l => l != "EOS"
+      }
     }
 
     def tid(sindex: String, tindex: Int) = sindex + "_tok" + tindex
 
     val sindex = (sentence \ "@id").toString
     val text = sentence.text
-    val tokens = runMecab(text).map{str => str.replace("\t", ",")}
 
     var tokenIndex = 0
 
-    //output form of Mecab
-    //表層形\t品詞,品詞細分類1,品詞細分類2,品詞細分類3,活用型,活用形,原形,読み,発音
-    //surf\tpos,pos1,pos2,pos3,inflectionType,inflectionForm,base,reading,pronounce
-    val tokenNodes =
-      tokens.filter(s => s != "EOS").map{
-        tokenized =>
-        val features         = tokenized.split(",")
-        val surf           = features(0)
-        val pos            = features(1)
-        val pos1           = features(2)
-        val pos2           = features(3)
-        val pos3           = features(4)
-        val inflectionType = features(5)
-        val inflectionForm = features(6)
-        val base           = features(7)
-
-        val reading   = if (features.size > 8) Some(Text(features(8))) else None
-        val pronounce = if (features.size > 9) Some(Text(features(9))) else None
-
-        //TODO ordering attribute
-        val nodes = <token
-        id={ tid(sindex, tokenIndex) }
-        surf={ surf }
-        pos={ pos }
-        pos1={ pos1 }
-        pos2={ pos2 }
-        pos3={ pos3 }
-        inflectionType={ inflectionType }
-        inflectionForm={ inflectionForm }
-        base={ base }
-        reading={ reading }
-        pronounce={ pronounce }/>
-
-        tokenIndex += 1
-        nodes
-      }
+    val tokenNodes = runMecab(text).withFilter(_!="EOS").map { t =>
+      val token = t.split(Array(',', '\t'))
+      val nodes = tokenToNodes(token, tid(sindex, tokenIndex))
+      tokenIndex += 1
+      nodes
+    }
 
     val tokensAnnotation = <tokens>{ tokenNodes }</tokens>
-
     jigg.util.XMLUtil.addChild(sentence, tokensAnnotation)
   }
 
@@ -141,14 +109,65 @@ ${helpMessage}
 
 class IPAMecabAnnotator(name: String, props: Properties) extends MecabAnnotator(name, props) {
   def dic = SystemDic.ipadic
+
+  //output form of mecab ipadic
+  //表層形\t品詞,品詞細分類1,品詞細分類2,品詞細分類3,活用型,活用形,原形,読み,発音
+  //surf\tpos,pos1,pos2,pos3,inflectionType,inflectionForm,base,reading,pronounce
+  def tokenToNodes(token: Seq[String], id: String) = <token
+    id={ id }
+    surf={ token(0) }
+    pos={ token(1) }
+    pos1={ token(2) }
+    pos2={ token(3) }
+    pos3={ token(4) }
+    inflectionType={ token(5) }
+    inflectionForm={ token(6) }
+    base={ token(7) }
+    reading={ if (token.size > 8) token(8) else "" }
+    pronounce={ if (token.size > 9) Text(token(9)) else Text("") }/>
+
   override def requirementsSatisfied = Set(Requirement.TokenizeWithIPA)
 }
+
 class JumanDicMecabAnnotator(name: String, props: Properties) extends MecabAnnotator(name, props) {
   def dic = SystemDic.jumandic
+
+  def tokenToNodes(token: Seq[String], id: String) = <token
+    id={ id }
+    surf={ token(0) }
+    pos={ token(1) }
+    pos1={ token(2) }
+    pos2={ token(3) }
+    pos3={ token(4) }
+    base={ token(5) }
+    reading={ token(6) }
+    semantic={ token(7) }/>
+
   override def requirementsSatisfied = Set(Requirement.TokenizeWithJuman)
 }
 class UnidicMecabAnnotator(name: String, props: Properties) extends MecabAnnotator(name, props) {
   def dic = SystemDic.unidic
+
+  def tokenToNodes(token: Seq[String], id: String) = {
+
+    val pos = token(4).split("-")
+    val inflectionType = if (token.size > 5) token(5) else "*"
+    val inflectionForm = if (token.size > 6) token(6) else "*"
+
+    <token
+      id={ id }
+      surf={ token(0) }
+      pos={ pos(0) }
+      pos1={ if (pos.size > 1) pos(1) else "*" }
+      pos2={ if (pos.size > 2) pos(2) else "*" }
+      pos3={ if (pos.size > 3) pos(3) else "*" }
+      inflectionType={ inflectionType }
+      inflectionForm={ inflectionForm }
+      lemmaReading={ token(2) }
+      lemma={ token(3) }
+      pronounce={ token(1) }/>
+  }
+
   override def requirementsSatisfied = Set(Requirement.TokenizeWithUnidic)
 }
 
