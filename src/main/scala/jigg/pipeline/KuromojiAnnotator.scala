@@ -37,7 +37,7 @@ abstract class KuromojiAnnotator(override val name: String, override val props: 
   readProps()
 
   def tokenize(text: String): Seq[T]
-  protected def tokenToNodes(token: T, id: String): Node
+  protected def tokenToNode(token: T, id: String): Node
 
   override def newSentenceAnnotation(sentence: Node): Node = {
 
@@ -49,9 +49,9 @@ abstract class KuromojiAnnotator(override val name: String, override val props: 
     var tokenIndex = 0
 
     val tokenNodes = tokenizedSentence.map { case token =>
-      val nodes = tokenToNodes(token, id(sindex, tokenIndex))
+      val node = tokenToNode(token, id(sindex, tokenIndex))
       tokenIndex += 1
-      nodes
+      node
     }
 
     val tokensAnnotation = <tokens>{ tokenNodes }</tokens>
@@ -73,10 +73,8 @@ class IPAKuromojiAnnotator(name: String, props: Properties)
   val tokenizer = new ITokenizer
   def tokenize(text: String) = tokenizer.tokenize(text)
 
-  def tokenToNodes(token: IToken, id: String): Node = {
-    val surf = token.getSurface
-
-    val nodes = <token
+  def tokenToNode(token: IToken, id: String): Node =
+    <token
       id={ id }
       surf={ token.getSurface }
       pos={ token.getPartOfSpeechLevel1 }
@@ -88,9 +86,6 @@ class IPAKuromojiAnnotator(name: String, props: Properties)
       base={ token.getBaseForm }
       reading={ token.getReading }
       pronounce={ token.getPronunciation }/>
-
-    nodes
-  }
 
   override def requirementsSatisfied = Set(Requirement.TokenizeWithIPA)
 }
@@ -103,10 +98,8 @@ class JumanKuromojiAnnotator(name: String, props: Properties)
   val tokenizer = new JTokenizer
   def tokenize(text: String) = tokenizer.tokenize(text)
 
-  def tokenToNodes(token: JToken, id: String): Node = {
-    val surf = token.getSurface
-
-    val nodes = <token
+  def tokenToNode(token: JToken, id: String): Node =
+    <token
       id={ id }
       surf={ token.getSurface }
       pos={ token.getPartOfSpeechLevel1 }
@@ -116,9 +109,6 @@ class JumanKuromojiAnnotator(name: String, props: Properties)
       base={ token.getBaseForm }
       reading={ token.getReading }
       semantic={ token.getSemanticInformation }/>
-
-    nodes
-  }
 
   override def requirementsSatisfied = Set(Requirement.TokenizeWithJuman)
 }
@@ -131,10 +121,8 @@ class UnidicKuromojiAnnotator(name: String, props: Properties)
   val tokenizer = new UTokenizer
   def tokenize(text: String) = tokenizer.tokenize(text)
 
-  def tokenToNodes(token: UToken, id: String): Node = {
-    val surf = token.getSurface
-
-    val nodes = <token
+  def tokenToNode(token: UToken, id: String): Node =
+    <token
       id={ id }
       surf={ token.getSurface }
       pos={ token.getPartOfSpeechLevel1 }
@@ -145,10 +133,15 @@ class UnidicKuromojiAnnotator(name: String, props: Properties)
       inflectionForm={ token.getConjugationForm }
       lemmaReading={ token.getLemmaReadingForm }
       lemma={ token.getLemma }
-      pronounce={ token.getPronunciation }/>
-
-    nodes
-  }
+      written={ token.getWrittenForm }
+      pronounce={ token.getPronunciation }
+      writtenBase={ token.getWrittenBaseForm }
+      pronounceBase={ token.getPronunciationBaseForm }
+      langageType={ token.getLanguageType }
+      initAltType={ token.getInitialSoundAlterationType }
+      initAltForm={ token.getInitialSoundAlterationForm }
+      finalAltType={ token.getFinalSoundAlterationType }
+      finalAltForm={ token.getFinalSoundAlterationForm }/>
 
   override def requirementsSatisfied = Set(Requirement.TokenizeWithJuman)
 }

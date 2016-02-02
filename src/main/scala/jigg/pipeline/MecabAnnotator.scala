@@ -49,7 +49,7 @@ ${helpMessage}
 
   private [this] val mecabProcess = startExternalProcess(
     command,
-    Seq(),
+    Seq("-O", ""),
     "https://taku910.github.io/mecab/")
 
   lazy private[this] val mecabIn = new BufferedReader(new InputStreamReader(mecabProcess.getInputStream, "UTF-8"))
@@ -64,7 +64,7 @@ ${helpMessage}
     mecabProcess.destroy()
   }
 
-  protected def tokenToNodes(token: Seq[String], id: String): Node
+  protected def tokenToNode(token: Array[String], id: String): Node
 
   override def newSentenceAnnotation(sentence: Node): Node = {
     /**
@@ -95,9 +95,9 @@ ${helpMessage}
 
     val tokenNodes = runMecab(text).withFilter(_!="EOS").map { t =>
       val token = t.split(Array(',', '\t'))
-      val nodes = tokenToNodes(token, tid(sindex, tokenIndex))
+      val node = tokenToNode(token, tid(sindex, tokenIndex))
       tokenIndex += 1
-      nodes
+      node
     }
 
     val tokensAnnotation = <tokens>{ tokenNodes }</tokens>
@@ -113,7 +113,7 @@ class IPAMecabAnnotator(name: String, props: Properties) extends MecabAnnotator(
   //output form of mecab ipadic
   //表層形\t品詞,品詞細分類1,品詞細分類2,品詞細分類3,活用型,活用形,原形,読み,発音
   //surf\tpos,pos1,pos2,pos3,inflectionType,inflectionForm,base,reading,pronounce
-  def tokenToNodes(token: Seq[String], id: String) = <token
+  def tokenToNode(token: Array[String], id: String) = <token
     id={ id }
     surf={ token(0) }
     pos={ token(1) }
@@ -132,7 +132,7 @@ class IPAMecabAnnotator(name: String, props: Properties) extends MecabAnnotator(
 class JumanDicMecabAnnotator(name: String, props: Properties) extends MecabAnnotator(name, props) {
   def dic = SystemDic.jumandic
 
-  def tokenToNodes(token: Seq[String], id: String) = <token
+  def tokenToNode(token: Array[String], id: String) = <token
     id={ id }
     surf={ token(0) }
     pos={ token(1) }
@@ -145,27 +145,36 @@ class JumanDicMecabAnnotator(name: String, props: Properties) extends MecabAnnot
 
   override def requirementsSatisfied = Set(Requirement.TokenizeWithJuman)
 }
+
 class UnidicMecabAnnotator(name: String, props: Properties) extends MecabAnnotator(name, props) {
   def dic = SystemDic.unidic
 
-  def tokenToNodes(token: Seq[String], id: String) = {
+  def tokenToNode(token: Array[String], id: String) = {
 
-    val pos = token(4).split("-")
-    val inflectionType = if (token.size > 5) token(5) else "*"
-    val inflectionForm = if (token.size > 6) token(6) else "*"
+    val feat:Int=>String =
+      if (token.size <= 18) idx => if (idx < token.size) token(idx) else "*" // unk token
+      else token(_)
 
     <token
       id={ id }
-      surf={ token(0) }
-      pos={ pos(0) }
-      pos1={ if (pos.size > 1) pos(1) else "*" }
-      pos2={ if (pos.size > 2) pos(2) else "*" }
-      pos3={ if (pos.size > 3) pos(3) else "*" }
-      inflectionType={ inflectionType }
-      inflectionForm={ inflectionForm }
-      lemmaReading={ token(2) }
-      lemma={ token(3) }
-      pronounce={ token(1) }/>
+      surf={ feat(0) }
+      pos={ feat(1) }
+      pos1={ feat(2) }
+      pos2={ feat(3) }
+      pos3={ feat(4) }
+      inflectionType={ feat(5) }
+      inflectionForm={ feat(6) }
+      lemmaReading={ feat(7) }
+      lemma={ feat(8) }
+      written={ feat(9) }
+      pronounce={ feat(10) }
+      writtenBase={ feat(11) }
+      pronounceBase={ feat(12) }
+      langageType={ feat(13) }
+      initAltType={ feat(14) }
+      initAltForm={ feat(15) }
+      finalAltType={ feat(16) }
+      finalAltForm={ feat(17) }/>
   }
 
   override def requirementsSatisfied = Set(Requirement.TokenizeWithUnidic)
