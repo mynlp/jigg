@@ -59,40 +59,31 @@ ${helpMessage}
 """
   }
 
-  // option -I1 : input tokenized file
-  // option -f3 : output result as XML
-  private[this] val cabochaProcess = startExternalProcess(
-    command,
-    Seq("-f3", "-I1"),
-    "http://taku910.github.io/cabocha/")
+  override def defaultArgs = Seq("-f3", "-I1")
+  override def softwareUrl = "http://taku910.github.io/cabocha/"
 
-  lazy private[this] val cabochaIn = new BufferedReader(new InputStreamReader(cabochaProcess.getInputStream, "UTF-8"))
-  lazy private[this] val cabochaOut = new BufferedWriter(new OutputStreamWriter(cabochaProcess.getOutputStream, "UTF-8"))
+  val communicator = new ExternalCommunicator
 
   /**
     * Close the external process and the interface
     */
-  override def close() {
-    cabochaOut.close()
-    cabochaIn.close()
-    cabochaProcess.destroy()
-  }
+  override def close() = communicator.closeResource()
 
   private def tid(sindex: String, tindex: String) = sindex + "_tok" + tindex
   private def cid(sindex: String, cindex: String) = sindex + "_chu" + cindex
   private def did(sindex: String, dindex: String) = sindex + "_dep" + dindex
 
-  //ununsed
-  def getTokens(xml:Node, sid:String) : NodeSeq = {
-    val nodeSeq = (xml \\ "tok").map{
-      tok =>
-      val t_id = tid(sid, (tok \ "@id").toString)
-      val t_feature = (tok \ "@feature").toString
-      <tok id={ t_id } feature={ t_feature }>{ tok.text }</tok>
-    }
+  // //ununsed
+  // def getTokens(xml:Node, sid:String) : NodeSeq = {
+  //   val nodeSeq = (xml \\ "tok").map{
+  //     tok =>
+  //     val t_id = tid(sid, (tok \ "@id").toString)
+  //     val t_feature = (tok \ "@feature").toString
+  //     <tok id={ t_id } feature={ t_feature }>{ tok.text }</tok>
+  //   }
 
-    <tokens>{ nodeSeq }</tokens>
-  }
+  //   <tokens>{ nodeSeq }</tokens>
+  // }
 
   def getChunks(xml:Node, sid:String) : NodeSeq = {
     val nodeSeq = (xml \\ "chunk").map{
@@ -139,24 +130,16 @@ ${helpMessage}
 
   override def newSentenceAnnotation(sentence: Node): Node = {
     def runCabocha(tokens:Node, sindex:String): Seq[String] = {
-      //surf\tpos,pos1,pos2,pos3,inflectionType,inflectionForm,base,reading,pronounce
-      val toks = (tokens \\ "token").map{
-        tok =>
-        (tok \ "@surf") + "\t" + (tok \ "@pos") + "," + (tok \ "@pos1") + "," +
-        (tok \ "@pos2") + "," + (tok \ "@pos3") + "," +
-        (tok \ "@inflectionType") + "," + (tok \ "@inflectionForm") + "," +
-        (tok \ "@base") +
-        tok.attribute("reading").map(","+_).getOrElse("") +
-        tok.attribute("pronounce").map(","+_).getOrElse("") + "\n"
-      } :+ "EOS\n"
 
-      cabochaOut.write(toks.mkString)
-      cabochaOut.flush()
-
-      Stream.continually(cabochaIn.readLine()) match {
-        case strm @ ("<sentence>" #:: _) => strm.takeWhile(_ != "</sentence>").toSeq :+ "</sentence>"
-        case other #:: _ => argumentError("command", s"Something wrong in $name\n$other\n...")
+      communicator.safeWrite {
+        for (token <- (tokens \\ "token")) {
+          communicator.writeln(tokenToMecabFormat(token))
+        }
+        communicator.writeln("EOS")
       }
+
+      communicator.readWithFirstLineCheck(_=="<sentence>", _=="</sentence>")
+        .toSeq :+ "</sentence>"
     }
 
     val text = sentence.text
@@ -167,21 +150,41 @@ ${helpMessage}
     convertXml(sentence, cabocha_result, sindex)
   }
 
+  protected def featAttributes: Array[String]
+
+  protected def tokenToMecabFormat(token: Node): String =
+    (token \ "@surf") + "\t" + featAttributes.map(token \ _).mkString(",")
+
   override def requirementsSatisfied = Set(Requirement.Chunk, Requirement.Dependency)
 }
 
 class IPACabochaAnnotator(name: String, props: Properties) extends CabochaAnnotator(name, props) {
   def dic = SystemDic.ipadic
+
+  val featAttributes = Array(
+    "pos", "pos1", "pos2", "pos3", "inflectionType", "inflectionForm",
+    "base", "reading", "pronounce").map("@"+_)
+
   override def requires = Set(Requirement.TokenizeWithIPA)
 }
 
 class JumanDicCabochaAnnotator(name: String, props: Properties) extends CabochaAnnotator(name, props) {
   def dic = SystemDic.jumandic
+
+  val featAttributes = Array(
+    "pos", "pos1", "pos2", "pos3", "base", "reading", "semantic").map("@"+_)
+
   override def requires = Set(Requirement.TokenizeWithJuman)
 }
 
 class UnidicCabochaAnnotator(name: String, props: Properties) extends CabochaAnnotator(name, props) {
   def dic = SystemDic.jumandic
+
+  val featAttributes = Array(
+    "pos", "pos1", "pos2", "pos3", "inflectionType", "inflectionForm",
+    "lemmaReading", "lemma", "written", "pronounce", "writtenBase", "pronounceBase",
+    "languageType", "initAltType", "initAltForm", "finalAltType", "finalAltForm").map("@"+_)
+
   override def requires = Set(Requirement.TokenizeWithUnidic)
 }
 
