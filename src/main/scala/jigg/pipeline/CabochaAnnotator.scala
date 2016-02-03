@@ -17,15 +17,12 @@ package jigg.pipeline
 */
 
 import java.util.Properties
-import java.io.BufferedReader
-import java.io.InputStreamReader
-import java.io.BufferedWriter
-import java.io.OutputStreamWriter
 import scala.xml._
 import scala.sys.process.Process
 import jigg.util.PropertiesUtil
 
-abstract class CabochaAnnotator(override val name: String, override val props: Properties) extends SentencesAnnotator {
+abstract class CabochaAnnotator(override val name: String, override val props: Properties)
+    extends SentencesAnnotator with AnnotatorWithExternalProcess {
 
   def dic: SystemDic
 
