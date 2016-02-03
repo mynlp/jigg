@@ -42,9 +42,9 @@ abstract class CabochaAnnotator(override val name: String, override val props: P
   Annotate chunks (bunsetsu) and dependencies on chunks.
 
   Note about system dictionary:
-    Dictionary settings of mecab and cabocha should be consistent (the same), but the pipeline
-    does not try to fix it even if there is some inconsistency, e.g., when mecab uses ipadic
-    while cabocha uses unidic.
+    Dictionary settings of tokenizer (e.g., mecab) and cabocha should be consistent (the same),
+    but the pipeline does not try to fix it even if there is some inconsistency, e.g., when
+    mecab uses ipadic while cabocha uses unidic.
 
     What the pipeline does is stopping annotation when such inconsistency is detected and
     it is user's responsibility to make the dictionary setting consistent acorss annotators in
