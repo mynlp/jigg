@@ -16,7 +16,7 @@ package jigg.pipeline
  limitations under the License.
 */
 
-import java.io.IOException
+import java.io._
 import java.lang.{Process, ProcessBuilder}
 import java.util.Properties
 import scala.xml.{Node, Elem}
@@ -49,7 +49,7 @@ trait Annotator extends PropsHolder {
     try new ProcessBuilder(buildCommand(cmd, args:_*)).start
     catch { case e: IOException =>
       val commandName = makeFullName("command")
-      val errorMsg = s"""Failed to start $name. Check environment variable PATH.
+      val errorMsg = s"""ERROR: Failed to start $name. Check environment variable PATH.
   You can get $prefix at ${software_url}.
   If you have $prefix out of your PATH, set ${commandName} option as follows:
     -${commandName} /PATH/TO/${prefix.toUpperCase}/$prefix
