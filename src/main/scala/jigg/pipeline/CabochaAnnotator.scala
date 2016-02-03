@@ -241,7 +241,7 @@ object CabochaAnnotator extends AnnotatorCompanion[CabochaAnnotator] {
     def tryToFindCabocharc(): Option[String] = {
       val configCommand = cmdList(0) + "-config --sysconfdir"
       safeProcess(configCommand) match {
-        case Seq(directoryPath) => Some(directoryPath + "/cabocharc")
+        case Some(Seq(directoryPath)) => Some(directoryPath + "/cabocharc")
         case _ => None
       }
     }
