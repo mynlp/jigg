@@ -101,3 +101,153 @@ trait SentencesAnnotator extends Annotator {
 
   def newSentenceAnnotation(sentence: Node): Node
 }
+
+/** A useful trait for annotator communicating with an external software, e.g., mecab.
+  *
+  * This trait introduces variable `communicator`, which is ExternalCommunicator,
+  * equipped with many utilities for processing with external software.
+  *
+  * When implementing this trait, make sure the following criteria are satisfied
+  * (see MecabAnnotator, for example):
+  *
+  *  1) `command` property is defined with @Prop;
+  *  2) When the software has a homepage, `softwareUrl` points to that URL;
+  *  3) Most importantly, `communicator` is instantiated in constructor
+  *     *after* readProps() is called.
+  *
+  * Some software may require appropriate preprocessing before starting communication.
+  * For example, a software may output some messages first, which should be discarded
+  * before sentence processing. `checkStartError` can be used for this preprocessing.
+  * This may also be used for some error check to ensure that software is successfully
+  * launched.
+  */
+trait AnnotatorWithExternalProcess extends Annotator {
+
+  def command: String
+  def defaultArgs: Seq[String] = Seq()
+  def softwareUrl: String = ""
+
+  // this is expected to be initialized in the annotator class
+  def communicator: ExternalCommunicator
+
+  class ExternalCommunicator {
+
+    val process: Process = startExternalProcess()
+
+    val processIn = new BufferedReader(new InputStreamReader(process.getInputStream, "UTF-8"))
+    val processOut = new BufferedWriter(new OutputStreamWriter(process.getOutputStream, "UTF-8"))
+
+    checkStartError()
+
+    def write(line: String) = processOut.write(line)
+    def writeln(line: String) = { processOut.write(line); processOut.newLine() }
+
+    def closeResource() = {
+      processIn.close()
+      processOut.close()
+      process.destroy()
+    }
+
+    /** Write to output stream safely.
+      * Throw [[jigg.pipeline.PropsHolder.argumentError]] if IOException occurs.
+      */
+    def safeWrite(f: =>Unit): Unit = {
+      try {
+        f
+        processOut.flush()
+      } catch {
+        case e: IOException =>
+          // Failing to write to output stream means that the program caused some problem
+          // (probably output stream is closed).
+          //
+          // When this occurs, throw argumentError. But before that,
+          // we check whether the process has exited. If so, we read
+          // the remaining output in the input buffer and output that.
+          // If the process still exists, we may not be able to read
+          // the remaining output, so we don't try.
+
+          def remainingMessage(): String = if (isExited) readAll().mkString("\n") else ""
+          val errorMsg = s"""ERROR: Problem occurs in $name.
+${remainingMessage()}
+"""
+          argumentError("command", errorMsg)
+      }
+    }
+
+    /** Read all output untill null is detected (no error check).
+      */
+    def readAll(): Iterator[String] =
+      Iterator.continually(processIn.readLine()).takeWhile(_ != null)
+
+    /** Read until a line matching `matchLast` is detected.
+      * Throw [[jigg.pipeline.PropsHolder.argumentError]] if null is detected.
+      */
+    def readOrErrorForNull(matchLast: String=>Boolean): Iterator[String] =
+      readUnlessNull(matchLast)(argumentErrorWithOutput)
+
+    /** Check whether the first line matches `matchFirst`, and then
+      * behave the same way as `readOrErrorForNull`
+      */
+    def readWithFirstLineCheck(
+      matchFirst: String=>Boolean, matchLast: String=>Boolean): Iterator[String] = {
+      val firstLine = processIn.readLine()
+      val iter = Iterator(firstLine) ++ Iterator.continually(processIn.readLine())
+      if (matchFirst(firstLine)) readUnlessNull(iter, matchLast)(argumentErrorWithOutput)
+      else {
+        argumentErrorWithOutput(iter)
+      }
+    }
+
+    private val argumentErrorWithOutput: Iterator[String]=>Nothing = { iter =>
+      val msg = iter.takeWhile(_ != null).mkString("\n")
+      argumentError("command", s"Error: Something wrong in $name?\n" + msg)
+    }
+
+    /** Read until a line matching `matchLast` is detected.
+      * Error handling for null line can be customized with `doForNull`.
+      */
+    def readUnlessNull(matchLast: String=>Boolean)
+      (doForNull: Iterator[String]=>Nothing): Iterator[String] =
+      readUnlessNull(Iterator.continually(processIn.readLine()), matchLast)(doForNull)
+
+    /** Read iterator `iter` until a line matching `matchLast` is detected.
+      * Error handling for null line can be customized with `doForNull`.
+      */
+    def readUnlessNull(iter: Iterator[String], matchLast: String=>Boolean)
+      (doForNull: Iterator[String]=>Nothing): Iterator[String]= {
+
+      iter.takeWhile {
+        case null =>
+          doForNull(iter)
+        case l => !matchLast(l)
+      }
+    }
+
+    def isExited =
+      try { process.exitValue; true }
+      catch { case e: IllegalThreadStateException => false }
+
+    protected def checkStartError() = {}
+
+    /** A useful method to start process of external command with an error messages (pointing to
+      * the homepage of the software), which is thrown when the process is failed to be launched.
+      */
+    private def startExternalProcess(): Process = {
+      val commandName = makeFullName("command")
+      val _process =
+        try new ProcessBuilder(buildCommand(command, defaultArgs:_*)).start
+        catch { case e: IOException =>
+          val errorMsg = s"""ERROR: Failed to start $name. Check environment variable PATH.
+  You can get $prefix at ${softwareUrl}.
+  If you have $prefix out of your PATH, set ${commandName} option as follows:
+    -${commandName} /path/to/$prefix
+"""
+          argumentError("command", errorMsg)
+        }
+      _process
+    }
+
+    private def buildCommand(cmd: String, args: String*): java.util.List[String] =
+      (cmd.split("\\s+") ++ args).toSeq.asJava
+  }
+}
