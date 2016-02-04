@@ -26,7 +26,7 @@ abstract class CabochaAnnotator(override val name: String, override val props: P
 
   def dic: SystemDic
 
-  @Prop(gloss = "Use this command to launch cabocha. Do not touch -f and -I options. -f3 -I1 are always automatically added.") var command = CabochaAnnotator.defaultCommand
+  @Prop(gloss = "Use this command to launch cabocha. Do not touch -f and -I options. -f1 -I1 are always automatically added.") var command = CabochaAnnotator.defaultCommand
   readProps()
 
   override def description = {
@@ -59,7 +59,7 @@ ${helpMessage}
 """
   }
 
-  override def defaultArgs = Seq("-f3", "-I1")
+  override def defaultArgs = Seq("-f1", "-I1")
   override def softwareUrl = "http://taku910.github.io/cabocha/"
 
   val communicator = new ExternalCommunicator
@@ -69,86 +69,95 @@ ${helpMessage}
     */
   override def close() = communicator.closeResource()
 
-  private def tid(sindex: String, tindex: String) = sindex + "_tok" + tindex
-  private def cid(sindex: String, cindex: String) = sindex + "_chu" + cindex
-  private def did(sindex: String, dindex: String) = sindex + "_dep" + dindex
+  override def newSentenceAnnotation(sentence: Node): Node = {
+    val tokens: NodeSeq = (sentence \ "tokens").head \ ("token")
+    val result = runCabocha(tokens).toArray
 
-  // //ununsed
-  // def getTokens(xml:Node, sid:String) : NodeSeq = {
-  //   val nodeSeq = (xml \\ "tok").map{
-  //     tok =>
-  //     val t_id = tid(sid, (tok \ "@id").toString)
-  //     val t_feature = (tok \ "@feature").toString
-  //     <tok id={ t_id } feature={ t_feature }>{ tok.text }</tok>
-  //   }
+    val sid = (sentence \ "@id").toString
+    val chunks = resultToChunks(result)
 
-  //   <tokens>{ nodeSeq }</tokens>
-  // }
+    val tokenIds = tokens .map(_ \ "@id" + "")
 
-  def getChunks(xml:Node, sid:String) : NodeSeq = {
-    val nodeSeq = (xml \\ "chunk").map{
-      chunk =>
-      val c_id = cid(sid, (chunk \ "@id").toString)
-      val c_tokens = (chunk \ "tok").map(tok => tid(sid, (tok \ "@id").toString)).mkString(" ")
-      val c_head = tid(sid, (chunk \ "@head").toString)
-      val c_func = tid(sid, (chunk \ "@func").toString)
-      <chunk id={ c_id } tokens={ c_tokens } head={ c_head } func = {c_func} />
+    jigg.util.XMLUtil.addChild(
+      sentence,
+      Seq(chunksNode(chunks, sid, tokenIds), depsNode(chunks, sid)))
+  }
+
+  private def runCabocha(tokens:NodeSeq): Iterator[String] = {
+    communicator.safeWrite {
+      for (token <- tokens) {
+        communicator.writeln(tokenToMecabFormat(token))
+      }
+      communicator.writeln("EOS")
     }
 
+    communicator.readOrErrorForNull(_=="EOS")
+  }
+
+  private def resultToChunks(result: Array[String]): Seq[Chunk] = {
+    val chunkIdxs = (0 until result.size).filter { i => result(i).startsWith("* ") }
+
+    (0 until chunkIdxs.size).map { i =>
+      val idx = chunkIdxs(i)
+      val offset = idx - i
+
+      val endIdx = if (i == chunkIdxs.size - 1) result.size else chunkIdxs(i+1)
+      val numTokens = endIdx - idx - 1
+      Chunk.fromResult(result(idx), offset, numTokens)
+    }
+  }
+
+  case class Chunk(id: Int, headChunk: Int, rel: String,
+    head: Int, func: Int, offset: Int, numTokens: Int) {
+
+    def range = (offset until offset + numTokens)
+    def headIdx = offset + head
+    def funcIdx = offset + func
+  }
+
+  object Chunk {
+    def fromResult(line: String, offset: Int, numTokens: Int): Chunk = {
+      val items = line.split(' ')
+      val id = items(1).toInt
+      val rel = items(2).last.toString
+      val headChunk = items(2).dropRight(1).toInt
+
+      val hd = items(3).split('/')
+      val head = hd(0).toInt
+      val func = hd(1).toInt
+
+      Chunk(id, headChunk, rel, head, func, offset, numTokens)
+    }
+  }
+
+  def chunksNode(chunks: Seq[Chunk], sid:String, tokenIds: Seq[String]): Node = {
+    val nodeSeq = (0 until chunks.size) map { i =>
+      val chunk = chunks(i)
+      val id = chunkId(sid, chunk.id)
+      val tokens = chunk.range.map(tokenIds).mkString(" ")
+
+      val head = tokenIds(chunk.headIdx)
+      val func = tokenIds(chunk.funcIdx)
+      <chunk id={ id } tokens={ tokens } head={ head } func={ func } />
+    }
     <chunks>{ nodeSeq }</chunks>
   }
 
-  def getDependencies(xml:Node, sid:String) : Option[NodeSeq] = {
-    val nodeSeq = (xml \\ "chunk").filter(chunk => (chunk \ "@link").toString != "-1").map{
-      chunk =>
-      val d_id =did(sid, (chunk \ "@id").toString)
-      val d_head = cid(sid, (chunk \ "@link").toString)
-      val d_dependent = cid(sid, (chunk \ "@id").toString)
-      val d_label = (chunk \ "@rel").toString
-
-      <dependency id={ d_id } head={ d_head } dependent={ d_dependent } label={ d_label } />
-    }
-
-    if(! nodeSeq.isEmpty) Some(<dependencies>{ nodeSeq }</dependencies>) else None
-  }
-
-  // input: parsed sentence by cabocha as XML
-  // output: XML tree what as the specification
-  def convertXml(sentence:Node, cabocha_xml:Node, sid:String) : Node = {
-    if (cabocha_xml == <sentence/>) sentence else{
-      //tokens have been annotated by another annotator
-      // val tokens = getTokens(cabocha_xml, sid)
-      val chunks = getChunks(cabocha_xml, sid)
-      val dependencies = getDependencies(cabocha_xml, sid)
-
-
-      val sentence_with_chunks = jigg.util.XMLUtil.addChild(sentence, chunks)
-
-      dependencies.map(jigg.util.XMLUtil.addChild(sentence_with_chunks, _)).getOrElse(sentence_with_chunks)
-    }
-  }
-
-  override def newSentenceAnnotation(sentence: Node): Node = {
-    def runCabocha(tokens:Node, sindex:String): Seq[String] = {
-
-      communicator.safeWrite {
-        for (token <- (tokens \\ "token")) {
-          communicator.writeln(tokenToMecabFormat(token))
-        }
-        communicator.writeln("EOS")
+  def depsNode(chunks: Seq[Chunk], sid:String): Node = {
+    val nodeSeq = chunks.map { chunk =>
+      val id = depId(sid, chunk.id)
+      val head = chunk.headChunk match {
+        case -1 => "root"
+        case id => chunkId(sid, id)
       }
-
-      communicator.readWithFirstLineCheck(_=="<sentence>", _=="</sentence>")
-        .toSeq :+ "</sentence>"
+      val dep = chunkId(sid, chunk.id)
+      <dependency id={ id } head={ head } dependent={ dep } label={ chunk.rel } />
     }
-
-    val text = sentence.text
-    val sindex = (sentence \ "@id").toString
-    val tokens = (sentence \\ "tokens").head
-    val cabocha_result = XML.loadString(runCabocha(tokens, sindex).mkString)
-
-    convertXml(sentence, cabocha_result, sindex)
+    <dependencies>{ nodeSeq }</dependencies>
   }
+
+  def chunkId(sid: String, idx: Int) = sid + "_chu" + idx
+  def depId(sid: String, idx: Int) = sid + "_dep" + idx
 
   protected def featAttributes: Array[String]
 
