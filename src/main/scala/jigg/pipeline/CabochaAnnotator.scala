@@ -94,6 +94,11 @@ ${helpMessage}
     communicator.readOrErrorForNull(_=="EOS")
   }
 
+  protected def tokenToMecabFormat(token: Node): String =
+    (token \ "@surf") + "\t" + featAttributes.map(token \ _).mkString(",")
+
+  protected def featAttributes: Array[String] // depends on dictionary
+
   private def resultToChunks(result: Array[String]): Seq[Chunk] = {
     val chunkIdxs = (0 until result.size).filter { i => result(i).startsWith("* ") }
 
@@ -158,11 +163,6 @@ ${helpMessage}
 
   def chunkId(sid: String, idx: Int) = sid + "_chu" + idx
   def depId(sid: String, idx: Int) = sid + "_dep" + idx
-
-  protected def featAttributes: Array[String]
-
-  protected def tokenToMecabFormat(token: Node): String =
-    (token \ "@surf") + "\t" + featAttributes.map(token \ _).mkString(",")
 
   override def requirementsSatisfied = Set(Requirement.Chunk, Requirement.Dependency)
 }
