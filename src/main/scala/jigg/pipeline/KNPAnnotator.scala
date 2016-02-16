@@ -25,19 +25,22 @@ import scala.util.matching.Regex
 import scala.xml._
 import jigg.util.XMLUtil
 
-trait KNPAnnotator extends Annotator{
-  val knpProcess : java.lang.Process
-  lazy val knpIn = new BufferedReader(new InputStreamReader(knpProcess.getInputStream, "UTF-8"))
-  lazy val knpOut = new BufferedWriter(new OutputStreamWriter(knpProcess.getOutputStream, "UTF-8"))
+trait KNPAnnotator extends Annotator with IOCreator {
+
+  @Prop(gloss = "Use this command to launch KNP (-tab and -anaphora are mandatory and automatically added). Version >= 4.12 is assumed.") var command = "knp"
+  readProps()
+
+  val io = mkIO()
+
+  def softwareUrl = "http://nlp.ist.i.kyoto-u.ac.jp/index.php?KNP"
 
   def runKNP(jumanTokens:String): Seq[String] = {
-    knpOut.write(jumanTokens)
-    knpOut.flush()
-
-    Stream.continually(knpIn.readLine()) match {
-      case strm @ (begin #:: _) if begin.startsWith("# S-ID") => strm.takeWhile(_ != "EOS").toIndexedSeq :+ "EOS"
-      case other #:: _ => argumentError("command", s"Something wrong in $name\n$other\n...")
-    }
+    io.safeWriteWithFlush(jumanTokens)
+    io.readUntilIf(_.startsWith("# S-ID"), _ == "EOS")
+    // Stream.continually(knpIn.readLine()) match {
+    //   case strm @ (begin #:: _) if begin.startsWith("# S-ID") => strm.takeWhile(_ != "EOS").toIndexedSeq :+ "EOS"
+    //   case other #:: _ => argumentError("command", s"Something wrong in $name\n$other\n...")
+    // }
   }
 
   def isDocInfo(knpStr:String) : Boolean = knpStr(0) == '#'

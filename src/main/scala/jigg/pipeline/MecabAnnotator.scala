@@ -25,11 +25,14 @@ import scala.xml._
 import scala.sys.process.Process
 import jigg.util.PropertiesUtil
 
-abstract class MecabAnnotator(override val name: String, override val props: Properties) extends SentencesAnnotator {
+abstract class MecabAnnotator(override val name: String, override val props: Properties)
+    extends SentencesAnnotator with IOCreator {
   def dic: SystemDic
 
   @Prop(gloss = "Use this command to launch mecab. System dictionary is selected according to the current configuration accessible with '-P' option.") var command = MecabAnnotator.defaultCommand
   readProps()
+
+  val io = mkIO()
 
   override def description = {
 
@@ -47,44 +50,14 @@ ${helpMessage}
 """
   }
 
-  private [this] val mecabProcess = startExternalProcess(
-    command,
-    Seq("-O", ""),
-    "https://taku910.github.io/mecab/")
+  override def defaultArgs = Seq("-O", "")
+  def softwareUrl = "https://taku910.github.io/mecab/"
 
-  lazy private[this] val mecabIn = new BufferedReader(new InputStreamReader(mecabProcess.getInputStream, "UTF-8"))
-  lazy private[this] val mecabOut = new BufferedWriter(new OutputStreamWriter(mecabProcess.getOutputStream, "UTF-8"))
-
-  /**
-    * Close the external process and the interface
-    */
-  override def close() {
-    mecabOut.close()
-    mecabIn.close()
-    mecabProcess.destroy()
-  }
+  override def close() = io.close()
 
   protected def tokenToNode(token: Array[String], id: String): Node
 
   override def newSentenceAnnotation(sentence: Node): Node = {
-    /**
-      * Input a text into the mecab process and obtain output
-      * @param text text to tokenize
-      * @return output of Mecab
-      */
-    def runMecab(text: String): Iterator[String] = {
-      mecabOut.write(text)
-      mecabOut.newLine()
-      mecabOut.flush()
-
-      val iter = Iterator.continually(mecabIn.readLine())
-      iter.takeWhile {
-        case null =>
-          argumentError("command", s"Error: Something wrong in $name?\n" +
-            iter.takeWhile(_ != null).mkString("\n"))
-        case l => l != "EOS"
-      }
-    }
 
     def tid(sindex: String, tindex: Int) = sindex + "_tok" + tindex
 
@@ -93,7 +66,7 @@ ${helpMessage}
 
     var tokenIndex = 0
 
-    val tokenNodes = runMecab(text).withFilter(_!="EOS").map { t =>
+    val tokenNodes = runMecab(text).map { t =>
       val token = t.split(Array(',', '\t'))
       val node = tokenToNode(token, tid(sindex, tokenIndex))
       tokenIndex += 1
@@ -102,6 +75,11 @@ ${helpMessage}
 
     val tokensAnnotation = <tokens>{ tokenNodes }</tokens>
     jigg.util.XMLUtil.addChild(sentence, tokensAnnotation)
+  }
+
+  def runMecab(text: String): Seq[String] = {
+    io.safeWriteWithFlush(text)
+    io.readUntil(_ == "EOS").dropRight(1)
   }
 
   override def requires = Set(Requirement.Sentence)

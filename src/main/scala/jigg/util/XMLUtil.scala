@@ -22,8 +22,19 @@ import scala.collection.JavaConversions._
 
 object XMLUtil {
   def addChild(n: Node, newChild: NodeSeq): Node = n match {
+    case e: Elem => e.copy(child = newChild)
+    case _ => sys.error("Can only add children to elements!")
+  }
+
+  def addOrOverrideChild(n: Node, newChild: NodeSeq): Node = n match {
     case e: Elem =>
-      e.copy(child = e.child ++ newChild)
+      // remove duplicate
+      def addOrOverwrite(orig: NodeSeq): NodeSeq = {
+        val addedLabels = newChild.map(_.label)
+        val uniqueInOrig = orig.filter { n => !addedLabels.contains(n.label) }
+        uniqueInOrig ++ newChild
+      }
+      e.copy(child = addOrOverwrite(e.child))
     case _ => sys.error("Can only add children to elements!")
   }
 

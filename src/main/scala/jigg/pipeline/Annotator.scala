@@ -16,7 +16,7 @@ package jigg.pipeline
  limitations under the License.
 */
 
-import java.io.IOException
+import java.io._
 import java.lang.{Process, ProcessBuilder}
 import java.util.Properties
 import scala.xml.{Node, Elem}
@@ -41,22 +41,6 @@ trait Annotator extends PropsHolder {
   def close = {} // Resource release etc; detault: do nothing
 
   def buildCommand(cmd: String, args: String*): java.util.List[String] = (cmd.split("\\s+") ++ args).toSeq.asJava
-
-  /** A useful method to start process of external command with an error messages (pointing to
-    * the homepage of the software), which is thrown when the process is failed to be launched.
-    */
-  def startExternalProcess(cmd: String, args: Seq[String], software_url: String): Process =
-    try new ProcessBuilder(buildCommand(cmd, args:_*)).start
-    catch { case e: IOException =>
-      val commandName = makeFullName("command")
-      val errorMsg = s"""Failed to start $name. Check environment variable PATH.
-  You can get $prefix at ${software_url}.
-  If you have $prefix out of your PATH, set ${commandName} option as follows:
-    -${commandName} /PATH/TO/${prefix.toUpperCase}/$prefix
-"""
-
-      argumentError("command", errorMsg)
-    }
 
   def requires = Set.empty[Requirement]
   def requirementsSatisfied = Set.empty[Requirement]
@@ -100,4 +84,106 @@ trait SentencesAnnotator extends Annotator {
   }
 
   def newSentenceAnnotation(sentence: Node): Node
+}
+
+/** Provides IO class, which wraps IOCommunicator, and handles errors during communication.
+  *
+  * In the class, for example, `safeWriteWithFlush(text: String)` wraps the same method in
+  * IOCommunicator to throw an appropriate argumentError.
+  *
+  * TODO: add documentation describing the condition for the annotation under which this
+  * trait should be mixed-in.
+  * TODO: remove a dependency to `command` property in argumentError.
+  *
+  * Now it is designed to make it easy to communicate with Japanese NLP softwares such as
+  * mecab, cabocha, and KNP.
+  *
+  */
+trait EasyIO extends Annotator {
+  // def name: String
+
+  class IO(val communicator: IOCommunicator) {
+
+    def close() = communicator.closeResource()
+
+    def safeWriteWithFlush(text: String) =
+      errorIfFailWriting(communicator.safeWriteWithFlush(text))
+
+    def safeWriteWithFlush(lines: TraversableOnce[String]) =
+      errorIfFailWriting(communicator.safeWriteWithFlush(lines))
+
+    def safeWrite(lines: TraversableOnce[String]) =
+      errorIfFailWriting(communicator.safeWrite(lines))
+
+    /** Similar to readUntil, but first check whether the first line matches
+      * to the predicate in `firstLine`. If not, throw an argumentError.
+      */
+    def readUntilIf(firstLine: String=>Boolean, lastLine: String=>Boolean) =
+      errorIfLeftOutput(communicator.readUntilIf(firstLine, lastLine, _==null))
+
+    /** Reads until lastLine is detected. The matched line will be in in the last
+      * index. Throw an argumentError if null line is detected.
+      *
+      * Assume that the successful last line is something except null, e.g., EOS.
+      */
+    def readUntil(lastLine: String=>Boolean) =
+      errorIfLeftOutput(communicator.readUntil(lastLine, _==null))
+
+    private def errorIfFailWriting(writeResult: Either[Throwable, Unit]): Unit =
+      writeResult match {
+        case Left(e: IOException) =>
+          def remainingMessage = communicator.readAll()
+          val errorMsg = s"""ERROR: Problem occurs in $name.
+  ${remainingMessage}
+"""
+          argumentError("command", errorMsg)
+        case Left(e) => throw e
+        case _ =>
+      }
+
+    private def errorIfLeftOutput(
+      output: Either[(Seq[String], Iterator[String]), Seq[String]]): Seq[String] =
+      output match {
+        case Right(results) => results
+        case Left((partial, iter)) =>
+          val errorMsg = s"""ERROR: Unexpected output in $name:\n
+  ${partial.dropRight(1).mkString("\n")}"""
+          argumentError("command", errorMsg)
+      }
+  }
+}
+
+/** This trait provides `mkIO()` and `mkCommunicator()`, an easy way to instantiate IO
+  * object in EasyIO. `mkCommunicator()` is implemented so that it throws an error
+  * message pointing to the software URL when failed to launch the process.
+  *
+  * An assumption for a subclass is that it defines `command` property with @Prop (which
+  * overrides `command` in this trait). See MecabAnnotator for example.
+  */
+trait IOCreator extends EasyIO {
+
+  def command: String
+
+  def defaultArgs = Seq[String]() // these args are always added when calling
+
+  def softwareUrl: String
+
+  def mkIO() = new IO(mkCommunicator())
+
+  def mkCommunicator(): IOCommunicator = new ProcessCommunicator {
+    def cmd = command
+    def args = defaultArgs
+    override def startError(e: Throwable) = {
+      val commandName = makeFullName("command")
+      val errorMsg = s"""ERROR: Failed to start $name.
+  cmd: ${cmd + args.mkString(" ")}
+
+  If the command is not installed, you can get it from ${softwareUrl}.
+  You may also customize the way to launch the process by specifying a
+  path to the command, e.g.:
+    -${commandName} /path/to/$prefix
+"""
+      argumentError("command", errorMsg)
+    }
+  }
 }
