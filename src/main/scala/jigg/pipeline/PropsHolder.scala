@@ -125,13 +125,15 @@ trait PropsHolder { outer =>
     nameToOptInfo.values.map(_ + "").mkString("\n")
   }
 
-  def argumentError(key: String, msg: String = "") = {
+  def argumentError(key: String, msg: String = "") = throw newArgumentError(key, msg)
+
+  def newArgumentError(key: String, msg: String = "") = {
     val fullName = makeFullName(key)
     val comment = if (msg != "") msg else s"Some problem detected in $fullName."
     val usage = nameToOptInfo get(key) match {
       case Some(optInfo) => optInfo + ""
       case None => s"$fullName is not a valid parameter name. Maybe the implementation is corrupted."
     }
-    throw new ArgumentError(comment + "\n" + usage)
+    new ArgumentError(comment + "\n" + usage)
   }
 }
