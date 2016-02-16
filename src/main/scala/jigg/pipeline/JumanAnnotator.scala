@@ -25,27 +25,15 @@ import java.io.OutputStreamWriter
 import scala.collection.mutable.ArrayBuffer
 import jigg.util.XMLUtil
 
-class JumanAnnotator(override val name: String, override val props: Properties) extends SentencesAnnotator {
+class JumanAnnotator(override val name: String, override val props: Properties)
+    extends SentencesAnnotator with IOCreator {
 
   @Prop(gloss = "Use this command to launch juman") var command = "juman"
   readProps()
 
-  private[this] val jumanProcess = startExternalProcess(
-    command,
-    Seq(),
-    "http://nlp.ist.i.kyoto-u.ac.jp/index.php?JUMAN")
+  val io = mkIO()
 
-  lazy private[this] val jumanIn = new BufferedReader(new InputStreamReader(jumanProcess.getInputStream, "UTF-8"))
-  lazy private[this] val jumanOut = new BufferedWriter(new OutputStreamWriter(jumanProcess.getOutputStream, "UTF-8"))
-
-  /**
-    * Close the external process and the interface
-    */
-  override def close() {
-    jumanOut.close()
-    jumanIn.close()
-    jumanProcess.destroy()
-  }
+  def softwareUrl = "http://nlp.ist.i.kyoto-u.ac.jp/index.php?JUMAN"
 
   def makeTokenAltChild(nodes: NodeSeq) : NodeSeq = {
     val tokenBoundaries = nodes.zipWithIndex.filter(_._1.label=="token").map(_._2) :+ nodes.size
@@ -57,10 +45,13 @@ class JumanAnnotator(override val name: String, override val props: Properties) 
 
   override def newSentenceAnnotation(sentence: Node): Node = {
     def runJuman(text: String): Seq[String] = {
-      jumanOut.write(text)
-      jumanOut.newLine()
-      jumanOut.flush()
-      Iterator.continually(jumanIn.readLine()).takeWhile{line => line != null && line != "EOS"}.toSeq
+
+      io.safeWriteWithFlush(text)
+      io.readUntil(_ == "EOS").dropRight(1)
+      // jumanOut.write(text)
+      // jumanOut.newLine()
+      // jumanOut.flush()
+      // Iterator.continually(jumanIn.readLine()).takeWhile{line => line != null && line != "EOS"}.toSeq
     }
 
     val sindex = (sentence \ "@id").toString

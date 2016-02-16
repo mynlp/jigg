@@ -22,24 +22,20 @@ import scala.util.matching.Regex
 import scala.xml._
 import jigg.util.XMLUtil
 
-class DocumentKNPAnnotator(override val name: String, override val props: Properties) extends DocumentAnnotator with KNPAnnotator{
-  @Prop(gloss = "Use this command to launch KNP (-tab and -anaphora are mandatory and automatically added). Version >= 4.12 is assumed.") var command = "knp"
-  readProps()
+class DocumentKNPAnnotator(override val name: String, override val props: Properties)
+    extends DocumentAnnotator with KNPAnnotator {
 
-  //for KNP 4.12 (-ne option is unneed)
-  lazy val knpProcess = startExternalProcess(
-    command,
-    Seq("-tab", "-anaphora"),
-    "http://nlp.ist.i.kyoto-u.ac.jp/index.php?KNP")
+  def commandGloss = "Use this command to launch KNP (-tab and -anaphora are mandatory and automatically added). Version >= 4.12 is assumed."
+  // @Prop(gloss = "Use this command to launch KNP (-tab and -anaphora are mandatory and automatically added). Version >= 4.12 is assumed.") var command = "knp"
+  // readProps()
 
-  /**
-    * Close the external process and the interface
-    */
-  override def close() {
-    knpOut.close()
-    knpIn.close()
-    knpProcess.destroy()
-  }
+  // //for KNP 4.12 (-ne option is unneed)
+  // lazy val knpProcess = startExternalProcess(
+  //   command,
+  //   Seq("-tab", "-anaphora"),
+  //   "http://nlp.ist.i.kyoto-u.ac.jp/index.php?KNP")
+
+  override def defaultArgs = Seq("-tab", "-anaphora")
 
   private def corefid(did: String, corefindex:Int) = did + "_coref" + corefindex.toString
   private def parid(sid: String, parindex:Int) = sid + "_par" + parindex.toString
