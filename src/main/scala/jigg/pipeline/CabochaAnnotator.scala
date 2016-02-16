@@ -22,12 +22,14 @@ import scala.sys.process.Process
 import jigg.util.PropertiesUtil
 
 abstract class CabochaAnnotator(override val name: String, override val props: Properties)
-    extends SentencesAnnotator with AnnotatorWithExternalProcess {
+    extends SentencesAnnotator with IOCreator {
 
   def dic: SystemDic
 
   @Prop(gloss = "Use this command to launch cabocha. Do not touch -f and -I options. -f1 -I1 are always automatically added.") var command = CabochaAnnotator.defaultCommand
   readProps()
+
+  val io = mkIO()
 
   override def description = {
 
@@ -60,14 +62,9 @@ ${helpMessage}
   }
 
   override def defaultArgs = Seq("-f1", "-I1")
-  override def softwareUrl = "http://taku910.github.io/cabocha/"
+  def softwareUrl = "http://taku910.github.io/cabocha/"
 
-  val communicator = new ExternalCommunicator
-
-  /**
-    * Close the external process and the interface
-    */
-  override def close() = communicator.closeResource()
+  override def close() = io.close()
 
   override def newSentenceAnnotation(sentence: Node): Node = {
     val tokens: NodeSeq = (sentence \ "tokens").head \ ("token")
@@ -76,22 +73,18 @@ ${helpMessage}
     val sid = (sentence \ "@id").toString
     val chunks = resultToChunks(result)
 
-    val tokenIds = tokens .map(_ \ "@id" + "")
+    val tokenIds = tokens map(_ \ "@id" + "")
 
-    jigg.util.XMLUtil.addChild(
+    jigg.util.XMLUtil.addOrOverrideChild(
       sentence,
       Seq(chunksNode(chunks, sid, tokenIds), depsNode(chunks, sid)))
   }
 
-  private def runCabocha(tokens:NodeSeq): Iterator[String] = {
-    communicator.safeWrite {
-      for (token <- tokens) {
-        communicator.writeln(tokenToMecabFormat(token))
-      }
-      communicator.writeln("EOS")
-    }
-
-    communicator.readOrErrorForNull(_=="EOS")
+  private def runCabocha(tokens:NodeSeq): Seq[String] = {
+    io.safeWriteWithFlush({
+      for (token <- tokens) yield tokenToMecabFormat(token)
+    } ++ Iterator("EOS"))
+    io.readUntil(_ == "EOS").dropRight(1)
   }
 
   protected def tokenToMecabFormat(token: Node): String =
