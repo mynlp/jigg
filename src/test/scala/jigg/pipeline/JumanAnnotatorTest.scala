@@ -31,6 +31,7 @@ class JumanAnnotatorTest extends FunSuite {
 
     newJuman() foreach { juman =>
       juman.makeTokenAltChild(input) should be(expected)
+      juman.close()
     }
   }
 
@@ -40,6 +41,7 @@ class JumanAnnotatorTest extends FunSuite {
 
     newJuman() foreach { juman =>
       juman.makeTokenAltChild(input) should be(expected)
+      juman.close()
     }
   }
 
@@ -49,6 +51,7 @@ class JumanAnnotatorTest extends FunSuite {
 
     newJuman() foreach { juman =>
       juman.makeTokenAltChild(input) should be(expected)
+      juman.close()
     }
   }
 }

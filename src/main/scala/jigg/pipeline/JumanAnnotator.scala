@@ -35,6 +35,8 @@ class JumanAnnotator(override val name: String, override val props: Properties)
 
   def softwareUrl = "http://nlp.ist.i.kyoto-u.ac.jp/index.php?JUMAN"
 
+  override def close() = io.close()
+
   def makeTokenAltChild(nodes: NodeSeq) : NodeSeq = {
     val tokenBoundaries = nodes.zipWithIndex.filter(_._1.label=="token").map(_._2) :+ nodes.size
 
