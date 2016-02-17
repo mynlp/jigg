@@ -20,18 +20,10 @@ import java.util.Properties
 import scala.xml.Node
 import org.scalatest._
 
-class CabochaAnnotatorSpec extends FlatSpec with Matchers {
+class CabochaAnnotatorSpec extends BaseAnnotatorSpec {
 
   def newIPA(output: String, p: Properties = new Properties) = new IPACabochaAnnotator("", p) {
     override def mkCommunicator = new StubExternalCommunicator(output)
-  }
-
-  val sameElem = new org.scalactic.Equality[Node] {
-    import scala.xml.Utility.trim
-    override def areEqual(a: Node, b: Any) = b match {
-      case n: Node => trim(a) == trim(n)
-      case _ => false
-    }
   }
 
   // def newJuman(output: String, p: Properties = new Properties) = new JumanDicCabochaAnnotator("", p) {
