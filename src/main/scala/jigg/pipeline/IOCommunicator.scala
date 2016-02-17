@@ -147,13 +147,17 @@ trait ProcessCommunicator extends IOCommunicator {
 
   def readingIter = Iterator.continually(processIn.readLine())
 
-  protected def startProcess(): Process = {
-    val fullCmd = (cmd.split("\\s+") ++ args).toSeq.asJava
-
-    control.Exception.allCatch either new ProcessBuilder(fullCmd).start match {
+  protected def startProcess(): Process =
+    control.Exception.allCatch either startWithRedirectError() match {
       case Right(process) => process
       case Left(error) => startError(error)
     }
+
+  private def startWithRedirectError() = {
+    val fullCmd = (cmd.split("\\s+") ++ args).toSeq.asJava
+    val pb = new ProcessBuilder(fullCmd)
+    pb.redirectErrorStream(true)
+    pb.start
   }
 
   /** Called when failing to launch the software with given command

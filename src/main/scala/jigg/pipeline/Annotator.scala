@@ -102,6 +102,8 @@ trait SentencesAnnotator extends Annotator {
 trait EasyIO extends Annotator {
   // def name: String
 
+  def mkIO(communicator: IOCommunicator): IO = new IO(communicator)
+
   class IO(val communicator: IOCommunicator) {
 
     def close() = communicator.closeResource()
@@ -146,11 +148,20 @@ trait EasyIO extends Annotator {
       output match {
         case Right(results) => results
         case Left((partial, iter)) =>
+          val remainingMsg = (partial.dropRight(1).mkString("\n") ++ readRemaining(iter))
           val errorMsg = s"""ERROR: Unexpected output in $name:\n
-  ${partial.dropRight(1).mkString("\n")}"""
+  ${remainingMsg}
+"""
           argumentError("command", errorMsg)
       }
   }
+
+  /** Internal method.
+    *
+    * What to process the remaining input iterator when the erorr occur?
+    * Default: do nothing, because it may not finish when input stream is alive.
+    */
+  def readRemaining(iter: Iterator[String]): String = ""
 }
 
 /** This trait provides `mkIO()` and `mkCommunicator()`, an easy way to instantiate IO
@@ -168,7 +179,7 @@ trait IOCreator extends EasyIO {
 
   def softwareUrl: String
 
-  def mkIO() = new IO(mkCommunicator())
+  def mkIO(): IO = mkIO(mkCommunicator()) // new IO(mkCommunicator())
 
   def mkCommunicator(): IOCommunicator = new ProcessCommunicator {
     def cmd = command
