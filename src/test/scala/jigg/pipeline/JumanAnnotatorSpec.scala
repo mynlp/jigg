@@ -38,7 +38,7 @@ EOS"""
     val result = newJuman(sample).newSentenceAnnotation(input)
 
     result should equal (
-      <sentence id="s0">
+      <sentence id="s0">太郎は走った
         <tokens>
           <token id="s0_tok0" surf="太郎" pos="名詞" pos1="人名" inflectionType="*" inflectionForm="*" base="太郎" reading="たろう" posId="6" pos1Id="5" inflectionTypeId="0" inflectionFormId="0" semantic="&quot;人名:日本:名:45:0.00106&quot;"/>
           <token id="s0_tok1" surf="は" pos="助詞" pos1="副助詞" inflectionType="*" inflectionForm="*" base="は" reading="は" posId="9" pos1Id="2" inflectionTypeId="0" inflectionFormId="0" semantic="NIL"/>
@@ -64,7 +64,7 @@ EOS"""
     val result = newJuman(sample).newSentenceAnnotation(input)
 
     result should equal (
-      <sentence id="s0">
+      <sentence id="s0">太郎は京都に行った
         <tokens>
           <token id="s0_tok0" surf="太郎" pos="名詞" pos1="人名" inflectionType="*" inflectionForm="*" base="太郎" reading="たろう" posId="6" pos1Id="5" inflectionTypeId="0" inflectionFormId="0" semantic="&quot;人名:日本:名:45:0.00106&quot;"/>
           <token id="s0_tok1" surf="は" pos="助詞" pos1="副助詞" inflectionType="*" inflectionForm="*" base="は" reading="は" posId="9" pos1Id="2" inflectionTypeId="0" inflectionFormId="0" semantic="NIL"/>
@@ -92,7 +92,7 @@ EOS"""
     val result = newJuman(sample).newSentenceAnnotation(input)
 
     result should equal(
-      <sentence id="s0">
+      <sentence id="s0">あ い
         <tokens>
           <token id="s0_tok0" surf="あ" pos="感動詞" pos1="*" inflectionType="*" inflectionForm="*" base="あ" reading="あ" posId="12" pos1Id="0" inflectionTypeId="0" inflectionFormId="0" semantic="&quot;代表表記:あ/あ&quot;"/>
           <token id="s0_tok1" surf=" " pos="特殊" pos1="空白" inflectionType="*" inflectionForm="*" base="\ " reading="\ " posId="1" pos1Id="6" inflectionTypeId="0" inflectionFormId="0" semantic="NIL"/>
