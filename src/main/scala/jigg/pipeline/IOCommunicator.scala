@@ -180,11 +180,19 @@ class CommonProcessCommunicator(val cmd: String, val args: Seq[String])
 /** A communicator, which may be used in a unit test.
   * Writing does nothing. By reading, it reads the given output lines.
   */
-class StubExternalCommunicator(output: String) extends IOCommunicator {
+class StubExternalCommunicator(outputs: Seq[String]) extends IOCommunicator {
+
+  def this(output: String) = this(Seq(output))
 
   def write(line: String) = {}
   def writeln(line: String) = {}
   def flush() = {}
 
-  def readingIter = output.split("\n").toIterator
+  var i = 0
+
+  def readingIter = {
+    val iter = if (i < outputs.size) outputs(i).split("\n").toIterator else Iterator[String]()
+    i += 1
+    iter
+  }
 }
