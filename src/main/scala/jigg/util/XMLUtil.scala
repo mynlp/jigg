@@ -52,6 +52,13 @@ object XMLUtil {
     recurse(root).head
   }
 
+  /** Return concatenation of all Atom[_] elements in the child.
+    * (is there any possibilities that a node has more than one such element in child?)
+    */
+  def text(node: Node): String = node.child.collect {
+    case t: Atom[_] => t.data
+  }.mkString
+
   def removeText(node: Elem) = node.copy(child = (node.child map {
     // Atom includes Text or other string objects.
     case t: Atom[_] => Text("")
