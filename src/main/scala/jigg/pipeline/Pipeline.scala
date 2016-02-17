@@ -117,7 +117,7 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
     import scala.reflect.runtime.{currentMirror => cm}
 
     getAnnotatorClass(name) flatMap { clazz =>
-      val symbol = cm.classSymbol(clazz).companionSymbol
+      val symbol = cm.classSymbol(clazz).companion
       try Some(cm.reflectModule(symbol.asModule).instance.asInstanceOf[AnnotatorCompanion[Annotator]])
       catch { case e: Throwable => None }
     }

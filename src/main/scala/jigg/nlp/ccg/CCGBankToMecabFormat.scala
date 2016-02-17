@@ -48,7 +48,7 @@ object CCGBankToMecabFormat {
       val trees = readParseTreesFromCCGBank(Opt.ccgBankPath, -1, true)
       val rawString = trees map { parseTreeConverter.toSentenceFromLabelTree(_) } map { _.wordSeq.mkString("") } mkString("\n")
       val is = new java.io.ByteArrayInputStream(rawString.getBytes("UTF-8"))
-      val out = (Process("cabocha -f1") #< is).lines_!
+      val out = (Process("cabocha -f1") #< is).lineStream_!
 
       val os = jigg.util.IOUtil.openOut(Opt.outputPath)
       out foreach { line =>

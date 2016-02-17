@@ -200,7 +200,7 @@ object CabochaAnnotator extends AnnotatorCompanion[CabochaAnnotator] {
     selector.select
   }
 
-  def getHelp(cmd: String) = Process(cmd + " --help").lines_!
+  def getHelp(cmd: String) = Process(cmd + " --help").lineStream_!
 
   private class CabochaSelector(name: String, props: Properties) {
     val cmdKey = name + ".command"
@@ -271,7 +271,7 @@ object CabochaAnnotator extends AnnotatorCompanion[CabochaAnnotator] {
     }
 
     def safeProcess(cmd:String): Option[Seq[String]] = {
-      try { Some(Process(cmd).lines_!.toSeq) }
+      try { Some(Process(cmd).lineStream_!.toSeq) }
       catch { case e : Throwable => None }
     }
 

@@ -197,6 +197,6 @@ object MecabAnnotator extends AnnotatorCompanion[MecabAnnotator] {
     } catch { case e: Throwable => None }
   }
 
-  def getConfig(cmd: String) = Process(cmd + " --dump-config").lines_!
-  def getHelp(cmd: String) = Process(cmd + " --help").lines_!
+  def getConfig(cmd: String) = Process(cmd + " --dump-config").lineStream_!
+  def getHelp(cmd: String) = Process(cmd + " --help").lineStream_!
 }
