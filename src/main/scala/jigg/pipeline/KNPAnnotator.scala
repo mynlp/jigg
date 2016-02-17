@@ -27,11 +27,6 @@ import jigg.util.XMLUtil
 
 trait KNPAnnotator extends Annotator with IOCreator {
 
-  @Prop(gloss = "Use this command to launch KNP (-tab and -anaphora are mandatory and automatically added). Version >= 4.12 is assumed.") var command = "knp"
-  readProps()
-
-  val io = mkIO()
-
   def softwareUrl = "http://nlp.ist.i.kyoto-u.ac.jp/index.php?KNP"
 
   /** When error occurs (e.g., encountering half spaces), KNP output errors and finish with EOS.
@@ -41,6 +36,8 @@ trait KNPAnnotator extends Annotator with IOCreator {
   override def readRemaining(iter: Iterator[String]) = iter.takeWhile {
     l => l != null && l != "EOS"
   }.mkString("\n")
+
+  val io: IO // this is defined in subclasses, after doing readProps()
 
   def runKNP(sentence: Node, beginInput: Option[String]): Seq[String] = {
     val firstLine: String=>Boolean = s => s.startsWith("# S-ID") && !s.contains("ERROR")

@@ -25,9 +25,10 @@ import jigg.util.XMLUtil
 class DocumentKNPAnnotator(override val name: String, override val props: Properties)
     extends DocumentAnnotator with KNPAnnotator {
 
-  def commandGloss = "Use this command to launch KNP (-tab and -anaphora are mandatory and automatically added). Version >= 4.12 is assumed."
-  // @Prop(gloss = "Use this command to launch KNP (-tab and -anaphora are mandatory and automatically added). Version >= 4.12 is assumed.") var command = "knp"
-  // readProps()
+  @Prop(gloss = "Use this command to launch KNP (-tab and -anaphora are mandatory and automatically added). Version >= 4.12 is assumed.") var command = "knp"
+  readProps()
+
+  val io = mkIO()
 
   override def defaultArgs = Seq("-tab", "-anaphora")
 
