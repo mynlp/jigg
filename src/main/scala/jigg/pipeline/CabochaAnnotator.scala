@@ -174,7 +174,7 @@ class JumanDicCabochaAnnotator(name: String, props: Properties) extends CabochaA
   def dic = SystemDic.jumandic
 
   val featAttributes = Array(
-    "pos", "pos1", "pos2", "pos3", "base", "reading", "semantic").map("@"+_)
+    "pos", "pos1", "inflectionType", "inflectionForm", "base", "reading", "semantic").map("@"+_)
 
   override def requires = Set(Requirement.TokenizeWithJuman)
 }

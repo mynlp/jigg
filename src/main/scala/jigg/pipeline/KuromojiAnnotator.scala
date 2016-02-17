@@ -104,8 +104,8 @@ class JumanKuromojiAnnotator(name: String, props: Properties)
       surf={ token.getSurface }
       pos={ token.getPartOfSpeechLevel1 }
       pos1={ token.getPartOfSpeechLevel2 }
-      pos2={ token.getPartOfSpeechLevel3 }
-      pos3={ token.getPartOfSpeechLevel4 }
+      inflectionType={ token.getPartOfSpeechLevel3 }
+      inflectionForm={ token.getPartOfSpeechLevel4 }
       base={ token.getBaseForm }
       reading={ token.getReading }
       semantic={ token.getSemanticInformation }/>

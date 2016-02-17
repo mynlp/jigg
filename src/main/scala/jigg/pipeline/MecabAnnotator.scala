@@ -115,8 +115,8 @@ class JumanDicMecabAnnotator(name: String, props: Properties) extends MecabAnnot
     surf={ token(0) }
     pos={ token(1) }
     pos1={ token(2) }
-    pos2={ token(3) }
-    pos3={ token(4) }
+    inflectionType={ token(3) }
+    inflectionForm={ token(4) }
     base={ token(5) }
     reading={ token(6) }
     semantic={ token(7) }/>
