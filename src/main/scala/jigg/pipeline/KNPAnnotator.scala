@@ -294,7 +294,7 @@ trait KNPAnnotator extends Annotator with IOCreator {
       }
     }
 
-    ans += "EOS\n"
+    ans += "EOS"
     ans.toSeq
   }
 }
