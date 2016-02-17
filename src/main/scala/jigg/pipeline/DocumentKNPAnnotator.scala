@@ -39,12 +39,11 @@ class DocumentKNPAnnotator(override val name: String, override val props: Proper
     val did = (document \ "@id").text
     val sentenceNodes = (document \ "sentences" \ "sentence")
 
-    val knpResults = sentenceNodes.map{
-      sentenceNode =>
+    val knpResults = sentenceNodes.map{ sentenceNode =>
       val sindex = (sentenceNode \ "@id").text
-      val jumanTokens = (sentenceNode \ "tokens").head
+      // val jumanTokens = (sentenceNode \ "tokens").head
 
-      val docIdInfo = "# S-ID:" + did + "-" + sindex + " JUMAN:7.01" + "\n" //FIXME
+      val docIdInfo = "# S-ID:" + did + "-" + sindex + " JUMAN:7.01" //FIXME
       runKNP(sentenceNode, Some(docIdInfo))
     }
 
