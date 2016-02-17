@@ -34,20 +34,36 @@ trait KNPAnnotator extends Annotator with IOCreator {
 
   def softwareUrl = "http://nlp.ist.i.kyoto-u.ac.jp/index.php?KNP"
 
-  def runKNP(jumanTokens:String): Seq[String] = {
-    io.safeWriteWithFlush(jumanTokens)
-    io.readUntilIf(_.startsWith("# S-ID"), _ == "EOS")
-    // Stream.continually(knpIn.readLine()) match {
-    //   case strm @ (begin #:: _) if begin.startsWith("# S-ID") => strm.takeWhile(_ != "EOS").toIndexedSeq :+ "EOS"
-    //   case other #:: _ => argumentError("command", s"Something wrong in $name\n$other\n...")
-    // }
+  /** When error occurs (e.g., encountering half spaces), KNP output errors and finish with EOS.
+    * (but the process is still alive, and waiting for new input) This method tries to read the
+    * remaining erorr message until EOS.
+    */
+  override def readRemaining(iter: Iterator[String]) = iter.takeWhile {
+    l => l != null && l != "EOS"
+  }.mkString("\n")
+
+  def runKNP(sentence: Node, beginInput: Option[String]): Seq[String] = {
+    val firstLine: String=>Boolean = s => s.startsWith("# S-ID") && !s.contains("ERROR")
+
+    val jumanTokens = (sentence \ "tokens").head
+
+    val _output = recovJumanOutput(jumanTokens)
+    val jumanOutput = beginInput.map (Iterator(_) ++ _output).getOrElse(_output)
+    io.safeWriteWithFlush(jumanOutput)
+
+    try io.readUntilIf(firstLine, _ == "EOS")
+    catch {
+      case e: ArgumentError =>
+        val raw = (jumanTokens \ "token").map(_ \ "@surf").mkString
+        throw new ArgumentError(e.getMessage + "\n\nProblematic sentence: " + raw)
+    }
   }
 
   def isDocInfo(knpStr:String) : Boolean = knpStr(0) == '#'
   def isChunk(knpStr:String) : Boolean = knpStr(0) == '*'
   def isBasicPhrase(knpStr:String) : Boolean = knpStr(0) == '+'
   def isEOS(knpStr:String) : Boolean = knpStr == "EOS"
-  def isToken(knpStr:String) : Boolean = ! isDocInfo(knpStr) && ! isChunk(knpStr) && ! isBasicPhrase(knpStr) && ! isEOS(knpStr)
+  def isToken(knpStr:String) : Boolean = !isDocInfo(knpStr) && !isChunk(knpStr) && !isBasicPhrase(knpStr) && !isEOS(knpStr)
 
   private def tid(sindex: String, tindex: Int) = sindex + "_tok" + tindex.toString
   private def cid(sindex: String, cindex: Int) = sindex + "_chu" + cindex
@@ -57,11 +73,11 @@ trait KNPAnnotator extends Annotator with IOCreator {
   private def crid(sindex: String, crindex:Int) = sindex + "_cr" + crindex.toString
   private def neid(sindex: String, neindex:Int) = sindex + "_ne" + neindex.toString
 
-  def getTokens(knpResult:Seq[String], sid:String) : Node = {
+  def getTokens(knpResult:Seq[String], sid:String): Node = {
     var tokenIndex = 0
 
-    val nodes = knpResult.filter(s => isToken(s)).map{
-      s =>
+    val nodes = knpResult.filter(isToken).map { s =>
+
       val tok = s.split(' ')
 
       val surf              = tok(0)
@@ -75,29 +91,25 @@ trait KNPAnnotator extends Annotator with IOCreator {
       val inflectionTypeId = tok(8)
       val inflectionForm    = tok(9)
       val inflectionFormId = tok(10)
-      val features          = tok.drop(11).mkString(" ")
-      val pos2           = None
-      val pos3           = None
-      val pronounce      = None
+      val semantic          = tok.drop(11).mkString(" ")
 
       val node = <token
-      id={ tid(sid, tokenIndex) }
+      id={ tid(sid, tokenIndex) + '_' }
       surf={ surf }
       pos={ pos }
       pos1={ pos1 }
-      pos2={ pos2 }
-      pos3={ pos3 }
       inflectionType={ inflectionType }
       inflectionForm={ inflectionForm }
       base={ base }
       reading={ reading }
-      pronounce={ pronounce }
       posId={ posId }
       pos1Id={ pos1Id }
       inflectionTypeId={ inflectionTypeId }
       inflectionFormId={ inflectionFormId }
-      features={ features }/>
+      semantic={ semantic }/>
+
       tokenIndex += 1
+
       node
     }
 
@@ -260,9 +272,10 @@ trait KNPAnnotator extends Annotator with IOCreator {
 
   def annotateSentenceNode(sentence:Node, knpResult:Seq[String], sid:String): Node = {
     val knpTokens = getTokens(knpResult, sid)
-    val sentenceWithTokens = XMLUtil.replaceAll(sentence, "tokens")(node => knpTokens)
+
     val basicPhrases = getBasicPhrases(knpResult, sid)
-    XMLUtil.addChild(sentenceWithTokens, Seq[Node](
+    XMLUtil.addOrOverrideChild(sentence, Seq[Node](
+      knpTokens,
       basicPhrases,
       getChunks(knpResult, sid),
       getBasicPhraseDependencies(knpResult, sid),
@@ -272,29 +285,28 @@ trait KNPAnnotator extends Annotator with IOCreator {
     ))
   }
 
+  private[this] val jumanFeats = Array("surf", "reading", "base", "pos", "posId", "pos1",
+    "pos1Id", "inflectionType", "inflectionTypeId", "inflectionForm", "inflectionFormId",
+    "semantic").map("@" + _)
 
-  private[this] def recoverTokenStr(tokenNode: Node, alt: Boolean) : String = (if (alt) "@ " else "") +
-  Seq("@surf", "@reading", "@base", "@pos", "@posId", "@pos1", "@pos1Id", "@inflectionType", "@inflectionTypeId", "@inflectionForm", "@inflectionFormId").map(tokenNode \ _).mkString(" ") +
-  " " + (tokenNode \ "@features").text + "\n"
+  private[this] def recoverTokenStr(tokenNode: Node, alt: Boolean): String = {
+    def head = if (alt) "@ " else ""
+    head + jumanFeats.map { a => (tokenNode \ a).text }.mkString(" ")
+  }
 
-  def recovJumanOutput(jumanTokens:Node) : Seq[String] = {
+  def recovJumanOutput(jumanTokens: Node): Iterator[String] = {
     val ans = ArrayBuffer.empty[String]
 
-    (jumanTokens \\ "token").map{
-      tok =>
+    for (tok <- jumanTokens \\ "token") {
       ans += recoverTokenStr(tok, false)
 
-      val tokenAltSeq = (tok \ "tokenAlt")
-
-      if (tokenAltSeq.nonEmpty){
-        tokenAltSeq.map{
-          tokAlt =>
-          ans += recoverTokenStr(tokAlt, true)
-        }
+      tok \ "tokenAlt" match {
+        case Seq() =>
+        case alts =>
+          for (alt <- alts) ans += recoverTokenStr(alt, true)
       }
     }
-
     ans += "EOS"
-    ans.toSeq
+    ans.toIterator
   }
 }

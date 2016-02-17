@@ -29,23 +29,10 @@ class DocumentKNPAnnotator(override val name: String, override val props: Proper
   // @Prop(gloss = "Use this command to launch KNP (-tab and -anaphora are mandatory and automatically added). Version >= 4.12 is assumed.") var command = "knp"
   // readProps()
 
-  // //for KNP 4.12 (-ne option is unneed)
-  // lazy val knpProcess = startExternalProcess(
-  //   command,
-  //   Seq("-tab", "-anaphora"),
-  //   "http://nlp.ist.i.kyoto-u.ac.jp/index.php?KNP")
-
   override def defaultArgs = Seq("-tab", "-anaphora")
 
   private def corefid(did: String, corefindex:Int) = did + "_coref" + corefindex.toString
   private def parid(sid: String, parindex:Int) = sid + "_par" + parindex.toString
-
-  def recovJumanOutputWithDocId(jumanTokens:Node, did:String, sid:String) : Seq[String] = {
-    val docIdInfo = "# S-ID:" + did + "-" + sid + " JUMAN:7.01" + "\n" //FIXME
-
-    docIdInfo +: recovJumanOutput(jumanTokens)
-  }
-
 
   override def newDocumentAnnotation(document: Node): Node = {
     val did = (document \ "@id").text
@@ -56,9 +43,8 @@ class DocumentKNPAnnotator(override val name: String, override val props: Proper
       val sindex = (sentenceNode \ "@id").text
       val jumanTokens = (sentenceNode \ "tokens").head
 
-      val jumanStr = recovJumanOutputWithDocId(jumanTokens, did, sindex).mkString
-
-      runKNP(jumanStr)
+      val docIdInfo = "# S-ID:" + did + "-" + sindex + " JUMAN:7.01" + "\n" //FIXME
+      runKNP(sentenceNode, Some(docIdInfo))
     }
 
     //sentence-level annotation

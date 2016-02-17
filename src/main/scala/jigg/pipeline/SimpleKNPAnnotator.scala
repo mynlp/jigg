@@ -28,17 +28,10 @@ class SimpleKNPAnnotator(override val name: String, override val props: Properti
 
   override def defaultArgs = Seq("-tab")
 
-  // lazy val knpProcess = startExternalProcess(
-  //   command,
-  //   Seq("-tab"),
-  //   "http://nlp.ist.i.kyoto-u.ac.jp/index.php?KNP")
-
   override def newSentenceAnnotation(sentence: Node): Node = {
     val sindex = (sentence \ "@id").toString
-    val jumanTokens = (sentence \ "tokens").head
-    val jumanStr = recovJumanOutput(jumanTokens).mkString
-    val knpResult = runKNP(jumanStr)
 
+    val knpResult = runKNP(sentence, None)
     annotateSentenceNode(sentence, knpResult, sindex)
   }
 
