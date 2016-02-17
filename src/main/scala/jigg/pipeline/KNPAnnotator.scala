@@ -65,52 +65,42 @@ trait KNPAnnotator extends Annotator with IOCreator {
   def isEOS(knpStr:String) : Boolean = knpStr == "EOS"
   def isToken(knpStr:String) : Boolean = !isDocInfo(knpStr) && !isChunk(knpStr) && !isBasicPhrase(knpStr) && !isEOS(knpStr)
 
-  private def tid(sindex: String, tindex: Int) = sindex + "_tok" + tindex.toString
+  private def tid(sindex: String, tindex: Int) = sindex + "_tok" + tindex
   private def cid(sindex: String, cindex: Int) = sindex + "_chu" + cindex
-  private def bpid(sindex: String, bpindex: Int) = sindex + "_bp" + bpindex.toString
-  private def bpdid(sindex: String, bpdindex: Int) = sindex + "_bpdep" + bpdindex.toString
-  private def depid(sindex: String, depindex: Int) = sindex + "_dep" + depindex.toString
-  private def crid(sindex: String, crindex:Int) = sindex + "_cr" + crindex.toString
-  private def neid(sindex: String, neindex:Int) = sindex + "_ne" + neindex.toString
+  private def bpid(sindex: String, bpindex: Int) = sindex + "_bp" + bpindex
+  private def bpdid(sindex: String, bpdindex: Int) = sindex + "_bpdep" + bpdindex
+  private def depid(sindex: String, depindex: Int) = sindex + "_dep" + depindex
+  private def crid(sindex: String, crindex:Int) = sindex + "_cr" + crindex
+  private def neid(sindex: String, neindex:Int) = sindex + "_ne" + neindex
 
   def getTokens(knpResult:Seq[String], sid:String): Node = {
     var tokenIndex = 0
 
-    val nodes = knpResult.filter(isToken).map { s =>
+    val nodes = knpResult.filter(isToken).map { tokenized =>
 
-      val tok = s.split(' ')
+      // this is OK since half space errors are detected earlier
+      val spaceIdx = -1 +: (0 until tokenized.size - 1).filter(tokenized(_) == ' ')
+      def feat(i: Int) = tokenized.substring(spaceIdx(i) + 1, spaceIdx(i + 1))
 
-      val surf              = tok(0)
-      val reading           = tok(1)
-      val base              = tok(2)
-      val pos               = tok(3)
-      val posId            = tok(4)
-      val pos1              = tok(5)
-      val pos1Id           = tok(6)
-      val inflectionType    = tok(7)
-      val inflectionTypeId = tok(8)
-      val inflectionForm    = tok(9)
-      val inflectionFormId = tok(10)
-      val semantic          = tok.drop(11).mkString(" ")
+      val semantic = tokenized.substring(spaceIdx(11) + 1)
 
-      val node = <token
-      id={ tid(sid, tokenIndex) + '_' }
-      surf={ surf }
-      pos={ pos }
-      pos1={ pos1 }
-      inflectionType={ inflectionType }
-      inflectionForm={ inflectionForm }
-      base={ base }
-      reading={ reading }
-      posId={ posId }
-      pos1Id={ pos1Id }
-      inflectionTypeId={ inflectionTypeId }
-      inflectionFormId={ inflectionFormId }
-      semantic={ semantic }/>
-
+      val id = tid(sid, tokenIndex)
       tokenIndex += 1
 
-      node
+      <token
+        id={ id }
+        surf={ feat(0) }
+        reading={ feat(1) }
+        base={ feat(2) }
+        pos={ feat(3) }
+        posId={ feat(4) }
+        pos1={ feat(5) }
+        pos1Id={ feat(6) }
+        inflectionType={ feat(7) }
+        inflectionTypeId={ feat(8) }
+        inflectionForm={ feat(9) }
+        inflectionFormId={ feat(10) }
+        semantic={ semantic }/>
     }
 
     <tokens>{ nodes }</tokens>

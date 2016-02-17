@@ -90,17 +90,17 @@ class JumanAnnotator(override val name: String, override val props: Properties)
       val token = <token
         id={ id }
         surf={ feat(0) }
-        pos={ feat(3) }
-        pos1={ feat(5) }
-        inflectionType={ feat(7) }
-        inflectionForm={ feat(9) }
-        base={ feat(2) }
         reading={ feat(1) }
+        base={ feat(2) }
+        pos={ feat(3) }
         posId={ feat(4) }
+        pos1={ feat(5) }
         pos1Id={ feat(6) }
+        inflectionType={ feat(7) }
         inflectionTypeId={ feat(8) }
+        inflectionForm={ feat(9) }
         inflectionFormId={ feat(10) }
-        semantic={ semantic }/> // For easy recoverment of the result of Juman, don't remove quotation marks
+        semantic={ semantic }/>
 
       if (isAmbig) token.copy(label="tokenAlt") else token
     }
