@@ -28,7 +28,7 @@ class DocumentKNPAnnotator(override val name: String, override val props: Proper
   @Prop(gloss = "Use this command to launch KNP (-tab and -anaphora are mandatory and automatically added). Version >= 4.12 is assumed.") var command = "knp"
   readProps()
 
-  val io = mkIO()
+  val ioQueue = new IOQueue(nThreads)
 
   override def defaultArgs = Seq("-tab", "-anaphora")
 
@@ -39,12 +39,15 @@ class DocumentKNPAnnotator(override val name: String, override val props: Proper
     val did = (document \ "@id").text
     val sentenceNodes = (document \ "sentences" \ "sentence")
 
-    val knpResults = sentenceNodes.map{ sentenceNode =>
-      val sindex = (sentenceNode \ "@id").text
-      // val jumanTokens = (sentenceNode \ "tokens").head
+    val knpResults = ioQueue.using { io =>
+      sentenceNodes.map{ sentenceNode =>
+        val sindex = (sentenceNode \ "@id").text
+        // val jumanTokens = (sentenceNode \ "tokens").head
 
-      val docIdInfo = "# S-ID:" + did + "-" + sindex + " JUMAN:7.01" //FIXME
-      runKNP(sentenceNode, Some(docIdInfo))
+        val docIdInfo = "# S-ID:" + did + "-" + sindex + " JUMAN:7.01" //FIXME
+
+        runKNP(sentenceNode, Some(docIdInfo), io)
+      }
     }
 
     //sentence-level annotation

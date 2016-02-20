@@ -22,14 +22,14 @@ import scala.sys.process.Process
 import jigg.util.PropertiesUtil
 
 abstract class CabochaAnnotator(override val name: String, override val props: Properties)
-    extends SentencesAnnotator with IOCreator {
+    extends SentencesAnnotator with ParallelIO with IOCreator {
 
   def dic: SystemDic
 
   @Prop(gloss = "Use this command to launch cabocha. Do not touch -f and -I options. -f1 -I1 are always automatically added.") var command = CabochaAnnotator.defaultCommand
   readProps()
 
-  val io = mkIO()
+  val ioQueue = new IOQueue(nThreads)
 
   override def description = {
 
@@ -64,7 +64,7 @@ ${helpMessage}
   override def defaultArgs = Seq("-f1", "-I1")
   def softwareUrl = "http://taku910.github.io/cabocha/"
 
-  override def close() = io.close()
+  override def close() = ioQueue.close()
 
   override def newSentenceAnnotation(sentence: Node): Node = {
     val tokens: NodeSeq = (sentence \ "tokens").head \ ("token")
@@ -80,7 +80,7 @@ ${helpMessage}
       Seq(chunksNode(chunks, sid, tokenIds), depsNode(chunks, sid)))
   }
 
-  private def runCabocha(tokens:NodeSeq): Seq[String] = {
+  private def runCabocha(tokens:NodeSeq): Seq[String] = ioQueue.using { io =>
     io.safeWriteWithFlush({
       for (token <- tokens) yield tokenToMecabFormat(token)
     } ++ Iterator("EOS"))

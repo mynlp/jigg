@@ -16,16 +16,13 @@ package jigg.pipeline
  limitations under the License.
 */
 
-import java.io.BufferedReader
-import java.io.BufferedWriter
-import java.io.InputStreamReader
-import java.io.OutputStreamWriter
+import java.util.concurrent.LinkedBlockingQueue
 import scala.collection.mutable.ArrayBuffer
 import scala.util.matching.Regex
 import scala.xml._
 import jigg.util.XMLUtil
 
-trait KNPAnnotator extends Annotator with IOCreator {
+trait KNPAnnotator extends Annotator with ParallelIO with IOCreator {
 
   def softwareUrl = "http://nlp.ist.i.kyoto-u.ac.jp/index.php?KNP"
 
@@ -37,23 +34,28 @@ trait KNPAnnotator extends Annotator with IOCreator {
     l => l != null && l != "EOS"
   }.mkString("\n")
 
-  val io: IO // this is defined in subclasses, after doing readProps()
+  val ioQueue: IOQueue // this is defined in subclasses, after doing readProps()
 
-  def runKNP(sentence: Node, beginInput: Option[String]): Seq[String] = {
-    val firstLine: String=>Boolean = s => s.startsWith("# S-ID") && !s.contains("ERROR")
+  override def close() = ioQueue.close()
 
-    val jumanTokens = (sentence \ "tokens").head
+  def runKNP(sentence: Node, beginInput: Option[String], io: IO): Seq[String] = {
+    // ioQueue.using { io =>
+      val firstLine: String=>Boolean = s => s.startsWith("# S-ID") && !s.contains("ERROR")
 
-    val _output = recovJumanOutput(jumanTokens)
-    val jumanOutput = beginInput.map (Iterator(_) ++ _output).getOrElse(_output)
-    io.safeWriteWithFlush(jumanOutput)
+      val jumanTokens = (sentence \ "tokens").head
 
-    try io.readUntilIf(firstLine, _ == "EOS")
-    catch {
-      case e: ArgumentError =>
-        val raw = (jumanTokens \ "token").map(_ \ "@surf").mkString
-        throw new ArgumentError(e.getMessage + "\n\nProblematic sentence: " + raw)
-    }
+      val _output = recovJumanOutput(jumanTokens)
+      val jumanOutput = beginInput.map (Iterator(_) ++ _output).getOrElse(_output)
+
+      io.safeWriteWithFlush(jumanOutput)
+
+      try io.readUntilIf(firstLine, _ == "EOS")
+      catch {
+        case e: ArgumentError =>
+          val raw = (jumanTokens \ "token").map(_ \ "@surf").mkString
+          throw new ArgumentError(e.getMessage + "\n\nProblematic sentence: " + raw)
+      // }
+      }
   }
 
   def isDocInfo(knpStr:String) : Boolean = knpStr(0) == '#'
