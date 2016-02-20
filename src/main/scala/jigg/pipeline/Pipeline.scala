@@ -35,6 +35,7 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
   @Prop(gloss="Output file; if omitted, `file`.xml is used. Gzipped if suffix is .gz") var output = ""
   @Prop(gloss="Print this message and descriptions of specified annotators, e.g., -help ssplit,mecab") var help = ""
   @Prop(gloss="You can add an abbreviation for a custom annotator class with \"-customAnnotatorClass.xxx path.package\"") var customAnnotatorClass = ""
+  @Prop(gloss="Number of threads for parallel annotation") var nThreads = -1
 
   // A hack to prevent throwing an exception when -help is given but -annotators is not given.
   // annotators is required prop so it has to be non-empty, but it is difficult to tell that if -help is given it is not necessary.
