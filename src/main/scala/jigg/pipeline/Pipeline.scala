@@ -47,7 +47,7 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
 
   lazy val annotatorList = createAnnotatorList
 
-  def close = annotatorList foreach { _.close }
+  def close() = annotatorList foreach { _.close() }
 
   // TODO: should document ID be given here?  Somewhere else?
   private[this] val documentIDGen = jigg.util.IDGenerator("d")
@@ -264,7 +264,7 @@ object Pipeline {
 
     try {
       val pipeline = new Pipeline(props)
-      PU.findProperty("help", props) match {
+      try PU.findProperty("help", props) match {
         case Some(help) =>
           pipeline.printHelp(System.out)
         case None =>
@@ -272,7 +272,7 @@ object Pipeline {
             case "" => pipeline.runFromStdin
             case _ => pipeline.run
           }
-      }
+      } finally pipeline.close()
     } catch {
       case e: ArgumentError =>
         System.err.println(e.getMessage)
