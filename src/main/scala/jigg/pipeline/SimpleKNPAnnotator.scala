@@ -25,16 +25,14 @@ class SimpleKNPAnnotator(override val name: String, override val props: Properti
   @Prop(gloss = "Use this command to launch KNP (-tab is automatically added. -anaphora is not compatible with this annotator. In that case, use knpDoc instead). Version >= 4.12 is assumed.") var command = "knp"
   readProps()
 
-  val io = mkIO()
-
-  def commandGloss = "Use this command to launch KNP (-tab is automatically added. -anaphora is not compatible with this annotator. In that case, use knpDoc instead). Version >= 4.12 is assumed."
+  val ioQueue = new IOQueue(nThreads)
 
   override def defaultArgs = Seq("-tab")
 
   override def newSentenceAnnotation(sentence: Node): Node = {
     val sindex = (sentence \ "@id").toString
 
-    val knpResult = runKNP(sentence, None)
+    val knpResult = ioQueue.using { io => runKNP(sentence, None, io) }
     annotateSentenceNode(sentence, knpResult, sindex)
   }
 

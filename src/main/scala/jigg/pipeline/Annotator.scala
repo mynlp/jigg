@@ -19,10 +19,14 @@ package jigg.pipeline
 import java.io._
 import java.lang.{Process, ProcessBuilder}
 import java.util.Properties
+import java.util.concurrent.LinkedBlockingQueue
 import scala.xml.{Node, Elem}
 import scala.reflect.ClassTag
+import scala.collection.GenSeq
 import scala.collection.JavaConverters._
-import jigg.util.XMLUtil
+import scala.collection.parallel.ForkJoinTaskSupport
+import scala.concurrent.forkjoin.ForkJoinPool
+import jigg.util.{XMLUtil, PropertiesUtil}
 
 trait Annotator extends PropsHolder {
 
@@ -32,18 +36,45 @@ trait Annotator extends PropsHolder {
 
   def props: Properties = new Properties
 
-  final def prop(key: String): Option[String] = jigg.util.PropertiesUtil.findProperty(name + "." + key, props)
+  final def prop(key: String): Option[String] = PropertiesUtil.findProperty(name + "." + key, props)
+
+  /** This method access to the global property of nThread to get the number of threads.
+    *
+    * The value is used if an annotator is SentenceAnnotator or DocumentAnnotator.
+    * One may customize this in an annotator subclass; for example, the following setting
+    * prevents parallel annotation, which may be necessary for an annotator, which is not
+    * thread-safe.
+    *
+    * {{{
+    * override val nThreads = 1
+    * }}}
+    *
+    */
+  def nThreads: Int = PropertiesUtil.findProperty("nThreads", props).map(_.toInt)
+    .getOrElse(collection.parallel.availableProcessors)
 
   def annotate(annotation: Node): Node
 
   def init = {} // Called before starting annotation
 
-  def close = {} // Resource release etc; detault: do nothing
+  def close() = {} // Resource release etc; detault: do nothing
 
   def buildCommand(cmd: String, args: String*): java.util.List[String] = (cmd.split("\\s+") ++ args).toSeq.asJava
 
   def requires = Set.empty[Requirement]
   def requirementsSatisfied = Set.empty[Requirement]
+}
+
+object Annotator {
+
+  def makePar[Datum](data: Seq[Datum], nThreads: Int): GenSeq[Datum] = nThreads match {
+    case 1 => data
+    case -1 => data.par
+    case n =>
+      val xx = data.par
+      xx.tasksupport = new ForkJoinTaskSupport(new ForkJoinPool(n))
+      xx
+  }
 }
 
 /** This is the base trait for all companion object of each Annotator
@@ -74,11 +105,10 @@ trait SentencesAnnotator extends Annotator {
 
     XMLUtil.replaceAll(annotation, "sentences") { e =>
       // TODO: sentence level parallelization should be handled here?
-      val newChild = e.child map { c =>
+      val newChild = Annotator.makePar(e.child, nThreads).map { c =>
         assert(c.label == "sentence") // assuming sentences node has only sentence nodes as children
-        val a = newSentenceAnnotation(c)
-        a
-      }
+        newSentenceAnnotation(c)
+      }.seq
       e.copy(child = newChild)
     }
   }
@@ -196,5 +226,28 @@ trait IOCreator extends EasyIO {
 """
       argumentError("command", errorMsg)
     }
+  }
+}
+
+/** Supply `IOQueue` class, which enables thread-safe call of external softwares.
+  *
+  * The subclass must implement `mkIO()`; easy way is to mix-in IOCreator
+  */
+trait ParallelIO extends EasyIO {
+
+  def mkIO(): IO
+
+  class IOQueue(size: Int) {
+    assert(size > 0)
+    val queue = new LinkedBlockingQueue((0 until size).map(_=>mkIO()).asJava)
+
+    def using[A](f: IO=>A): A = {
+      val io = queue.poll
+      val ret = f(io)
+      queue.put(io)
+      ret
+    }
+
+    def close() = queue.asScala foreach (_.close())
   }
 }

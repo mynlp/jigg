@@ -67,7 +67,7 @@ class CCGParseAnnotator(override val name: String, override val props: Propertie
         val errorMsg = s"""Failed to start CCG parser. Make sure the model file of CCG is already installed. If not, execute the following command in jigg directory:
   ./script/download_ccg_model.sh
 """
-        argumentError("command", errorMsg)
+        argumentError("model", errorMsg)
     }
   }
 

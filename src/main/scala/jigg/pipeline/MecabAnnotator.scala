@@ -16,23 +16,20 @@ package jigg.pipeline
  limitations under the License.
 */
 
+import java.util.concurrent.LinkedBlockingQueue
 import java.util.Properties
-import java.io.BufferedReader
-import java.io.InputStreamReader
-import java.io.BufferedWriter
-import java.io.OutputStreamWriter
 import scala.xml._
 import scala.sys.process.Process
 import jigg.util.PropertiesUtil
 
 abstract class MecabAnnotator(override val name: String, override val props: Properties)
-    extends SentencesAnnotator with IOCreator {
+    extends SentencesAnnotator with ParallelIO with IOCreator {
   def dic: SystemDic
 
   @Prop(gloss = "Use this command to launch mecab. System dictionary is selected according to the current configuration accessible with '-P' option.") var command = MecabAnnotator.defaultCommand
   readProps()
 
-  val io = mkIO()
+  val ioQueue = new IOQueue(nThreads)
 
   override def description = {
 
@@ -53,7 +50,7 @@ ${helpMessage}
   override def defaultArgs = Seq("-O", "")
   def softwareUrl = "https://taku910.github.io/mecab/"
 
-  override def close() = io.close()
+  override def close() = ioQueue.close()
 
   protected def tokenToNode(token: Array[String], id: String): Node
 
@@ -77,7 +74,7 @@ ${helpMessage}
     jigg.util.XMLUtil.addChild(sentence, tokensAnnotation)
   }
 
-  def runMecab(text: String): Seq[String] = {
+  def runMecab(text: String): Seq[String] = ioQueue.using { io =>
     io.safeWriteWithFlush(text)
     io.readUntil(_ == "EOS").dropRight(1)
   }
