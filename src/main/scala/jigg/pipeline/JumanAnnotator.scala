@@ -26,16 +26,16 @@ import scala.collection.mutable.ArrayBuffer
 import jigg.util.XMLUtil
 
 class JumanAnnotator(override val name: String, override val props: Properties)
-    extends SentencesAnnotator with IOCreator {
+    extends SentencesAnnotator with ParallelIO with IOCreator {
 
   @Prop(gloss = "Use this command to launch juman") var command = "juman"
   readProps()
 
-  val io = mkIO()
+  val ioQueue = new IOQueue(nThreads)
 
   def softwareUrl = "http://nlp.ist.i.kyoto-u.ac.jp/index.php?JUMAN"
 
-  override def close() = io.close()
+  override def close() = ioQueue.close()
 
   def makeTokenAltChild(nodes: NodeSeq): NodeSeq = {
     val tokenBoundaries =
@@ -110,7 +110,7 @@ class JumanAnnotator(override val name: String, override val props: Properties)
     XMLUtil.addChild(sentence, tokensAnnotation)
   }
 
-  private def runJuman(text: String): Seq[String] = {
+  private def runJuman(text: String): Seq[String] = ioQueue.using { io =>
     io.safeWriteWithFlush(text)
     io.readUntil(_ == "EOS").dropRight(1)
   }
