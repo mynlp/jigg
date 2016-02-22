@@ -50,8 +50,10 @@ trait Annotator extends PropsHolder {
     * }}}
     *
     */
-  def nThreads: Int = PropertiesUtil.findProperty("nThreads", props).map(_.toInt)
-    .getOrElse(collection.parallel.availableProcessors)
+  def nThreads: Int = PropertiesUtil.findProperty("nThreads", props).map(_.toInt) match {
+    case Some(n) if n > 0 => n
+    case _ => collection.parallel.availableProcessors
+  }
 
   def annotate(annotation: Node): Node
 
@@ -67,13 +69,15 @@ trait Annotator extends PropsHolder {
 
 object Annotator {
 
-  def makePar[Datum](data: Seq[Datum], nThreads: Int): GenSeq[Datum] = nThreads match {
-    case 1 => data
-    case -1 => data.par
-    case n =>
-      val xx = data.par
-      xx.tasksupport = new ForkJoinTaskSupport(new ForkJoinPool(n))
-      xx
+  def makePar[Datum](data: Seq[Datum], nThreads: Int): GenSeq[Datum] = {
+    assert(nThreads > 0)
+    nThreads match {
+      case 1 => data
+      case n =>
+        val xx = data.par
+        xx.tasksupport = new ForkJoinTaskSupport(new ForkJoinPool(n))
+        xx
+    }
   }
 }
 
