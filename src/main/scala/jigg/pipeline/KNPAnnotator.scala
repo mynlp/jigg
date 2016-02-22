@@ -34,10 +34,6 @@ trait KNPAnnotator extends Annotator with ParallelIO with IOCreator {
     l => l != null && l != "EOS"
   }.mkString("\n")
 
-  val ioQueue: IOQueue // this is defined in subclasses, after doing readProps()
-
-  override def close() = ioQueue.close()
-
   def runKNP(sentence: Node, beginInput: Option[String], io: IO): Seq[String] = {
     // ioQueue.using { io =>
       val firstLine: String=>Boolean = s => s.startsWith("# S-ID") && !s.contains("ERROR")

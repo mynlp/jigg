@@ -27,6 +27,8 @@ class SimpleKNPAnnotator(override val name: String, override val props: Properti
 
   val ioQueue = new IOQueue(nThreads)
 
+  override def close() = ioQueue.close()
+
   override def defaultArgs = Seq("-tab")
 
   override def newSentenceAnnotation(sentence: Node): Node = {

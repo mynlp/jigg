@@ -30,6 +30,8 @@ class DocumentKNPAnnotator(override val name: String, override val props: Proper
 
   val ioQueue = new IOQueue(nThreads)
 
+  override def close() = ioQueue.close()
+
   override def defaultArgs = Seq("-tab", "-anaphora")
 
   private def corefid(did: String, corefindex:Int) = did + "_coref" + corefindex.toString
