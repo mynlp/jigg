@@ -23,6 +23,7 @@ import java.io.BufferedWriter
 import java.io.OutputStreamWriter
 import java.io.ByteArrayOutputStream
 import java.io.PrintWriter
+import java.io.StringWriter
 import scala.collection.JavaConversions._
 import scala.xml._
 import scala.sys.process.Process
@@ -31,6 +32,9 @@ import scala.xml.{Node, Elem, Text, Atom}
 import jigg.util.PropertiesUtil
 import jigg.util.XMLUtil
 import edu.stanford.nlp.pipeline._
+import edu.stanford.nlp.trees.Tree
+import edu.stanford.nlp.trees.TreeCoreAnnotations
+import edu.stanford.nlp.trees.TreePrint
 import edu.stanford.nlp.ling.CoreAnnotations
 import edu.stanford.nlp.util.CoreMap
 
@@ -97,17 +101,43 @@ class StanfordCoreNLPAnnotator(override val name: String, override val props: Pr
 
   def mkSentenceNode(sentence_map:CoreMap): Option[Elem] ={
     val sentence_text = sentence_map.get(classOf[CoreAnnotations.TextAnnotation])
-    val token_maps = sentence_map.get(classOf[CoreAnnotations.TokensAnnotation])
     var sid = sentenceIDGen.next
-      if( token_maps != null){
-        var tokens = (0 until token_maps.size).sliding(1) flatMap { case Seq(x) =>
-          mkTokenNode(token_maps.get(x),tid(sid,x))
-        }
-        Option(<sentence id={ sid }>{ sentence_text }<tokens>{tokens}</tokens></sentence>)
-      }else{
-          //token情報なし
-        Option(<sentence id={ sid }>{ sentence_text }</sentence>)
+    var token_nord: Elem = null
+    var parse_nord: Elem = null
+
+    val token_maps = sentence_map.get(classOf[CoreAnnotations.TokensAnnotation])
+    if( token_maps != null){
+      var tokens = (0 until token_maps.size).sliding(1) flatMap { case Seq(x) =>
+        mkTokenNode(token_maps.get(x),tid(sid,x))
       }
+      token_nord = <tokens>{tokens}</tokens>
+    }
+
+    val parse_tree = sentence_map.get(classOf[TreeCoreAnnotations.TreeAnnotation])
+    if( parse_tree != null){
+      var parse_data = mkParseNode(parse_tree:Tree)
+      var treeStrWriter:StringWriter = new StringWriter()
+      var TreePrinter:TreePrint = sf_options.constituentTreePrinter
+      TreePrinter.printTree(parse_tree, new PrintWriter(treeStrWriter, true))
+      var parse_Sexp:String = treeStrWriter.toString()
+
+      parse_nord = <parse>{parse_data}</parse>
+    }
+
+    Option(<sentence id={ sid }>{ sentence_text }{token_nord}{parse_nord}</sentence>)
+  }
+
+  def mkParseNode(parse:Tree): /*Option[Elem]*/ String={  //一時的にS式表記のStringで出力
+    var treeStrWriter:StringWriter = new StringWriter()
+    var constituentTreePrinter:TreePrint = sf_options.constituentTreePrinter
+    constituentTreePrinter.printTree(parse, new PrintWriter(treeStrWriter, true))
+    var parse_Sexp:String = treeStrWriter.toString()
+    S_expression2Xml(parse_Sexp)
+
+  }
+
+  def S_expression2Xml(input:String): /*Option[Elem]*/ String = {
+    input
   }
 
   def mkTokenNode(token:CoreMap,tkid:String): Option[Elem] ={
