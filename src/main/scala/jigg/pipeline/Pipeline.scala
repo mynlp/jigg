@@ -29,7 +29,7 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
 
   def prop(key: String) = PU.findProperty(key, properties)
 
-  @Prop(gloss="List of annotator names, e.g., ssplit,mecab ssplit|kuromoji|mecab|cabocha|juman|knp|ccg", required=true) var annotators = ""
+  @Prop(gloss="List of annotator names, e.g., ssplit,mecab dsplit|ssplit|kuromoji|mecab|cabocha|juman|knp|ccg", required=true) var annotators = ""
   @Prop(gloss="Property file") var props = ""
   @Prop(gloss="Input file; if omitted, read from stdin") var file = ""
   @Prop(gloss="Output file; if omitted, `file`.xml is used. Gzipped if suffix is .gz") var output = ""
