@@ -108,7 +108,6 @@ trait SentencesAnnotator extends Annotator {
   override def annotate(annotation: Node): Node = {
 
     XMLUtil.replaceAll(annotation, "sentences") { e =>
-      // TODO: sentence level parallelization should be handled here?
       val newChild = Annotator.makePar(e.child, nThreads).map { c =>
         assert(c.label == "sentence") // assuming sentences node has only sentence nodes as children
         newSentenceAnnotation(c)
@@ -119,6 +118,27 @@ trait SentencesAnnotator extends Annotator {
 
   def newSentenceAnnotation(sentence: Node): Node
 }
+
+/** A trait for an annotator which modifies a document node. Use this trait if an annotator
+  * is a document-level annotator.
+  */
+trait DocumentAnnotator extends Annotator {
+  override def annotate(annotation: Node): Node = {
+
+    XMLUtil.replaceAll(annotation, "root") { e =>
+      val newChild = Annotator.makePar(e.child, nThreads).map { c =>
+        c match {
+          case c if c.label == "document" => newDocumentAnnotation(c)
+          case c => c
+        }
+      }.seq
+      e.copy(child = newChild)
+    }
+  }
+
+  def newDocumentAnnotation(sentence: Node): Node
+}
+
 
 /** Provides IO class, which wraps IOCommunicator, and handles errors during communication.
   *
