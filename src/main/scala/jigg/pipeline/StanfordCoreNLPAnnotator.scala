@@ -24,6 +24,7 @@ import java.io.OutputStreamWriter
 import java.io.ByteArrayOutputStream
 import java.io.PrintWriter
 import java.io.StringWriter
+import scala.collection.mutable.ListBuffer
 import scala.collection.JavaConversions._
 import scala.xml._
 import scala.sys.process.Process
@@ -37,7 +38,6 @@ import edu.stanford.nlp.trees.TreeCoreAnnotations
 import edu.stanford.nlp.trees.TreePrint
 import edu.stanford.nlp.ling.CoreAnnotations
 import edu.stanford.nlp.util.CoreMap
-
 
 class StanfordCoreNLPAnnotator(override val name: String, override val props: Properties) extends Annotator {
 
@@ -116,18 +116,13 @@ class StanfordCoreNLPAnnotator(override val name: String, override val props: Pr
     val parse_tree = sentence_map.get(classOf[TreeCoreAnnotations.TreeAnnotation])
     if( parse_tree != null){
       var parse_data = mkParseNode(parse_tree:Tree)
-      var treeStrWriter:StringWriter = new StringWriter()
-      var TreePrinter:TreePrint = sf_options.constituentTreePrinter
-      TreePrinter.printTree(parse_tree, new PrintWriter(treeStrWriter, true))
-      var parse_Sexp:String = treeStrWriter.toString()
-
-      parse_nord = <parse>{parse_data}</parse>
+      parse_nord = <parse>{XML.loadString(parse_data)}</parse>
     }
 
     Option(<sentence id={ sid }>{ sentence_text }{token_nord}{parse_nord}</sentence>)
   }
 
-  def mkParseNode(parse:Tree): /*Option[Elem]*/ String={  //一時的にS式表記のStringで出力
+  def mkParseNode(parse:Tree): String={
     var treeStrWriter:StringWriter = new StringWriter()
     var constituentTreePrinter:TreePrint = sf_options.constituentTreePrinter
     constituentTreePrinter.printTree(parse, new PrintWriter(treeStrWriter, true))
@@ -136,10 +131,60 @@ class StanfordCoreNLPAnnotator(override val name: String, override val props: Pr
 
   }
 
-  def S_expression2Xml(input:String): /*Option[Elem]*/ String = {
-    input
-  }
+  def S_expression2Xml(input:String):String = {
 
+    class StrStack{
+      private var datalist:ListBuffer[String] = ListBuffer.empty[String]
+      
+      def init()
+      {
+        while(!datalist.isEmpty)datalist.remove(0)
+        datalist
+      }
+      def push(data:String):Int ={
+        data +=: datalist
+        datalist.length
+      }
+
+      def pop():String ={
+        var str = datalist.head
+        datalist.remove(0)
+        str
+      }
+
+      def print():Int = {
+        for(elem<- datalist) println(elem)
+        datalist.size
+      }
+      def size():Int = {
+        datalist.size
+      }
+    }
+    var stk:StrStack = new StrStack
+
+    var XmlStr:String = ""
+    var elements = input.replace("\n","").split("[\\s]+")
+
+    for(elemnt <- elements) {
+      if(elemnt startsWith "("){
+        var tag_name = elemnt.drop(1)
+        if(tag_name == ".") tag_name = "END"
+        stk.push(tag_name)
+        
+        XmlStr += "<"+tag_name+">"
+      }else{
+        var text_data = elemnt
+        var tag_tail = ""
+        while( text_data.endsWith(")")){
+          text_data = text_data.dropRight(1)
+          tag_tail += "</" + stk.pop() + ">"
+        }
+        XmlStr += text_data + tag_tail
+      }
+    }
+    XmlStr
+  }
+  
   def mkTokenNode(token:CoreMap,tkid:String): Option[Elem] ={
 
     var word = token.get(classOf[CoreAnnotations.TextAnnotation])
@@ -164,7 +209,8 @@ class StanfordCoreNLPAnnotator(override val name: String, override val props: Pr
   var min_option:Int = 9999
   var max_option:Int = -1
   var sf_option : String = ""
-
+  var sf_pipline:StanfordCoreNLP = null
+  var sf_options:AnnotationOutputter.Options = null
   var Operator2Id: (String)=> Int ={
     case "ssplit" => 1
     case "tokenize" => 2
@@ -177,7 +223,8 @@ class StanfordCoreNLPAnnotator(override val name: String, override val props: Pr
 
     var sf_props = new Properties()
     sf_props.put("annotators", sf_option)
-    var sf_pipline = new StanfordCoreNLP(sf_props)
+    sf_pipline = new StanfordCoreNLP(sf_props)
+    sf_options = AnnotationOutputter.getOptions(sf_pipline)
     var annotation= new Annotation(text)
 
     sf_pipline.annotate(annotation)
