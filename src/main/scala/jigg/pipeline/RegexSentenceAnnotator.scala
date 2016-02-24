@@ -62,7 +62,7 @@ class RegexSentenceAnnotator(override val name: String, override val props: Prop
  }
 
   override def requires = Set()
-  override def requirementsSatisfied = Set(Requirement.Sentence)
+  override def requirementsSatisfied = Set(Requirement.Ssplit)
 
 }
 

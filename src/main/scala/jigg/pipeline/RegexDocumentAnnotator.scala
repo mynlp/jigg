@@ -36,5 +36,5 @@ class RegexDocumentAnnotator(override val name: String, override val props: Prop
   }
 
   override def requires = Set()
-  override def requirementsSatisfied = Set(Requirement.Document)
+  override def requirementsSatisfied = Set(Requirement.Dsplit)
 }

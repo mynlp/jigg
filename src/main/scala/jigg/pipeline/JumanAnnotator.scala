@@ -115,6 +115,6 @@ class JumanAnnotator(override val name: String, override val props: Properties)
     io.readUntil(_ == "EOS").dropRight(1)
   }
 
-  override def requires = Set(Requirement.Sentence)
-  override def requirementsSatisfied = Set(Requirement.TokenizeWithJuman)
+  override def requires = Set(Requirement.Ssplit)
+  override def requirementsSatisfied = Set(JaRequirement.TokenizeWithJuman)
 }

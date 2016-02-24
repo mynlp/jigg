@@ -21,12 +21,10 @@ import org.scalatest._
 
 class RequirementSpec extends FlatSpec with Matchers {
 
-  import Requirement._
-
   "Tokenize" should "be satisfied when TokenizeWithIPA is satisfied" in {
 
-    val requires = RequirementSet(Tokenize)
-    val satisfied = RequirementSet(TokenizeWithIPA)
+    val satisfied = RequirementSet(JaRequirement.TokenizeWithIPA)
+    val requires: Set[Requirement] = Set(Requirement.Tokenize)
 
     val lacked = satisfied.lackedIn(requires)
     lacked shouldBe empty
@@ -34,10 +32,10 @@ class RequirementSpec extends FlatSpec with Matchers {
 
   "TokenizedWithIPA" should "not be satisifed when Tokenize is satisfied" in {
 
-    val requires = RequirementSet(TokenizeWithIPA)
-    val satisfied = RequirementSet(Tokenize)
+    val satisfied = RequirementSet(Requirement.Tokenize)
+    val requires: Set[Requirement] = Set(JaRequirement.TokenizeWithIPA)
 
     val lacked = satisfied.lackedIn(requires)
-    lacked shouldBe Set(TokenizeWithIPA)
+    lacked shouldBe Set(JaRequirement.TokenizeWithIPA)
   }
 }

@@ -133,9 +133,10 @@ class DocumentKNPAnnotator(override val name: String, override val props: Proper
     <predicateArgumentRelations>{ predArgNodes }</predicateArgumentRelations>
   }
 
-  override def requires = Set(Requirement.TokenizeWithJuman)
+  override def requires = Set(JaRequirement.TokenizeWithJuman)
   override def requirementsSatisfied = {
-    import Requirement._
-    Set(Chunk, Dependency, BasicPhrase, BasicPhraseDependency, Coreference, PredArg, NamedEntity)
+    import JaRequirement._
+    Set(Requirement.Chunk, Requirement.Dependencies, BasicPhrase, BasicPhraseDependencies,
+      Coreference, PredArg, NamedEntity)
   }
 }

@@ -59,8 +59,8 @@ abstract class KuromojiAnnotator(override val name: String, override val props: 
     jigg.util.XMLUtil.addChild(sentence, tokensAnnotation)
   }
 
-  override def requires = Set(Requirement.Sentence)
-  override def requirementsSatisfied = Set(Requirement.TokenizeWithIPA)
+  override def requires = Set(Requirement.Ssplit)
+  override def requirementsSatisfied = Set(JaRequirement.TokenizeWithIPA)
 }
 
 // TODO: support naist-jdic annotator, possibly by making a trait implementing tokenToNodes,
@@ -87,7 +87,7 @@ class IPAKuromojiAnnotator(name: String, props: Properties)
       reading={ token.getReading }
       pronounce={ token.getPronunciation }/>
 
-  override def requirementsSatisfied = Set(Requirement.TokenizeWithIPA)
+  override def requirementsSatisfied = Set(JaRequirement.TokenizeWithIPA)
 }
 
 class JumanKuromojiAnnotator(name: String, props: Properties)
@@ -110,7 +110,7 @@ class JumanKuromojiAnnotator(name: String, props: Properties)
       reading={ token.getReading }
       semantic={ token.getSemanticInformation }/>
 
-  override def requirementsSatisfied = Set(Requirement.TokenizeWithJuman)
+  override def requirementsSatisfied = Set(JaRequirement.TokenizeWithJuman)
 }
 
 class UnidicKuromojiAnnotator(name: String, props: Properties)
@@ -143,7 +143,7 @@ class UnidicKuromojiAnnotator(name: String, props: Properties)
       finalAltType={ token.getFinalSoundAlterationType }
       finalAltForm={ token.getFinalSoundAlterationForm }/>
 
-  override def requirementsSatisfied = Set(Requirement.TokenizeWithJuman)
+  override def requirementsSatisfied = Set(JaRequirement.TokenizeWithJuman)
 }
 
 object KuromojiAnnotator extends AnnotatorCompanion[KuromojiAnnotator] {

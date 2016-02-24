@@ -79,7 +79,7 @@ ${helpMessage}
     io.readUntil(_ == "EOS").dropRight(1)
   }
 
-  override def requires = Set(Requirement.Sentence)
+  override def requires = Set(Requirement.Ssplit)
 }
 
 class IPAMecabAnnotator(name: String, props: Properties) extends MecabAnnotator(name, props) {
@@ -101,7 +101,7 @@ class IPAMecabAnnotator(name: String, props: Properties) extends MecabAnnotator(
     reading={ if (token.size > 8) token(8) else "" }
     pronounce={ if (token.size > 9) Text(token(9)) else Text("") }/>
 
-  override def requirementsSatisfied = Set(Requirement.TokenizeWithIPA)
+  override def requirementsSatisfied = Set(JaRequirement.TokenizeWithIPA)
 }
 
 class JumanDicMecabAnnotator(name: String, props: Properties) extends MecabAnnotator(name, props) {
@@ -118,7 +118,7 @@ class JumanDicMecabAnnotator(name: String, props: Properties) extends MecabAnnot
     reading={ token(6) }
     semantic={ token(7) }/>
 
-  override def requirementsSatisfied = Set(Requirement.TokenizeWithJuman)
+  override def requirementsSatisfied = Set(JaRequirement.TokenizeWithJuman)
 }
 
 class UnidicMecabAnnotator(name: String, props: Properties) extends MecabAnnotator(name, props) {
@@ -152,7 +152,7 @@ class UnidicMecabAnnotator(name: String, props: Properties) extends MecabAnnotat
       finalAltForm={ feat(17) }/>
   }
 
-  override def requirementsSatisfied = Set(Requirement.TokenizeWithUnidic)
+  override def requirementsSatisfied = Set(JaRequirement.TokenizeWithUnidic)
 }
 
 object MecabAnnotator extends AnnotatorCompanion[MecabAnnotator] {

@@ -177,6 +177,6 @@ class CCGParseAnnotator(override val name: String, override val props: Propertie
     map.toMap
   }
 
-  override def requires = Set(Requirement.TokenizeWithIPA)
-  override def requirementsSatisfied = Set(Requirement.CCG)
+  override def requires = Set(JaRequirement.TokenizeWithIPA)
+  override def requirementsSatisfied = Set(JaRequirement.CCGDerivation)
 }

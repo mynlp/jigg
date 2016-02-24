@@ -157,7 +157,8 @@ ${helpMessage}
   def chunkId(sid: String, idx: Int) = sid + "_chu" + idx
   def depId(sid: String, idx: Int) = sid + "_dep" + idx
 
-  override def requirementsSatisfied = Set(Requirement.Chunk, Requirement.Dependency)
+  override def requirementsSatisfied =
+    Set(Requirement.Chunk, JaRequirement.ChunkDependencies)
 }
 
 class IPACabochaAnnotator(name: String, props: Properties) extends CabochaAnnotator(name, props) {
@@ -167,7 +168,7 @@ class IPACabochaAnnotator(name: String, props: Properties) extends CabochaAnnota
     "pos", "pos1", "pos2", "pos3", "inflectionType", "inflectionForm",
     "base", "reading", "pronounce").map("@"+_)
 
-  override def requires = Set(Requirement.TokenizeWithIPA)
+  override def requires = Set(JaRequirement.TokenizeWithIPA)
 }
 
 class JumanDicCabochaAnnotator(name: String, props: Properties) extends CabochaAnnotator(name, props) {
@@ -176,7 +177,7 @@ class JumanDicCabochaAnnotator(name: String, props: Properties) extends CabochaA
   val featAttributes = Array(
     "pos", "pos1", "inflectionType", "inflectionForm", "base", "reading", "semantic").map("@"+_)
 
-  override def requires = Set(Requirement.TokenizeWithJuman)
+  override def requires = Set(JaRequirement.TokenizeWithJuman)
 }
 
 class UnidicCabochaAnnotator(name: String, props: Properties) extends CabochaAnnotator(name, props) {
@@ -187,7 +188,7 @@ class UnidicCabochaAnnotator(name: String, props: Properties) extends CabochaAnn
     "lemmaReading", "lemma", "written", "pronounce", "writtenBase", "pronounceBase",
     "languageType", "initAltType", "initAltForm", "finalAltType", "finalAltForm").map("@"+_)
 
-  override def requires = Set(Requirement.TokenizeWithUnidic)
+  override def requires = Set(JaRequirement.TokenizeWithUnidic)
 }
 
 object CabochaAnnotator extends AnnotatorCompanion[CabochaAnnotator] {

@@ -21,52 +21,80 @@ import scala.annotation.tailrec
 /** If you want to define your own Requirement, please override this.
   */
 trait Requirement {
-  def parent: Option[Requirement] = None
+  def parent = Seq[Requirement]()
 
-  def allDescendants(): Set[Requirement] = {
+  def allAncestors(): Set[Requirement] = {
     @tailrec
-    def collectDescendants(r: Requirement, current: Set[Requirement]): Set[Requirement] =
-      r.parent match {
-        case Some(p) => collectDescendants(p, current + r)
-        case _ => current + r
+    def collectAncestors(r: Seq[Requirement], current: Set[Requirement]): Set[Requirement] = {
+      r.map(_.parent).flatten match {
+        case Seq() => current ++ r
+        case seq => collectAncestors(seq, current ++ r)
       }
-    collectDescendants(this, Set[Requirement]())
+    }
+    collectAncestors(Seq(this), Set[Requirement]())
   }
 }
 
 object Requirement {
 
-  case object Document extends Requirement
+  case object Dsplit extends Requirement
 
-  case object Sentence extends Requirement
+  case object Ssplit extends Requirement
 
   case object Tokenize extends Requirement
 
-  trait TokenizeChild extends Requirement {
-    override def parent = Some(Tokenize)
-  }
-  case object TokenizeWithIPA extends TokenizeChild
-  case object TokenizeWithJuman extends TokenizeChild
-  case object TokenizeWithUnidic extends TokenizeChild
+  case object POS extends Requirement
+
+  case object Lemma extends Requirement
+
+  case object Dependencies extends Requirement
+
+  case object Parse extends Requirement
 
   case object Chunk extends Requirement
-  case object Dependency extends Requirement // dependency between chunks
+}
+
+object JaRequirement {
+
+  trait JaTokenize extends Requirement {
+    import Requirement._
+    override def parent = Seq(Tokenize, POS, Lemma)
+  }
+
+  case object TokenizeWithIPA extends JaTokenize
+  case object TokenizeWithJuman extends JaTokenize
+  case object TokenizeWithUnidic extends JaTokenize
+
+  case object Juman extends Requirement {
+    override def parent = Seq(TokenizeWithJuman)
+  }
+
+  case object ChunkDependencies extends Requirement
 
   case object BasicPhrase extends Requirement
-  case object BasicPhraseDependency extends Requirement
+  case object BasicPhraseDependencies extends Requirement
   case object Coreference extends Requirement
   case object PredArg extends Requirement
   case object NamedEntity extends Requirement
 
-  case object CCG extends Requirement
+  case object CCGDerivation extends Requirement
+  case object CCGDependencies extends Requirement
 }
 
+// Requirements specialized for CoreNLP are included here?
+object CoreNLPrequirement {
+
+}
+
+/** This set is a specialized set to preserve satisfied requirements. If an element is
+  * added to this collection, all its ancestor requirements are also added automatically.
+  */
 sealed trait RequirementSet { self =>
 
   protected val elems: Set[Requirement]
 
   def |(other: RequirementSet): RequirementSet =
-    this | other.elems.map(_.allDescendants).flatten.toSet
+    this | other.elems.map(_.allAncestors).flatten.toSet
 
   def |(otherElems: Set[Requirement]): RequirementSet = new RequirementSet {
     override val elems = self.elems | otherElems
@@ -83,6 +111,6 @@ sealed trait RequirementSet { self =>
 
 object RequirementSet {
   def apply(_elems: Requirement*) = new RequirementSet {
-    override val elems = _elems.map(_.allDescendants).flatten.toSet
+    override val elems = _elems.map(_.allAncestors).flatten.toSet
   }
 }
