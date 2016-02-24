@@ -40,9 +40,9 @@ EOS"""
     result should equal (
       <sentence id="s0">太郎は走った
         <tokens>
-          <token id="s0_tok0" surf="太郎" pos="名詞" pos1="人名" inflectionType="*" inflectionForm="*" base="太郎" reading="たろう" posId="6" pos1Id="5" inflectionTypeId="0" inflectionFormId="0" semantic="&quot;人名:日本:名:45:0.00106&quot;"/>
-          <token id="s0_tok1" surf="は" pos="助詞" pos1="副助詞" inflectionType="*" inflectionForm="*" base="は" reading="は" posId="9" pos1Id="2" inflectionTypeId="0" inflectionFormId="0" semantic="NIL"/>
-          <token id="s0_tok2" surf="走った" pos="動詞" pos1="*" inflectionType="子音動詞ラ行" inflectionForm="タ形" base="走る" reading="はしった" posId="2" pos1Id="0" inflectionTypeId="10" inflectionFormId="10" semantic="&quot;代表表記:走る/はしる&quot;"/>
+          <token id="s0_tok0" form="太郎" pos="名詞" pos1="人名" cType="*" cForm="*" lemma="太郎" yomi="たろう" posId="6" pos1Id="5" cTypeId="0" cFormId="0" misc="&quot;人名:日本:名:45:0.00106&quot;"/>
+          <token id="s0_tok1" form="は" pos="助詞" pos1="副助詞" cType="*" cForm="*" lemma="は" yomi="は" posId="9" pos1Id="2" cTypeId="0" cFormId="0" misc="NIL"/>
+          <token id="s0_tok2" form="走った" pos="動詞" pos1="*" cType="子音動詞ラ行" cForm="タ形" lemma="走る" yomi="はしった" posId="2" pos1Id="0" cTypeId="10" cFormId="10" misc="&quot;代表表記:走る/はしる&quot;"/>
         </tokens>
       </sentence>
     ) (decided by sameElem)
@@ -66,14 +66,14 @@ EOS"""
     result should equal (
       <sentence id="s0">太郎は京都に行った
         <tokens>
-          <token id="s0_tok0" surf="太郎" pos="名詞" pos1="人名" inflectionType="*" inflectionForm="*" base="太郎" reading="たろう" posId="6" pos1Id="5" inflectionTypeId="0" inflectionFormId="0" semantic="&quot;人名:日本:名:45:0.00106&quot;"/>
-          <token id="s0_tok1" surf="は" pos="助詞" pos1="副助詞" inflectionType="*" inflectionForm="*" base="は" reading="は" posId="9" pos1Id="2" inflectionTypeId="0" inflectionFormId="0" semantic="NIL"/>
-          <token id="s0_tok2" surf="京都" pos="名詞" pos1="地名" inflectionType="*" inflectionForm="*" base="京都" reading="きょうと" posId="6" pos1Id="4" inflectionTypeId="0" inflectionFormId="0" semantic="&quot;代表表記:京都/きょうと 地名:日本:府&quot;">
-            <tokenAlt id="s0_tok2_alt0" surf="京都" pos="名詞" pos1="地名" inflectionType="*" inflectionForm="*" base="京都" reading="きょうと" posId="6" pos1Id="4" inflectionTypeId="0" inflectionFormId="0" semantic="&quot;代表表記:京都/きょうと 地名:日本:京都府:市&quot;"/>
+          <token id="s0_tok0" form="太郎" pos="名詞" pos1="人名" cType="*" cForm="*" lemma="太郎" yomi="たろう" posId="6" pos1Id="5" cTypeId="0" cFormId="0" misc="&quot;人名:日本:名:45:0.00106&quot;"/>
+          <token id="s0_tok1" form="は" pos="助詞" pos1="副助詞" cType="*" cForm="*" lemma="は" yomi="は" posId="9" pos1Id="2" cTypeId="0" cFormId="0" misc="NIL"/>
+          <token id="s0_tok2" form="京都" pos="名詞" pos1="地名" cType="*" cForm="*" lemma="京都" yomi="きょうと" posId="6" pos1Id="4" cTypeId="0" cFormId="0" misc="&quot;代表表記:京都/きょうと 地名:日本:府&quot;">
+            <tokenAlt id="s0_tok2_alt0" form="京都" pos="名詞" pos1="地名" cType="*" cForm="*" lemma="京都" yomi="きょうと" posId="6" pos1Id="4" cTypeId="0" cFormId="0" misc="&quot;代表表記:京都/きょうと 地名:日本:京都府:市&quot;"/>
           </token>
-          <token id="s0_tok3" surf="に" pos="助詞" pos1="格助詞" inflectionType="*" inflectionForm="*" base="に" reading="に" posId="9" pos1Id="1" inflectionTypeId="0" inflectionFormId="0" semantic="NIL"/>
-          <token id="s0_tok4" surf="行った" pos="動詞" pos1="*" inflectionType="子音動詞カ行促音便形" inflectionForm="タ形" base="行く" reading="いった" posId="2" pos1Id="0" inflectionTypeId="3" inflectionFormId="10" semantic="&quot;代表表記:行く/いく 付属動詞候補（タ系） ドメイン:交通 反義:動詞:帰る/かえる&quot;">
-            <tokenAlt id="s0_tok4_alt0" surf="行った" pos="動詞" pos1="*" inflectionType="子音動詞ワ行" inflectionForm="タ形" base="行う" reading="おこなった" posId="2" pos1Id="0" inflectionTypeId="12" inflectionFormId="10" semantic="&quot;代表表記:行う/おこなう&quot;"/>
+          <token id="s0_tok3" form="に" pos="助詞" pos1="格助詞" cType="*" cForm="*" lemma="に" yomi="に" posId="9" pos1Id="1" cTypeId="0" cFormId="0" misc="NIL"/>
+          <token id="s0_tok4" form="行った" pos="動詞" pos1="*" cType="子音動詞カ行促音便形" cForm="タ形" lemma="行く" yomi="いった" posId="2" pos1Id="0" cTypeId="3" cFormId="10" misc="&quot;代表表記:行く/いく 付属動詞候補（タ系） ドメイン:交通 反義:動詞:帰る/かえる&quot;">
+            <tokenAlt id="s0_tok4_alt0" form="行った" pos="動詞" pos1="*" cType="子音動詞ワ行" cForm="タ形" lemma="行う" yomi="おこなった" posId="2" pos1Id="0" cTypeId="12" cFormId="10" misc="&quot;代表表記:行う/おこなう&quot;"/>
           </token>
         </tokens>
       </sentence>
@@ -94,9 +94,9 @@ EOS"""
     result should equal(
       <sentence id="s0">あ い
         <tokens>
-          <token id="s0_tok0" surf="あ" pos="感動詞" pos1="*" inflectionType="*" inflectionForm="*" base="あ" reading="あ" posId="12" pos1Id="0" inflectionTypeId="0" inflectionFormId="0" semantic="&quot;代表表記:あ/あ&quot;"/>
-          <token id="s0_tok1" surf=" " pos="特殊" pos1="空白" inflectionType="*" inflectionForm="*" base="\ " reading="\ " posId="1" pos1Id="6" inflectionTypeId="0" inflectionFormId="0" semantic="NIL"/>
-          <token id="s0_tok2" surf="い" pos="形容詞" pos1="*" inflectionType="イ形容詞イ段" inflectionForm="文語基本形" base="いい" reading="い" posId="3" pos1Id="0" inflectionTypeId="19" inflectionFormId="18" semantic="&quot;代表表記:良い/よい 反義:形容詞:悪い/わるい&quot;"/>
+          <token id="s0_tok0" form="あ" pos="感動詞" pos1="*" cType="*" cForm="*" lemma="あ" yomi="あ" posId="12" pos1Id="0" cTypeId="0" cFormId="0" misc="&quot;代表表記:あ/あ&quot;"/>
+          <token id="s0_tok1" form=" " pos="特殊" pos1="空白" cType="*" cForm="*" lemma="\ " yomi="\ " posId="1" pos1Id="6" cTypeId="0" cFormId="0" misc="NIL"/>
+          <token id="s0_tok2" form="い" pos="形容詞" pos1="*" cType="イ形容詞イ段" cForm="文語基本形" lemma="いい" yomi="い" posId="3" pos1Id="0" cTypeId="19" cFormId="18" misc="&quot;代表表記:良い/よい 反義:形容詞:悪い/わるい&quot;"/>
         </tokens>
       </sentence>
     ) (decided by sameElem)
