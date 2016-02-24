@@ -65,14 +65,17 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
     val annotatorList =
       annotatorNames.map { getAnnotator(_) }.toList
 
-    annotatorList.foldLeft(Set[Requirement]()) { (satisfiedSofar, annotator) =>
+    annotatorList.foldLeft(RequirementSet()) { (satisfiedSofar, annotator) =>
       val requires = annotator.requires
 
-      val lacked = requires &~ (requires & satisfiedSofar)
-      if (!lacked.isEmpty) argumentError("annotators", "annotator %s requires annotators %s".format(annotator.name, lacked.mkString(", ")))
+      val lacked = satisfiedSofar.lackedIn(requires)
+      if (!lacked.isEmpty) argumentError(
+        "annotators",
+        "annotator %s requires annotators %s".format(annotator.name, lacked.mkString(", ")))
 
-      Requirement.add(satisfiedSofar, annotator.requirementsSatisfied)
+      satisfiedSofar | annotator.requirementsSatisfied
     }
+
     annotatorList foreach(_.init)
     annotatorList
   }

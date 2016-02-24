@@ -16,10 +16,22 @@ package jigg.pipeline
  limitations under the License.
 */
 
+import scala.annotation.tailrec
+
 /** If you want to define your own Requirement, please override this.
   */
 trait Requirement {
   def parent: Option[Requirement] = None
+
+  def allDescendants(): Set[Requirement] = {
+    @tailrec
+    def collectDescendants(r: Requirement, current: Set[Requirement]): Set[Requirement] =
+      r.parent match {
+        case Some(p) => collectDescendants(p, current + r)
+        case _ => current + r
+      }
+    collectDescendants(this, Set[Requirement]())
+  }
 }
 
 object Requirement {
@@ -47,14 +59,30 @@ object Requirement {
   case object NamedEntity extends Requirement
 
   case object CCG extends Requirement
+}
 
-  /** All all elements in newElem and all descendants of elements in newElems
+sealed trait RequirementSet { self =>
+
+  protected val elems: Set[Requirement]
+
+  def |(other: RequirementSet): RequirementSet =
+    this | other.elems.map(_.allDescendants).flatten.toSet
+
+  def |(otherElems: Set[Requirement]): RequirementSet = new RequirementSet {
+    override val elems = self.elems | otherElems
+  }
+
+  /** Elements in requirements, which is not in this.
     */
-  def add(original: Set[Requirement], newElems: Set[Requirement]) =
-    newElems.foldLeft(original) { (currentSet, elem) =>
-      currentSet | allDescendants(elem)
-    }
+  def lackedIn(requirements: RequirementSet): Set[Requirement] =
+    lackedIn(requirements.elems)
 
-  private[this] def allDescendants(requirement: Requirement, current: Set[Requirement] = Set.empty): Set[Requirement] =
-    requirement.parent map { p => allDescendants(p, current + requirement) } getOrElse (current + requirement)
+  def lackedIn(requirements: Set[Requirement]): Set[Requirement] =
+    requirements &~ (elems & requirements)
+}
+
+object RequirementSet {
+  def apply(_elems: Requirement*) = new RequirementSet {
+    override val elems = _elems.map(_.allDescendants).flatten.toSet
+  }
 }
