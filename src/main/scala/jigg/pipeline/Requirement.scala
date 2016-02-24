@@ -69,6 +69,14 @@ object JaRequirement {
     override def parent = Seq(TokenizeWithJuman)
   }
 
+  case object CabochaChunk extends Requirement {
+    override val parent = Seq(Requirement.Chunk)
+  }
+
+  case object KNPChunk extends Requirement {
+    override val parent = Seq(Requirement.Chunk)
+  }
+
   case object ChunkDependencies extends Requirement
 
   case object BasicPhrase extends Requirement

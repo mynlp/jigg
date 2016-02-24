@@ -294,4 +294,10 @@ trait KNPAnnotator extends Annotator with ParallelIO with IOCreator {
     ans += "EOS"
     ans.toIterator
   }
+
+  override def requires = Set(JaRequirement.Juman)
+  override def requirementsSatisfied = {
+    import JaRequirement._
+    Set(KNPChunk, ChunkDependencies, BasicPhrase, BasicPhraseDependencies, NamedEntity)
+  }
 }

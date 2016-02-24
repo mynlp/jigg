@@ -116,5 +116,5 @@ class JumanAnnotator(override val name: String, override val props: Properties)
   }
 
   override def requires = Set(Requirement.Ssplit)
-  override def requirementsSatisfied = Set(JaRequirement.TokenizeWithJuman)
+  override def requirementsSatisfied = Set(JaRequirement.Juman)
 }

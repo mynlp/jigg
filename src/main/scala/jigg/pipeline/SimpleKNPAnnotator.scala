@@ -37,11 +37,4 @@ class SimpleKNPAnnotator(override val name: String, override val props: Properti
     val knpResult = ioQueue.using { io => runKNP(sentence, None, io) }
     annotateSentenceNode(sentence, knpResult, sindex)
   }
-
-  override def requires = Set(JaRequirement.TokenizeWithJuman)
-  override def requirementsSatisfied = {
-    import JaRequirement._
-    Set(Requirement.Chunk, Requirement.Dependencies,
-      BasicPhrase, BasicPhraseDependencies, NamedEntity)
-  }
 }
