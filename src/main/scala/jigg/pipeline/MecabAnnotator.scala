@@ -118,7 +118,7 @@ class JumanDicMecabAnnotator(name: String, props: Properties) extends MecabAnnot
     yomi={ token(6) }
     misc={ token(7) }/>
 
-  override def requirementsSatisfied = Set(JaRequirement.TokenizeWithJuman)
+  override def requirementsSatisfied = Set(JaRequirement.TokenizeWithJumandic)
 }
 
 class UnidicMecabAnnotator(name: String, props: Properties) extends MecabAnnotator(name, props) {

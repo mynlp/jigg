@@ -62,11 +62,11 @@ object JaRequirement {
   }
 
   case object TokenizeWithIPA extends JaTokenize
-  case object TokenizeWithJuman extends JaTokenize
+  case object TokenizeWithJumandic extends JaTokenize
   case object TokenizeWithUnidic extends JaTokenize
 
   case object Juman extends Requirement {
-    override def parent = Seq(TokenizeWithJuman)
+    override def parent = Seq(TokenizeWithJumandic)
   }
 
   case object CabochaChunk extends Requirement {

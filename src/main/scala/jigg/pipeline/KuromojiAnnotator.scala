@@ -110,7 +110,7 @@ class JumanKuromojiAnnotator(name: String, props: Properties)
       yomi={ token.getReading }
       misc={ token.getSemanticInformation }/>
 
-  override def requirementsSatisfied = Set(JaRequirement.TokenizeWithJuman)
+  override def requirementsSatisfied = Set(JaRequirement.TokenizeWithJumandic)
 }
 
 class UnidicKuromojiAnnotator(name: String, props: Properties)
@@ -143,7 +143,7 @@ class UnidicKuromojiAnnotator(name: String, props: Properties)
       fType={ token.getFinalSoundAlterationType }
       fForm={ token.getFinalSoundAlterationForm }/>
 
-  override def requirementsSatisfied = Set(JaRequirement.TokenizeWithJuman)
+  override def requirementsSatisfied = Set(JaRequirement.TokenizeWithJumandic)
 }
 
 object KuromojiAnnotator extends AnnotatorCompanion[KuromojiAnnotator] {

@@ -177,7 +177,7 @@ class JumanDicCabochaAnnotator(name: String, props: Properties) extends CabochaA
   val featAttributes = Array(
     "pos", "pos1", "cType", "cForm", "lemma", "yomi", "misc").map("@"+_)
 
-  override def requires = Set(JaRequirement.TokenizeWithJuman)
+  override def requires = Set(JaRequirement.TokenizeWithJumandic)
 }
 
 class UnidicCabochaAnnotator(name: String, props: Properties) extends CabochaAnnotator(name, props) {
