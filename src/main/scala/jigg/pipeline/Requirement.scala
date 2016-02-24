@@ -89,7 +89,7 @@ object JaRequirement {
   case object CCGDependencies extends Requirement
 }
 
-// Requirements specialized for CoreNLP are included here?
+// Requirements specialized for StanfordCoreNLP are included here?
 object CoreNLPrequirement {
 
 }
