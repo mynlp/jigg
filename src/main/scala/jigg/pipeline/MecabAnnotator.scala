@@ -87,19 +87,19 @@ class IPAMecabAnnotator(name: String, props: Properties) extends MecabAnnotator(
 
   //output form of mecab ipadic
   //表層形\t品詞,品詞細分類1,品詞細分類2,品詞細分類3,活用型,活用形,原形,読み,発音
-  //surf\tpos,pos1,pos2,pos3,inflectionType,inflectionForm,base,reading,pronounce
+  //form\tpos,pos1,pos2,pos3,cType,cForm,lemma,yomi,pron
   def tokenToNode(token: Array[String], id: String) = <token
     id={ id }
-    surf={ token(0) }
+    form={ token(0) }
     pos={ token(1) }
     pos1={ token(2) }
     pos2={ token(3) }
     pos3={ token(4) }
-    inflectionType={ token(5) }
-    inflectionForm={ token(6) }
-    base={ token(7) }
-    reading={ if (token.size > 8) token(8) else "" }
-    pronounce={ if (token.size > 9) Text(token(9)) else Text("") }/>
+    cType={ token(5) }
+    cForm={ token(6) }
+    lemma={ token(7) }
+    yomi={ if (token.size > 8) token(8) else "*" }
+    pron={ if (token.size > 9) Text(token(9)) else Text("*") }/>
 
   override def requirementsSatisfied = Set(JaRequirement.TokenizeWithIPA)
 }
@@ -109,14 +109,14 @@ class JumanDicMecabAnnotator(name: String, props: Properties) extends MecabAnnot
 
   def tokenToNode(token: Array[String], id: String) = <token
     id={ id }
-    surf={ token(0) }
+    form={ token(0) }
     pos={ token(1) }
     pos1={ token(2) }
-    inflectionType={ token(3) }
-    inflectionForm={ token(4) }
-    base={ token(5) }
-    reading={ token(6) }
-    semantic={ token(7) }/>
+    cType={ token(3) }
+    cForm={ token(4) }
+    lemma={ token(5) }
+    yomi={ token(6) }
+    misc={ token(7) }/>
 
   override def requirementsSatisfied = Set(JaRequirement.TokenizeWithJuman)
 }
@@ -132,24 +132,24 @@ class UnidicMecabAnnotator(name: String, props: Properties) extends MecabAnnotat
 
     <token
       id={ id }
-      surf={ feat(0) }
+      form={ feat(0) }
       pos={ feat(1) }
       pos1={ feat(2) }
       pos2={ feat(3) }
       pos3={ feat(4) }
-      inflectionType={ feat(5) }
-      inflectionForm={ feat(6) }
-      lemmaReading={ feat(7) }
+      cType={ feat(5) }
+      cForm={ feat(6) }
+      lForm={ feat(7) }
       lemma={ feat(8) }
-      written={ feat(9) }
-      pronounce={ feat(10) }
-      writtenBase={ feat(11) }
-      pronounceBase={ feat(12) }
-      langageType={ feat(13) }
-      initAltType={ feat(14) }
-      initAltForm={ feat(15) }
-      finalAltType={ feat(16) }
-      finalAltForm={ feat(17) }/>
+      orth={ feat(9) }
+      pron={ feat(10) }
+      orthBase={ feat(11) }
+      pronBase={ feat(12) }
+      goshu={ feat(13) }
+      iType={ feat(14) }
+      iForm={ feat(15) }
+      fType={ feat(16) }
+      fForm={ feat(17) }/>
   }
 
   override def requirementsSatisfied = Set(JaRequirement.TokenizeWithUnidic)

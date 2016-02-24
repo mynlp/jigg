@@ -48,7 +48,7 @@ class CabochaAnnotatorSpec extends BaseAnnotatorSpec {
     val deps = result \\ "dependencies"
     deps.size should be (1)
     deps.head should equal (
-      <dependencies><dependency id="s0_dep0" head="root" dependent="s0_chu0" label="D"/></dependencies>)
+      <dependencies><dependency id="s0_dep0" head="root" dependent="s0_chu0" deprel="D"/></dependencies>)
 
     result.size should be (1)
     (result \ "_" \ "_").size should be (3)
@@ -69,7 +69,7 @@ class CabochaAnnotatorSpec extends BaseAnnotatorSpec {
     val deps = result \\ "dependencies"
     deps.size should be (1)
     deps.head should equal (
-      <dependencies><dependency id="s0_dep0" head="root" dependent="s0_chu0" label="D"/></dependencies>)
+      <dependencies><dependency id="s0_dep0" head="root" dependent="s0_chu0" deprel="D"/></dependencies>)
 
     result.size should be (1)
     (result \ "_" \ "_").size should be (3)
@@ -96,9 +96,9 @@ class CabochaAnnotatorSpec extends BaseAnnotatorSpec {
     deps.size should be (1)
     deps.head should equal (
       <dependencies>
-        <dependency id="s0_dep0" head="s0_chu2" dependent="s0_chu0" label="D"/>
-        <dependency id="s0_dep1" head="s0_chu2" dependent="s0_chu1" label="D"/>
-        <dependency id="s0_dep2" head="root" dependent="s0_chu2" label="D"/>
+        <dependency id="s0_dep0" head="s0_chu2" dependent="s0_chu0" deprel="D"/>
+        <dependency id="s0_dep1" head="s0_chu2" dependent="s0_chu1" deprel="D"/>
+        <dependency id="s0_dep2" head="root" dependent="s0_chu2" deprel="D"/>
       </dependencies>
     ) (decided by sameElem)
   }
@@ -117,7 +117,7 @@ class CabochaAnnotatorSpec extends BaseAnnotatorSpec {
         <token id="s0_tok0" surf="あ" pos="フィラー" pos1="*" pos2="*" pos3="*" inflectionType="*" inflectionForm="*" base="あ" reading="ア" pronounce="ア"/>
         </tokens>
         <chunks><chunk id="s0_chu0" tokens="s0_tok0" head="" func="s0_tok0"/></chunks>
-        <dependencies><dependency id="s0_dep0" head="" dependent="s0_chu0" label="D"/></dependencies>
+        <dependencies><dependency id="s0_dep0" head="" dependent="s0_chu0" deprel="D"/></dependencies>
         </sentence>,
 
       "ipa3words" ->

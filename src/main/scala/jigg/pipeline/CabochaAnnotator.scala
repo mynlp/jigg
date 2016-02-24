@@ -88,7 +88,7 @@ ${helpMessage}
   }
 
   protected def tokenToMecabFormat(token: Node): String =
-    (token \ "@surf") + "\t" + featAttributes.map(token \ _).mkString(",")
+    (token \ "@form") + "\t" + featAttributes.map(token \ _).mkString(",")
 
   protected def featAttributes: Array[String] // depends on dictionary
 
@@ -149,7 +149,7 @@ ${helpMessage}
         case id => chunkId(sid, id)
       }
       val dep = chunkId(sid, chunk.id)
-      <dependency id={ id } head={ head } dependent={ dep } label={ chunk.rel } />
+      <dependency id={ id } head={ head } dependent={ dep } deprel={ chunk.rel } />
     }
     <dependencies>{ nodeSeq }</dependencies>
   }
@@ -158,15 +158,15 @@ ${helpMessage}
   def depId(sid: String, idx: Int) = sid + "_dep" + idx
 
   override def requirementsSatisfied =
-    Set(Requirement.Chunk, JaRequirement.ChunkDependencies)
+    Set(JaRequirement.CabochaChunk, JaRequirement.ChunkDependencies)
 }
 
 class IPACabochaAnnotator(name: String, props: Properties) extends CabochaAnnotator(name, props) {
   def dic = SystemDic.ipadic
 
   val featAttributes = Array(
-    "pos", "pos1", "pos2", "pos3", "inflectionType", "inflectionForm",
-    "base", "reading", "pronounce").map("@"+_)
+    "pos", "pos1", "pos2", "pos3", "cType", "cForm",
+    "lemma", "yomi", "pron").map("@"+_)
 
   override def requires = Set(JaRequirement.TokenizeWithIPA)
 }
@@ -175,7 +175,7 @@ class JumanDicCabochaAnnotator(name: String, props: Properties) extends CabochaA
   def dic = SystemDic.jumandic
 
   val featAttributes = Array(
-    "pos", "pos1", "inflectionType", "inflectionForm", "base", "reading", "semantic").map("@"+_)
+    "pos", "pos1", "cType", "cForm", "lemma", "yomi", "misc").map("@"+_)
 
   override def requires = Set(JaRequirement.TokenizeWithJuman)
 }
@@ -184,9 +184,8 @@ class UnidicCabochaAnnotator(name: String, props: Properties) extends CabochaAnn
   def dic = SystemDic.jumandic
 
   val featAttributes = Array(
-    "pos", "pos1", "pos2", "pos3", "inflectionType", "inflectionForm",
-    "lemmaReading", "lemma", "written", "pronounce", "writtenBase", "pronounceBase",
-    "languageType", "initAltType", "initAltForm", "finalAltType", "finalAltForm").map("@"+_)
+    "pos", "pos1", "pos2", "pos3", "cType", "cForm", "lForm", "lemma", "orth", "pron",
+    "orthBase", "pronBase", "goshu", "iType", "iForm", "fType", "fForm").map("@"+_)
 
   override def requires = Set(JaRequirement.TokenizeWithUnidic)
 }

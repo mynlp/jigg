@@ -76,16 +76,16 @@ class IPAKuromojiAnnotator(name: String, props: Properties)
   def tokenToNode(token: IToken, id: String): Node =
     <token
       id={ id }
-      surf={ token.getSurface }
+      form={ token.getSurface }
       pos={ token.getPartOfSpeechLevel1 }
       pos1={ token.getPartOfSpeechLevel2 }
       pos2={ token.getPartOfSpeechLevel3 }
       pos3={ token.getPartOfSpeechLevel4 }
-      inflectionType={ token.getConjugationType }
-      inflectionForm={ token.getConjugationForm }
-      base={ token.getBaseForm }
-      reading={ token.getReading }
-      pronounce={ token.getPronunciation }/>
+      cType={ token.getConjugationType }
+      cForm={ token.getConjugationForm }
+      lemma={ token.getBaseForm }
+      yomi={ token.getReading }
+      pron={ token.getPronunciation }/>
 
   override def requirementsSatisfied = Set(JaRequirement.TokenizeWithIPA)
 }
@@ -101,14 +101,14 @@ class JumanKuromojiAnnotator(name: String, props: Properties)
   def tokenToNode(token: JToken, id: String): Node =
     <token
       id={ id }
-      surf={ token.getSurface }
+      form={ token.getSurface }
       pos={ token.getPartOfSpeechLevel1 }
       pos1={ token.getPartOfSpeechLevel2 }
-      inflectionType={ token.getPartOfSpeechLevel3 }
-      inflectionForm={ token.getPartOfSpeechLevel4 }
-      base={ token.getBaseForm }
-      reading={ token.getReading }
-      semantic={ token.getSemanticInformation }/>
+      cType={ token.getPartOfSpeechLevel3 }
+      cForm={ token.getPartOfSpeechLevel4 }
+      lemma={ token.getBaseForm }
+      yomi={ token.getReading }
+      misc={ token.getSemanticInformation }/>
 
   override def requirementsSatisfied = Set(JaRequirement.TokenizeWithJuman)
 }
@@ -124,24 +124,24 @@ class UnidicKuromojiAnnotator(name: String, props: Properties)
   def tokenToNode(token: UToken, id: String): Node =
     <token
       id={ id }
-      surf={ token.getSurface }
+      form={ token.getSurface }
       pos={ token.getPartOfSpeechLevel1 }
       pos1={ token.getPartOfSpeechLevel2 }
       pos2={ token.getPartOfSpeechLevel3 }
       pos3={ token.getPartOfSpeechLevel4 }
-      inflectionType={ token.getConjugationType }
-      inflectionForm={ token.getConjugationForm }
-      lemmaReading={ token.getLemmaReadingForm }
+      cType={ token.getConjugationType }
+      cForm={ token.getConjugationForm }
+      lForm={ token.getLemmaReadingForm }
       lemma={ token.getLemma }
-      written={ token.getWrittenForm }
-      pronounce={ token.getPronunciation }
-      writtenBase={ token.getWrittenBaseForm }
-      pronounceBase={ token.getPronunciationBaseForm }
-      langageType={ token.getLanguageType }
-      initAltType={ token.getInitialSoundAlterationType }
-      initAltForm={ token.getInitialSoundAlterationForm }
-      finalAltType={ token.getFinalSoundAlterationType }
-      finalAltForm={ token.getFinalSoundAlterationForm }/>
+      orth={ token.getWrittenForm }
+      pron={ token.getPronunciation }
+      orthBase={ token.getWrittenBaseForm }
+      pronBase={ token.getPronunciationBaseForm }
+      goshu={ token.getLanguageType }
+      iType={ token.getInitialSoundAlterationType }
+      iForm={ token.getInitialSoundAlterationForm }
+      fType={ token.getFinalSoundAlterationType }
+      fForm={ token.getFinalSoundAlterationForm }/>
 
   override def requirementsSatisfied = Set(JaRequirement.TokenizeWithJuman)
 }
