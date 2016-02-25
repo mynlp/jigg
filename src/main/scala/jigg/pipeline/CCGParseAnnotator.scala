@@ -124,9 +124,9 @@ class CCGParseAnnotator(override val name: String, override val props: Propertie
     val dict = parsing.tagging.dict
     def toTaggedSentence(tokenSeq: NodeSeq) = {
       val terminalSeq = tokenSeq map { token =>
-        val surf = dict.getWordOrCreate(token \ "@surf" toString())
-        val base = dict.getWordOrCreate(token \ "@base" toString())
-        val katsuyou = token \ "@inflectionForm" toString() match {
+        val form = dict.getWordOrCreate(token \ "@form" toString())
+        val lemma = dict.getWordOrCreate(token \ "@lemma" toString())
+        val cForm = token \ "@cForm" toString() match {
           case "*" => "_"; case x => x
         }
         val posSeq = Seq("@pos", "@pos1", "@pos2", "@pos3") map { token \ _ toString() }
@@ -135,9 +135,9 @@ class CCGParseAnnotator(override val name: String, override val props: Propertie
           case idx => posSeq.take(idx).mkString("-")
         }
 
-        val combinedPoS = dict.getPoSOrCreate(pos + "/" + katsuyou)
+        val combinedPoS = dict.getPoSOrCreate(pos + "/" + cForm)
 
-        (surf, base, combinedPoS)
+        (form, lemma, combinedPoS)
       }
       new PoSTaggedSentence(terminalSeq.map(_._1), terminalSeq.map(_._2), terminalSeq.map(_._3))
     }
