@@ -149,7 +149,7 @@ ${helpMessage}
         case id => chunkId(sid, id)
       }
       val dep = chunkId(sid, chunk.id)
-      <dependency id={ id } head={ head } dependent={ dep } deprel={ chunk.rel } />
+      <dependency unit="chunk" id={ id } head={ head } dependent={ dep } deprel={ chunk.rel } />
     }
     <dependencies>{ nodeSeq }</dependencies>
   }
