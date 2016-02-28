@@ -100,7 +100,8 @@ class DocumentKNPAnnotator(override val name: String, override val props: Proper
         case begin =>
           val end = line indexOf (">", begin + 7) // 7 is the index of char next to :
           val items = line substring (begin, end) split ":"
-          Some(items(3))
+
+          if (items.size > 3) Some(items(3)) else None
       }
     }
 
