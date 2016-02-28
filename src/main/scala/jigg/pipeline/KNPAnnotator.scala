@@ -30,9 +30,9 @@ trait KNPAnnotator extends Annotator with ParallelIO with IOCreator {
     * (but the process is still alive, and waiting for new input) This method tries to read the
     * remaining erorr message until EOS.
     */
-  override def readRemaining(iter: Iterator[String]) = iter.takeWhile {
+  override def readRemaining(iter: Iterator[String]) = iter takeWhile {
     l => l != null && l != "EOS"
-  }.mkString("\n")
+  } mkString "\n"
 
   def runKNP(sentence: Node, beginInput: Option[String], io: IO): Seq[String] = {
     val firstLine: String=>Boolean = s => s.startsWith("# S-ID") && !s.contains("ERROR")
@@ -76,7 +76,7 @@ trait KNPAnnotator extends Annotator with ParallelIO with IOCreator {
       analyzer.extractCaseRelations(knpTokens, basicPhrases, nPrevSentenceId),
       analyzer.extractNEs(knpTokens)
     )
-    XMLUtil.addChild(tokenAdded, otherChildren)
+    XMLUtil addChild (tokenAdded, otherChildren)
   }
 
   private[this] val jumanFeats = Array("form", "yomi", "lemma", "pos", "posId", "pos1",
@@ -115,9 +115,9 @@ trait KNPAnnotator extends Annotator with ParallelIO with IOCreator {
 
         // this is OK since half space errors are detected earlier
         val spaceIdx = -1 +: (0 until tokenized.size - 1).filter(tokenized(_) == ' ')
-        def feat(i: Int) = tokenized.substring(spaceIdx(i) + 1, spaceIdx(i + 1))
+        def feat(i: Int) = tokenized substring (spaceIdx(i) + 1, spaceIdx(i + 1))
 
-        val semantic = tokenized.substring(spaceIdx(11) + 1)
+        val semantic = tokenized substring (spaceIdx(11) + 1)
 
         JumanAnnotator.tokenNode(tokenId(idx), feat, semantic)
       }
