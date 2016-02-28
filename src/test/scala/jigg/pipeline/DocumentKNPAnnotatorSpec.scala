@@ -21,7 +21,7 @@ import org.scalatest._
 
 class DocumentKNPAnnotatorTest extends BaseAnnotatorSpec {
 
-  def newKNP(output: Seq[String], p: Properties = new Properties) = new DocumentKNPAnnotator("", p) {
+  def newKNP(output: Seq[String], p: Properties = new Properties) = new DocumentKNPAnnotator("knpDoc", p) {
     override def mkCommunicator = new StubExternalCommunicator(output)
   }
 
@@ -74,119 +74,28 @@ EOS""")
 
     val result = newKNP(knpOutputs).newDocumentAnnotation(jumanOutputNode)
 
-    result should equal (
-      <document id="d0">
-        <sentences>
-          <sentence id="s0">
-            太郎が走る。
-            <tokens>
-              <token id="s0_tok0" surf="太郎" reading="たろう" base="太郎" pos="名詞" posId="6" pos1="人名" pos1Id="5" inflectionType="*" inflectionTypeId="0" inflectionForm="*" inflectionFormId="0" semantic="&quot;人名:日本:名:45:0.00106 疑似代表表記 代表表記:太郎/たろう&quot; &lt;人名:日本:名:45:0.00106&gt;&lt;疑似代表表記&gt;&lt;代表表記:太郎/たろう&gt;&lt;正規化代表表記:太郎/たろう&gt;&lt;文頭&gt;&lt;漢字&gt;&lt;かな漢字&gt;&lt;名詞相当語&gt;&lt;自立&gt;&lt;内容語&gt;&lt;タグ単位始&gt;&lt;文節始&gt;&lt;固有キー&gt;&lt;文節主辞&gt;&lt;係:ガ格&gt;&lt;NE:PERSON:S&gt;"/>
-              <token id="s0_tok1" surf="が" reading="が" base="が" pos="助詞" posId="9" pos1="格助詞" pos1Id="1" inflectionType="*" inflectionTypeId="0" inflectionForm="*" inflectionFormId="0" semantic="NIL &lt;かな漢字&gt;&lt;ひらがな&gt;&lt;付属&gt;"/>
-              <token id="s0_tok2" surf="走る" reading="はしる" base="走る" pos="動詞" posId="2" pos1="*" pos1Id="0" inflectionType="子音動詞ラ行" inflectionTypeId="10" inflectionForm="基本形" inflectionFormId="2" semantic="&quot;代表表記:走る/はしる&quot; &lt;代表表記:走る/はしる&gt;&lt;正規化代表表記:走る/はしる&gt;&lt;表現文末&gt;&lt;かな漢字&gt;&lt;活用語&gt;&lt;自立&gt;&lt;内容語&gt;&lt;タグ単位始&gt;&lt;文節始&gt;&lt;文節主辞&gt;"/>
-              <token id="s0_tok3" surf="。" reading="。" base="。" pos="特殊" posId="1" pos1="句点" pos1Id="1" inflectionType="*" inflectionTypeId="0" inflectionForm="*" inflectionFormId="0" semantic="NIL &lt;文末&gt;&lt;英記号&gt;&lt;記号&gt;&lt;付属&gt;"/>
-            </tokens>
-            <basicPhrases>
-              <basicPhrase id="s0_bp0" tokens="s0_tok0 s0_tok1" features="&lt;文頭&gt;&lt;人名&gt;&lt;ガ&gt;&lt;助詞&gt;&lt;体言&gt;&lt;係:ガ格&gt;&lt;区切:0-0&gt;&lt;格要素&gt;&lt;連用要素&gt;&lt;名詞項候補&gt;&lt;先行詞候補&gt;&lt;SM-人&gt;&lt;SM-主体&gt;&lt;正規化代表表記:太郎/たろう&gt;&lt;NE:PERSON:太郎&gt;&lt;照応詞候補:太郎&gt;&lt;解析格:ガ&gt;&lt;EID:0&gt;"/>
-              <basicPhrase
-          id="s0_bp1" tokens="s0_tok2 s0_tok3" features="&lt;文末&gt;&lt;句点&gt;&lt;用言:動&gt;&lt;レベル:C&gt;&lt;区切:5-5&gt;&lt;ID:（文末）&gt;&lt;係:文末&gt;&lt;提題受:30&gt;&lt;主節&gt;&lt;格要素&gt;&lt;連用要素&gt;&lt;動態述語&gt;&lt;正規化代表表記:走る/はしる&gt;&lt;用言代表表記:走る/はしる&gt;&lt;時制-未来&gt;&lt;主題格:一人称優位&gt;&lt;格関係0:ガ:太郎&gt;&lt;格解析結果:走る/はしる:動13:ガ/C/太郎/0/0/d0-s0;ヲ/U/-/-/-/-;ニ/U/-/-/-/-;ト/U/-/-/-/-;デ/U/-/-/-/-;カラ/U/-/-/-/-;ヨリ/U/-/-/-/-;マデ/U/-/-/-/-;時間/U/-/-/-/-;外の関係/U/-/-/-/-;ノ/U/-/-/-/-;修飾/U/-/-/-/-;トスル/U/-/-/-/-;ニオク/U/-/-/-/-;ニカンスル/U/-/-/-/-;ニヨル/U/-/-/-/-;ヲフクメル/U/-/-/-/-;ヲハジメル/U/-/-/-/-;ヲノゾク/U/-/-/-/-;ヲツウジル/U/-/-/-/-&gt;&lt;EID:1&gt;&lt;述語項構造:走る/はしる:動13:ガ/C/太郎/0&gt;">
-</basicPhrase>
-            </basicPhrases>
-            <chunks>
-              <chunk id="s0_chu0" tokens="s0_tok0 s0_tok1" features="&lt;文頭&gt;&lt;人名&gt;&lt;ガ&gt;&lt;助詞&gt;&lt;体言&gt;&lt;係:ガ格&gt;&lt;区切:0-0&gt;&lt;格要素&gt;&lt;連用要素&gt;&lt;正規化代表表記:太郎/たろう&gt;&lt;主辞代表表記:太郎/たろう&gt;"/>
-              <chunk id="s0_chu1" tokens="s0_tok2 s0_tok3" features="&lt;文末&gt;&lt;句点&gt;&lt;用言:動&gt;&lt;レベル:C&gt;&lt;区切:5-5&gt;&lt;ID:（文末）&gt;&lt;係:文末&gt;&lt;提題受:30&gt;&lt;主節&gt;&lt;格要素&gt;&lt;連用要素&gt;&lt;動態述語&gt;&lt;正規化代表表記:走る/はしる&gt;&lt;主辞代表表記:走る/はしる&gt;"/>
-            </chunks>
-            <basicPhraseDependencies root="s0_bp1">
-              <basicPhraseDependency id="s0_bpdep0" head="s0_bp1" dependent="s0_bp0" label="D"/>
-            </basicPhraseDependencies>
-            <dependencies root="s0_chu1">
-              <dependency id="s0_dep0" head="s0_chu1" dependent="s0_chu0" label="D"/>
-            </dependencies>
-            <caseRelations>
-              <caseRelation id="s0_cr0" head="s0_bp1" depend="s0_tok0" label="ガ" flag="C"/>
-              <caseRelation id="s0_cr1" head="s0_bp1" depend="unk" label="ヲ" flag="U"/>
-               <caseRelation id="s0_cr2" head="s0_bp1" depend="unk" label="ニ" flag="U"/>
-               <caseRelation id="s0_cr3" head="s0_bp1" depend="unk" label="ト" flag="U"/>
-               <caseRelation id="s0_cr4" head="s0_bp1" depend="unk" label="デ" flag="U"/>
-               <caseRelation id="s0_cr5" head="s0_bp1" depend="unk" label="カラ" flag="U"/>
-               <caseRelation id="s0_cr6" head="s0_bp1" depend="unk" label="ヨリ" flag="U"/>
-               <caseRelation id="s0_cr7" head="s0_bp1" depend="unk" label="マデ" flag="U"/>
-               <caseRelation id="s0_cr8" head="s0_bp1" depend="unk" label="時間" flag="U"/>
-               <caseRelation id="s0_cr9" head="s0_bp1" depend="unk" label="外の関係" flag="U"/>
-               <caseRelation id="s0_cr10" head="s0_bp1" depend="unk" label="ノ" flag="U"/>
-               <caseRelation id="s0_cr11" head="s0_bp1" depend="unk" label="修飾" flag="U"/>
-               <caseRelation id="s0_cr12" head="s0_bp1" depend="unk" label="トスル" flag="U"/>
-               <caseRelation id="s0_cr13" head="s0_bp1" depend="unk" label="ニオク" flag="U"/>
-               <caseRelation id="s0_cr14" head="s0_bp1" depend="unk" label="ニカンスル" flag="U"/>
-               <caseRelation id="s0_cr15" head="s0_bp1" depend="unk" label="ニヨル" flag="U"/>
-               <caseRelation id="s0_cr16" head="s0_bp1" depend="unk" label="ヲフクメル" flag="U"/>
-               <caseRelation id="s0_cr17" head="s0_bp1" depend="unk" label="ヲハジメル" flag="U"/>
-               <caseRelation id="s0_cr18" head="s0_bp1" depend="unk" label="ヲノゾク" flag="U"/>
-               <caseRelation id="s0_cr19" head="s0_bp1" depend="unk" label="ヲツウジル" flag="U"/>
-            </caseRelations>
-            <namedEntities>
-              <namedEntity id="s0_ne0" tokens="s0_tok0" label="PERSON"/>
-            </namedEntities>
-            <predicateArgumentRelations>
-              <predicateArgumentRelation id="s0_par0" predicate="s0_bp1" argument="d0_coref0" label="ガ" flag="C"/>
-            </predicateArgumentRelations>
-          </sentence>
-          <sentence id="s1">
-            太郎が歩く。
-            <tokens>
-              <token id="s1_tok0" surf="太郎" reading="たろう" base="太郎" pos="名詞" posId="6" pos1="人名" pos1Id="5" inflectionType="*" inflectionTypeId="0" inflectionForm="*" inflectionFormId="0" semantic="&quot;人名:日本:名:45:0.00106 疑似代表表記 代表表記:太郎/たろう&quot; &lt;人名:日本:名:45:0.00106&gt;&lt;疑似代表表記&gt;&lt;代表表記:太郎/たろう&gt;&lt;正規化代表表記:太郎/たろう&gt;&lt;文頭&gt;&lt;漢字&gt;&lt;かな漢字&gt;&lt;名詞相当語&gt;&lt;自立&gt;&lt;内容語&gt;&lt;タグ単位始&gt;&lt;文節始&gt;&lt;固有キー&gt;&lt;文節主辞&gt;&lt;係:ガ格&gt;&lt;NE:PERSON:S&gt;"/>
-              <token id="s1_tok1" surf="が" reading="が" base="が" pos="助詞" posId="9" pos1="格助詞" pos1Id="1" inflectionType="*" inflectionTypeId="0" inflectionForm="*" inflectionFormId="0" semantic="NIL &lt;かな漢字&gt;&lt;ひらがな&gt;&lt;付属&gt;"/>
-              <token id="s1_tok2" surf="歩く" reading="あるく" base="歩く" pos="動詞" posId="2" pos1="*" pos1Id="0" inflectionType="子音動詞カ行" inflectionTypeId="2" inflectionForm="基本形" inflectionFormId="2" semantic="&quot;代表表記:歩く/あるく&quot; &lt;代表表記:歩く/あるく&gt;&lt;正規化代表表記:歩く/あるく&gt;&lt;表現文末&gt;&lt;かな漢字&gt;&lt;活用語&gt;&lt;自立&gt;&lt;内容語&gt;&lt;タグ単位始&gt;&lt;文節始&gt;&lt;文節主辞&gt;"/>
-              <token id="s1_tok3" surf="。" reading="。" base="。" pos="特殊" posId="1" pos1="句点" pos1Id="1" inflectionType="*" inflectionTypeId="0" inflectionForm="*" inflectionFormId="0" semantic="NIL &lt;文末&gt;&lt;英記号&gt;&lt;記号&gt;&lt;付属&gt;"/>
-            </tokens>
-            <basicPhrases>
-              <basicPhrase id="s1_bp0" tokens="s1_tok0 s1_tok1" features="&lt;文頭&gt;&lt;人名&gt;&lt;ガ&gt;&lt;助詞&gt;&lt;体言&gt;&lt;係:ガ格&gt;&lt;区切:0-0&gt;&lt;格要素&gt;&lt;連用要素&gt;&lt;名詞項候補&gt;&lt;先行詞候補&gt;&lt;SM-人&gt;&lt;SM-主体&gt;&lt;正規化代表表記:太郎/たろう&gt;&lt;NE:PERSON:太郎&gt;&lt;照応詞候補:太郎&gt;&lt;解析格:ガ&gt;&lt;C用;【太郎】;=;1;0;9.99:d0-s0(1文前):0文節&gt;&lt;共参照&gt;&lt;COREFER_ID:1&gt;&lt;REFERRED:1-0&gt;&lt;EID:0&gt;"/>
-              <basicPhrase
-          id="s1_bp1" tokens="s1_tok2 s1_tok3" features="&lt;文末&gt;&lt;句点&gt;&lt;用言:動&gt;&lt;レベル:C&gt;&lt;区切:5-5&gt;&lt;ID:（文末）&gt;&lt;係:文末&gt;&lt;提題受:30&gt;&lt;主節&gt;&lt;格要素&gt;&lt;連用要素&gt;&lt;動態述語&gt;&lt;正規化代表表記:歩く/あるく&gt;&lt;用言代表表記:歩く/あるく&gt;&lt;時制-未来&gt;&lt;主題格:一人称優位&gt;&lt;格関係0:ガ:太郎&gt;&lt;格解析結果:歩く/あるく:動12:ガ/C/太郎/0/0/d0-s1;ヲ/U/-/-/-/-;ニ/U/-/-/-/-;ト/U/-/-/-/-;デ/U/-/-/-/-;カラ/U/-/-/-/-;ヨリ/U/-/-/-/-;ヘ/U/-/-/-/-;時間/U/-/-/-/-;外の関係/U/-/-/-/-;修飾/U/-/-/-/-;ノ/U/-/-/-/-;トスル/U/-/-/-/-;ニツク/U/-/-/-/-;ニムケル/U/-/-/-/-;ニソウ/U/-/-/-/-;トイウ/U/-/-/-/-&gt;&lt;EID:2&gt;&lt;述語項構造:歩く/あるく:動12:ガ/C/太郎/0&gt;">
-              </basicPhrase>
-            </basicPhrases>
-            <chunks>
-              <chunk id="s1_chu0" tokens="s1_tok0 s1_tok1" features="&lt;文頭&gt;&lt;人名&gt;&lt;ガ&gt;&lt;助詞&gt;&lt;体言&gt;&lt;係:ガ格&gt;&lt;区切:0-0&gt;&lt;格要素&gt;&lt;連用要素&gt;&lt;正規化代表表記:太郎/たろう&gt;&lt;主辞代表表記:太郎/たろう&gt;"/>
-              <chunk id="s1_chu1" tokens="s1_tok2 s1_tok3" features="&lt;文末&gt;&lt;句点&gt;&lt;用言:動&gt;&lt;レベル:C&gt;&lt;区切:5-5&gt;&lt;ID:（文末）&gt;&lt;係:文末&gt;&lt;提題受:30&gt;&lt;主節&gt;&lt;格要素&gt;&lt;連用要素&gt;&lt;動態述語&gt;&lt;正規化代表表記:歩く/あるく&gt;&lt;主辞代表表記:歩く/あるく&gt;"/>
-            </chunks>
-            <basicPhraseDependencies root="s1_bp1">
-              <basicPhraseDependency id="s1_bpdep0" head="s1_bp1" dependent="s1_bp0" label="D"/>
-            </basicPhraseDependencies>
-            <dependencies root="s1_chu1">
-              <dependency id="s1_dep0" head="s1_chu1" dependent="s1_chu0" label="D"/>
-            </dependencies>
-            <caseRelations>
-              <caseRelation id="s1_cr0" head="s1_bp1" depend="s1_tok0" label="ガ" flag="C"/>
-              <caseRelation id="s1_cr1" head="s1_bp1" depend="unk" label="ヲ" flag="U"/>
-              <caseRelation id="s1_cr2" head="s1_bp1" depend="unk" label="ニ" flag="U"/>
-              <caseRelation id="s1_cr3" head="s1_bp1" depend="unk" label="ト" flag="U"/>
-              <caseRelation id="s1_cr4" head="s1_bp1" depend="unk" label="デ" flag="U"/>
-              <caseRelation id="s1_cr5" head="s1_bp1" depend="unk" label="カラ" flag="U"/>
-              <caseRelation id="s1_cr6" head="s1_bp1" depend="unk" label="ヨリ" flag="U"/>
-              <caseRelation id="s1_cr7" head="s1_bp1" depend="unk" label="ヘ" flag="U"/>
-              <caseRelation id="s1_cr8" head="s1_bp1" depend="unk" label="時間" flag="U"/>
-              <caseRelation id="s1_cr9" head="s1_bp1" depend="unk" label="外の関係" flag="U"/>
-              <caseRelation id="s1_cr10" head="s1_bp1" depend="unk" label="修飾" flag="U"/>
-              <caseRelation id="s1_cr11" head="s1_bp1" depend="unk" label="ノ" flag="U"/>
-              <caseRelation id="s1_cr12" head="s1_bp1" depend="unk" label="トスル" flag="U"/>
-              <caseRelation id="s1_cr13" head="s1_bp1" depend="unk" label="ニツク" flag="U"/>
-              <caseRelation id="s1_cr14" head="s1_bp1" depend="unk" label="ニムケル" flag="U"/>
-              <caseRelation id="s1_cr15" head="s1_bp1" depend="unk" label="ニソウ" flag="U"/>
-               <caseRelation id="s1_cr16" head="s1_bp1" depend="unk" label="トイウ" flag="U"/>
-             </caseRelations>
-             <namedEntities>
-               <namedEntity id="s1_ne0" tokens="s1_tok0" label="PERSON"/>
-             </namedEntities>
-             <predicateArgumentRelations>
-               <predicateArgumentRelation id="s1_par0" predicate="s1_bp1" argument="d0_coref0" label="ガ" flag="C"/>
-             </predicateArgumentRelations>
-           </sentence>
-         </sentences>
-         <coreferences>
-           <coreference id="d0_coref0" basicPhrases="s0_bp0 s1_bp0"/>
-           <coreference id="d0_coref1" basicPhrases="s0_bp1"/>
-           <coreference id="d0_coref2" basicPhrases="s1_bp1"/>
-         </coreferences>
-       </document>
+    val coreferences = result \ "coreferences"
+
+    coreferences.head should equal (
+      <coreferences annotators="knpDoc">
+        <coreference id="d0_knpcr0" mentions="s0_knpbp0 s1_knpbp0"/>
+        <coreference id="d0_knpcr1" mentions="s0_knpbp1"/>
+        <coreference id="d0_knpcr2" mentions="s1_knpbp1"/>
+      </coreferences>
+    ) (decided by sameElem)
+
+    val predArgs = result \\ "predArgs"
+
+    predArgs(0) should equal (
+      <predArgs annotators="knpDoc">
+        <predArg id="s0_knppr0" pred="s0_knpbp1" arg="d0_knpcr0" deprel="ガ" flag="C"/>
+      </predArgs>
+    ) (decided by sameElem)
+
+    predArgs(1) should equal (
+      <predArgs annotators="knpDoc">
+        <predArg id="s1_knppr0" pred="s1_knpbp1" arg="d0_knpcr0" deprel="ガ" flag="C"/>
+      </predArgs>
     ) (decided by sameElem)
   }
 }

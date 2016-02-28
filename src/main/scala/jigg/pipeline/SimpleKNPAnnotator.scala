@@ -32,9 +32,9 @@ class SimpleKNPAnnotator(override val name: String, override val props: Properti
   override def defaultArgs = Seq("-tab")
 
   override def newSentenceAnnotation(sentence: Node): Node = {
-    val sindex = (sentence \ "@id").toString
+    val sentenceId = (sentence \ "@id").toString
 
     val knpResult = ioQueue.using { io => runKNP(sentence, None, io) }
-    annotateSentenceNode(sentence, knpResult, sindex)
+    annotateSentenceNode(sentence, knpResult, sentenceId,  _ => sentenceId)
   }
 }

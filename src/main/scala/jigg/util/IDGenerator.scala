@@ -14,9 +14,33 @@ package jigg.util
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  See the License for the specific language governing permissions and
  limitations under the License.
-*/
+ */
 
-case class IDGenerator(prefix: String) {
+// trait IDGeneratorBase {
+//   def next(): String
+// }
+
+// case class IDGenerator(prefix: String) extends IDGeneratorBase {
+//   private[this] val stream = Stream.from(0).iterator
+//   def next() = prefix + stream.next
+// }
+
+case class IDGenerator(toId: Int=>String) {
   private[this] val stream = Stream.from(0).iterator
-  def next() = prefix + stream.next
+  def next() = toId(stream.next)
+}
+
+object IDGenerator {
+  def apply(prefix: String): IDGenerator = IDGenerator(prefix + _)
+}
+
+/** Not thread-safe but little overhead
+  */
+case class LocalIDGenerator(toId: Int=>String) {
+  var i = 0
+  def next() = {
+    val n = toId(i)
+    i += 1
+    n
+  }
 }

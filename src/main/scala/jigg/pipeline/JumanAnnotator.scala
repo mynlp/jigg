@@ -87,20 +87,7 @@ class JumanAnnotator(override val name: String, override val props: Properties)
         if (isAmbig) tokenized.substring(spaceIdx(12)+1)
         else tokenized.substring(spaceIdx(11)+1)
 
-      val token = <token
-        id={ id }
-        form={ feat(0) }
-        yomi={ feat(1) }
-        lemma={ feat(2) }
-        pos={ feat(3) }
-        posId={ feat(4) }
-        pos1={ feat(5) }
-        pos1Id={ feat(6) }
-        cType={ feat(7) }
-        cTypeId={ feat(8) }
-        cForm={ feat(9) }
-        cFormId={ feat(10) }
-        misc={ semantic }/>
+      val token = JumanAnnotator.tokenNode(id, feat, semantic)
 
       if (isAmbig) token.copy(label="tokenAlt") else token
     }
@@ -117,4 +104,24 @@ class JumanAnnotator(override val name: String, override val props: Properties)
 
   override def requires = Set(Requirement.Ssplit)
   override def requirementsSatisfied = Set(JaRequirement.Juman)
+}
+
+object JumanAnnotator {
+
+  def tokenNode(id: String, feat: Int=>String, misc: String) =
+    <token
+      id={ id }
+      form={ feat(0) }
+      yomi={ feat(1) }
+      lemma={ feat(2) }
+      pos={ feat(3) }
+      posId={ feat(4) }
+      pos1={ feat(5) }
+      pos1Id={ feat(6) }
+      cType={ feat(7) }
+      cTypeId={ feat(8) }
+      cForm={ feat(9) }
+      cFormId={ feat(10) }
+      misc={ misc }/>
+
 }
