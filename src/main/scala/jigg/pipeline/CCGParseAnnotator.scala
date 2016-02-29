@@ -112,7 +112,7 @@ class CCGParseAnnotator(override val name: String, override val props: Propertie
 
       val rootIDs = deriv.roots.map { p => spanID(point2id(derivID, p)) }.mkString(" ")
 
-      <ccg root={ rootIDs } id={ ccgID } score={ score.toString }>{ spans }</ccg>
+      <ccg annotators={ name } root={ rootIDs } id={ ccgID } score={ score.toString }>{ spans }</ccg>
     }
 
     val ccgs = derivs.zipWithIndex map { case ((deriv, score), i) => ccgAnnotation(i, deriv, score) }

@@ -87,7 +87,7 @@ ${helpMessage}
       node
     }
 
-    val tokensAnnotation = <tokens>{ tokenNodes }</tokens>
+    val tokensAnnotation = <tokens annotators={ name }>{ tokenNodes }</tokens>
     jigg.util.XMLUtil.addChild(sentence, tokensAnnotation)
   }
 
