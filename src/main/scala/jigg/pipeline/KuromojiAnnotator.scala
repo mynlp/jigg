@@ -36,9 +36,6 @@ abstract class KuromojiAnnotator(override val name: String, override val props: 
 
   readProps()
 
-  def tokenize(text: String): Seq[T]
-  protected def tokenToNode(token: T, id: String): Node
-
   override def newSentenceAnnotation(sentence: Node): Node = {
 
     def id(sindex: String, tindex: Int) = sindex + "_" + tindex
@@ -49,7 +46,9 @@ abstract class KuromojiAnnotator(override val name: String, override val props: 
     var tokenIndex = 0
 
     val tokenNodes = tokenizedSentence.map { case token =>
-      val node = tokenToNode(token, id(sindex, tokenIndex))
+      val begin = token.getPosition
+      val end = begin + token.getSurface.size
+      val node = tokenToNode(token, begin + "", end + "", id(sindex, tokenIndex))
       tokenIndex += 1
       node
     }
@@ -58,6 +57,9 @@ abstract class KuromojiAnnotator(override val name: String, override val props: 
 
     jigg.util.XMLUtil.addChild(sentence, tokensAnnotation)
   }
+
+  protected def tokenize(text: String): Seq[T]
+  protected def tokenToNode(token: T, begin: String, end: String, id: String): Node
 
   override def requires = Set(Requirement.Ssplit)
   override def requirementsSatisfied = Set(JaRequirement.TokenizeWithIPA)
@@ -73,10 +75,12 @@ class IPAKuromojiAnnotator(name: String, props: Properties)
   val tokenizer = new ITokenizer
   def tokenize(text: String) = tokenizer.tokenize(text)
 
-  def tokenToNode(token: IToken, id: String): Node =
+  def tokenToNode(token: IToken, begin: String, end: String, id: String): Node =
     <token
       id={ id }
       form={ token.getSurface }
+      characterOffsetBegin={ begin }
+      characterOffsetEnd={ end }
       pos={ token.getPartOfSpeechLevel1 }
       pos1={ token.getPartOfSpeechLevel2 }
       pos2={ token.getPartOfSpeechLevel3 }
@@ -98,10 +102,12 @@ class JumanKuromojiAnnotator(name: String, props: Properties)
   val tokenizer = new JTokenizer
   def tokenize(text: String) = tokenizer.tokenize(text)
 
-  def tokenToNode(token: JToken, id: String): Node =
+  def tokenToNode(token: JToken, begin: String, end: String, id: String): Node =
     <token
       id={ id }
       form={ token.getSurface }
+      characterOffsetBegin={ begin }
+      characterOffsetEnd={ end }
       pos={ token.getPartOfSpeechLevel1 }
       pos1={ token.getPartOfSpeechLevel2 }
       cType={ token.getPartOfSpeechLevel3 }
@@ -121,10 +127,12 @@ class UnidicKuromojiAnnotator(name: String, props: Properties)
   val tokenizer = new UTokenizer
   def tokenize(text: String) = tokenizer.tokenize(text)
 
-  def tokenToNode(token: UToken, id: String): Node =
+  def tokenToNode(token: UToken, begin: String, end: String, id: String): Node =
     <token
       id={ id }
       form={ token.getSurface }
+      characterOffsetBegin={ begin }
+      characterOffsetEnd={ end }
       pos={ token.getPartOfSpeechLevel1 }
       pos1={ token.getPartOfSpeechLevel2 }
       pos2={ token.getPartOfSpeechLevel3 }
