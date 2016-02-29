@@ -30,4 +30,5 @@ libraryDependencies ++= Seq(
   "org.scala-lang" % "scala-reflect" % "2.10.2",
   "com.atilika.kuromoji" % "kuromoji-ipadic" % "0.9.0",
   "com.atilika.kuromoji" % "kuromoji-jumandic" % "0.9.0",
-  "com.atilika.kuromoji" % "kuromoji-unidic" % "0.9.0")
+  "com.atilika.kuromoji" % "kuromoji-unidic" % "0.9.0",
+  "com.ibm.icu" % "icu4j" % "56.1")

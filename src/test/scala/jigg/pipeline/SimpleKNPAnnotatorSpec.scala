@@ -31,12 +31,12 @@ class SimpleKNPAnnotatorSpec extends BaseAnnotatorSpec {
       <sentence id="s0">
         国際連合が設立された
         <tokens annotators="juman">
-          <token id="s0_tok0" form="国際" yomi="こくさい" lemma="国際" pos="名詞" posId="6" pos1="普通名詞" pos1Id="1" cType="*" cTypeId="0" cForm="*" cFormId="0" misc="&quot;代表表記:国際/こくさい カテゴリ:抽象物&quot;"/>
-          <token id="s0_tok1" form="連合" yomi="れんごう" lemma="連合" pos="名詞" posId="6" pos1="サ変名詞" pos1Id="2" cType="*" cTypeId="0" cForm="*" cFormId="0" misc="&quot;代表表記:連合/れんごう 組織名末尾 カテゴリ:組織・団体;抽象物&quot;"/>
-          <token id="s0_tok2" form="が" yomi="が" lemma="が" pos="助詞" posId="9" pos1="格助詞" pos1Id="1" cType="*" cTypeId="0" cForm="*" cFormId="0" misc="NIL"/>
-          <token id="s0_tok3" form="設立" yomi="せつりつ" lemma="設立" pos="名詞" posId="6" pos1="サ変名詞" pos1Id="2" cType="*" cTypeId="0" cForm="*" cFormId="0" misc="&quot;代表表記:設立/せつりつ カテゴリ:抽象物&quot;"/>
-          <token id="s0_tok4" form="さ" yomi="さ" lemma="する" pos="動詞" posId="2" pos1="*" pos1Id="0" cType="サ変動詞" cTypeId="16" cForm="未然形" cFormId="3" misc="&quot;代表表記:する/する 付属動詞候補（基本） 自他動詞:自:成る/なる&quot;"/>
-          <token id="s0_tok5" form="れた" yomi="れた" lemma="れる" pos="接尾辞" posId="14" pos1="動詞性接尾辞" pos1Id="7" cType="母音動詞" cTypeId="1" cForm="タ形" cFormId="10" misc="&quot;代表表記:れる/れる&quot;"/>
+          <token id="s0_tok0" form="国際" characterOffsetBegin="0" characterOffsetEnd="2" yomi="こくさい" lemma="国際" pos="名詞" posId="6" pos1="普通名詞" pos1Id="1" cType="*" cTypeId="0" cForm="*" cFormId="0" misc="&quot;代表表記:国際/こくさい カテゴリ:抽象物&quot;"/>
+          <token id="s0_tok1" form="連合" characterOffsetBegin="2" characterOffsetEnd="4" yomi="れんごう" lemma="連合" pos="名詞" posId="6" pos1="サ変名詞" pos1Id="2" cType="*" cTypeId="0" cForm="*" cFormId="0" misc="&quot;代表表記:連合/れんごう 組織名末尾 カテゴリ:組織・団体;抽象物&quot;"/>
+          <token id="s0_tok2" form="が" characterOffsetBegin="4" characterOffsetEnd="5" yomi="が" lemma="が" pos="助詞" posId="9" pos1="格助詞" pos1Id="1" cType="*" cTypeId="0" cForm="*" cFormId="0" misc="NIL"/>
+          <token id="s0_tok3" form="設立" characterOffsetBegin="5" characterOffsetEnd="7" yomi="せつりつ" lemma="設立" pos="名詞" posId="6" pos1="サ変名詞" pos1Id="2" cType="*" cTypeId="0" cForm="*" cFormId="0" misc="&quot;代表表記:設立/せつりつ カテゴリ:抽象物&quot;"/>
+          <token id="s0_tok4" form="さ" characterOffsetBegin="7" characterOffsetEnd="8" yomi="さ" lemma="する" pos="動詞" posId="2" pos1="*" pos1Id="0" cType="サ変動詞" cTypeId="16" cForm="未然形" cFormId="3" misc="&quot;代表表記:する/する 付属動詞候補（基本） 自他動詞:自:成る/なる&quot;"/>
+          <token id="s0_tok5" form="れた" characterOffsetBegin="8" characterOffsetEnd="10" yomi="れた" lemma="れる" pos="接尾辞" posId="14" pos1="動詞性接尾辞" pos1Id="7" cType="母音動詞" cTypeId="1" cForm="タ形" cFormId="10" misc="&quot;代表表記:れる/れる&quot;"/>
         </tokens>
       </sentence>
 
@@ -81,12 +81,12 @@ EOS"""
     ) (decided by sameElem)
 
     (result \ "tokens").head should equal (<tokens annotators="knp">
-      <token id="s0_knpt0" form="国際" yomi="こくさい" lemma="国際" pos="名詞" posId="6" pos1="普通名詞" pos1Id="1" cType="*" cTypeId="0" cForm="*" cFormId="0" misc="&quot;代表表記:国際/こくさい カテゴリ:抽象物&quot; &lt;代表表記:国際/こくさい&gt;&lt;カテゴリ:抽象物&gt;&lt;正規化代表表記:国際/こくさい&gt;&lt;文頭&gt;&lt;漢字&gt;&lt;かな漢字&gt;&lt;名詞相当語&gt;&lt;自立&gt;&lt;内容語&gt;&lt;タグ単位始&gt;&lt;文節始&gt;&lt;NE:ORGANIZATION:B&gt;"/>
-      <token id="s0_knpt1" form="連合" yomi="れんごう" lemma="連合" pos="名詞" posId="6" pos1="サ変名詞" pos1Id="2" cType="*" cTypeId="0" cForm="*" cFormId="0" misc="&quot;代表表記:連合/れんごう 組織名末尾 カテゴリ:組織・団体;抽象物&quot; &lt;代表表記:連合/れんごう&gt;&lt;組織名末尾&gt;&lt;カテゴリ:組織・団体;抽象物&gt;&lt;正規化代表表記:連合/れんごう&gt;&lt;Wikipedia上位語:国際組織:0-1&gt;&lt;漢字&gt;&lt;かな漢字&gt;&lt;名詞相当語&gt;&lt;サ変&gt;&lt;自立&gt;&lt;複合←&gt;&lt;内容語&gt;&lt;タグ単位始&gt;&lt;文節主辞&gt;&lt;係:ガ格&gt;&lt;NE:ORGANIZATION:E&gt;"/>
-      <token id="s0_knpt2" form="が" yomi="が" lemma="が" pos="助詞" posId="9" pos1="格助詞" pos1Id="1" cType="*" cTypeId="0" cForm="*" cFormId="0" misc="NIL &lt;かな漢字&gt;&lt;ひらがな&gt;&lt;付属&gt;"/>
-      <token id="s0_knpt3" form="設立" yomi="せつりつ" lemma="設立" pos="名詞" posId="6" pos1="サ変名詞" pos1Id="2" cType="*" cTypeId="0" cForm="*" cFormId="0" misc="&quot;代表表記:設立/せつりつ カテゴリ:抽象物&quot; &lt;代表表記:設立/せつりつ&gt;&lt;カテゴリ:抽象物&gt;&lt;正規化代表表記:設立/せつりつ&gt;&lt;漢字&gt;&lt;かな漢字&gt;&lt;名詞相当語&gt;&lt;サ変&gt;&lt;サ変動詞&gt;&lt;自立&gt;&lt;内容語&gt;&lt;タグ単位始&gt;&lt;文節始&gt;&lt;文節主辞&gt;"/>
-      <token id="s0_knpt4" form="さ" yomi="さ" lemma="する" pos="動詞" posId="2" pos1="*" pos1Id="0" cType="サ変動詞" cTypeId="16" cForm="未然形" cFormId="3" misc="&quot;代表表記:する/する 付属動詞候補（基本） 自他動詞:自:成る/なる&quot; &lt;代表表記:する/する&gt;&lt;付属動詞候補（基本）&gt;&lt;自他動詞:自:成る/なる&gt;&lt;正規化代表表記:する/する&gt;&lt;とタ系連用テ形複合辞&gt;&lt;かな漢字&gt;&lt;ひらがな&gt;&lt;活用語&gt;&lt;付属&gt;"/>
-      <token id="s0_knpt5" form="れた" yomi="れた" lemma="れる" pos="接尾辞" posId="14" pos1="動詞性接尾辞" pos1Id="7" cType="母音動詞" cTypeId="1" cForm="タ形" cFormId="10" misc="&quot;代表表記:れる/れる&quot; &lt;代表表記:れる/れる&gt;&lt;正規化代表表記:れる/れる&gt;&lt;文末&gt;&lt;表現文末&gt;&lt;かな漢字&gt;&lt;ひらがな&gt;&lt;活用語&gt;&lt;付属&gt;"/>
+      <token id="s0_knpt0" form="国際" characterOffsetBegin="0" characterOffsetEnd="2" yomi="こくさい" lemma="国際" pos="名詞" posId="6" pos1="普通名詞" pos1Id="1" cType="*" cTypeId="0" cForm="*" cFormId="0" misc="&quot;代表表記:国際/こくさい カテゴリ:抽象物&quot; &lt;代表表記:国際/こくさい&gt;&lt;カテゴリ:抽象物&gt;&lt;正規化代表表記:国際/こくさい&gt;&lt;文頭&gt;&lt;漢字&gt;&lt;かな漢字&gt;&lt;名詞相当語&gt;&lt;自立&gt;&lt;内容語&gt;&lt;タグ単位始&gt;&lt;文節始&gt;&lt;NE:ORGANIZATION:B&gt;"/>
+      <token id="s0_knpt1" form="連合" characterOffsetBegin="2" characterOffsetEnd="4" yomi="れんごう" lemma="連合" pos="名詞" posId="6" pos1="サ変名詞" pos1Id="2" cType="*" cTypeId="0" cForm="*" cFormId="0" misc="&quot;代表表記:連合/れんごう 組織名末尾 カテゴリ:組織・団体;抽象物&quot; &lt;代表表記:連合/れんごう&gt;&lt;組織名末尾&gt;&lt;カテゴリ:組織・団体;抽象物&gt;&lt;正規化代表表記:連合/れんごう&gt;&lt;Wikipedia上位語:国際組織:0-1&gt;&lt;漢字&gt;&lt;かな漢字&gt;&lt;名詞相当語&gt;&lt;サ変&gt;&lt;自立&gt;&lt;複合←&gt;&lt;内容語&gt;&lt;タグ単位始&gt;&lt;文節主辞&gt;&lt;係:ガ格&gt;&lt;NE:ORGANIZATION:E&gt;"/>
+      <token id="s0_knpt2" form="が" characterOffsetBegin="4" characterOffsetEnd="5" yomi="が" lemma="が" pos="助詞" posId="9" pos1="格助詞" pos1Id="1" cType="*" cTypeId="0" cForm="*" cFormId="0" misc="NIL &lt;かな漢字&gt;&lt;ひらがな&gt;&lt;付属&gt;"/>
+      <token id="s0_knpt3" form="設立" characterOffsetBegin="5" characterOffsetEnd="7" yomi="せつりつ" lemma="設立" pos="名詞" posId="6" pos1="サ変名詞" pos1Id="2" cType="*" cTypeId="0" cForm="*" cFormId="0" misc="&quot;代表表記:設立/せつりつ カテゴリ:抽象物&quot; &lt;代表表記:設立/せつりつ&gt;&lt;カテゴリ:抽象物&gt;&lt;正規化代表表記:設立/せつりつ&gt;&lt;漢字&gt;&lt;かな漢字&gt;&lt;名詞相当語&gt;&lt;サ変&gt;&lt;サ変動詞&gt;&lt;自立&gt;&lt;内容語&gt;&lt;タグ単位始&gt;&lt;文節始&gt;&lt;文節主辞&gt;"/>
+      <token id="s0_knpt4" form="さ" characterOffsetBegin="7" characterOffsetEnd="8" yomi="さ" lemma="する" pos="動詞" posId="2" pos1="*" pos1Id="0" cType="サ変動詞" cTypeId="16" cForm="未然形" cFormId="3" misc="&quot;代表表記:する/する 付属動詞候補（基本） 自他動詞:自:成る/なる&quot; &lt;代表表記:する/する&gt;&lt;付属動詞候補（基本）&gt;&lt;自他動詞:自:成る/なる&gt;&lt;正規化代表表記:する/する&gt;&lt;とタ系連用テ形複合辞&gt;&lt;かな漢字&gt;&lt;ひらがな&gt;&lt;活用語&gt;&lt;付属&gt;"/>
+      <token id="s0_knpt5" form="れた" characterOffsetBegin="8" characterOffsetEnd="10" yomi="れた" lemma="れる" pos="接尾辞" posId="14" pos1="動詞性接尾辞" pos1Id="7" cType="母音動詞" cTypeId="1" cForm="タ形" cFormId="10" misc="&quot;代表表記:れる/れる&quot; &lt;代表表記:れる/れる&gt;&lt;正規化代表表記:れる/れる&gt;&lt;文末&gt;&lt;表現文末&gt;&lt;かな漢字&gt;&lt;ひらがな&gt;&lt;活用語&gt;&lt;付属&gt;"/>
       </tokens>
     ) (decided by sameElem)
 

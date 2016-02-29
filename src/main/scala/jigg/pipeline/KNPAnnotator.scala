@@ -47,7 +47,7 @@ trait KNPAnnotator extends Annotator with ParallelIO with IOCreator {
     try io readUntilIf (firstLine, _ == "EOS")
     catch {
       case e: ArgumentError =>
-        val raw =  jumanTokens \ "token" map (_ \ "@form") mkString("")
+        val raw = XMLUtil.text(sentence)
         throw new ArgumentError(e.getMessage + "\n\nProblematic sentence: " + raw)
     }
   }
@@ -111,15 +111,22 @@ trait KNPAnnotator extends Annotator with ParallelIO with IOCreator {
       !isDocInfo(line) && !isChunk(line) && !isBasicPhrase(line) && line != "EOS"
 
     def extractTokens(): Node = {
+      val tokens = output filter isToken
+      // this is OK since half space errors are detected earlier
+      val tokenSizes = tokens map (_ indexOf ' ')
+      val tokenOffsets = tokenSizes.scanLeft(0) { _ + _ }
+
       val nodes = (output filter isToken).zipWithIndex map { case (tokenized, idx) =>
 
-        // this is OK since half space errors are detected earlier
         val spaceIdx = -1 +: (0 until tokenized.size - 1).filter(tokenized(_) == ' ')
         def feat(i: Int) = tokenized substring (spaceIdx(i) + 1, spaceIdx(i + 1))
 
         val semantic = tokenized substring (spaceIdx(11) + 1)
 
-        JumanAnnotator.tokenNode(tokenId(idx), feat, semantic)
+        val offsetBegin = tokenOffsets(idx)
+        val offsetEnd = tokenOffsets(idx + 1)
+
+        JumanAnnotator.tokenNode(tokenId(idx), feat, semantic, offsetBegin, offsetEnd)
       }
       <tokens annotators={ name }>{ nodes }</tokens>
     }

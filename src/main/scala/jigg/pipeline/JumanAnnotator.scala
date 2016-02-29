@@ -28,7 +28,8 @@ import jigg.util.XMLUtil
 class JumanAnnotator(override val name: String, override val props: Properties)
     extends SentencesAnnotator with ParallelIO with IOCreator {
 
-  @Prop(gloss = "Use this command to launch juman") var command = "juman"
+  @Prop(gloss = "Use this command to launch JUMAN") var command = "juman"
+  @Prop(gloss = "If true, run JUMAN and KNP for a normalized input that replaces hankaku chars (ascii only; not kana) with zenkaku chars. If false use the original input.") var normalize = true
   readProps()
 
   val ioQueue = new IOQueue(nThreads)
@@ -44,7 +45,7 @@ class JumanAnnotator(override val name: String, override val props: Properties)
     (0 until tokenBoundaries.size - 1).map { i =>
       val b = tokenBoundaries(i)
       val e = tokenBoundaries(i + 1)
-      XMLUtil.addChild(nodes(b), (b + 1 until e).map(nodes))
+      XMLUtil.addChild(nodes(b), (b + 1 until e) map nodes)
     }
   }
 
@@ -55,9 +56,18 @@ class JumanAnnotator(override val name: String, override val props: Properties)
 
     val text = sentence.text
 
+    val normalized = if (normalize) jigg.util.Normalizer.hanZenAscii(text) else text
+
     //Before tokenIndex is substituted, it will be added 1. So, the first tokenIndex is 0.
     var tokenIndex = -1
     var tokenAltIndex = -1
+
+    val jumanOutput = runJuman(normalized)
+    val tokenSizes = jumanOutput collect {
+      case line if line(0) != '@' =>
+        (1 until line.size - 1) find { line(_) == ' ' } getOrElse 0
+    }
+    val tokenOffsets = tokenSizes.scanLeft(0) { _ + _ }
 
     // output form of Juman
     // surf reading base pos n pos1 n inflectionType n inflectionForm semantic
@@ -73,27 +83,40 @@ class JumanAnnotator(override val name: String, override val props: Properties)
         tid(tokenIndex)
       }
 
+      val offsetBegin = tokenOffsets(tokenIndex)
+      val offsetEnd = tokenOffsets(tokenIndex + 1)
+
       val spaceIdx = -1 +: (0 until tokenized.size - 1).filter {
-        // The reason why we check the next token is to process half space tokens correctly
+        // The reason why we check the next token is to process half space tokens
+        // correctly.
         // See https://github.com/mynlp/jigg/issues/28 for detail.
         i => tokenized(i) == ' ' && tokenized(i + 1) != ' '
       }
 
-      val feat:Int => String =
-        if (isAmbig) i => tokenized.substring(spaceIdx(i + 1) + 1, spaceIdx(i + 2)) // skip @
-        else i => tokenized.substring(spaceIdx(i) + 1, spaceIdx(i + 1))
+      val feat: Int => String =
+        if (isAmbig)
+          i => tokenized substring (spaceIdx(i + 1) + 1, spaceIdx(i + 2)) // skip @
+        else i => tokenized substring (spaceIdx(i) + 1, spaceIdx(i + 1))
+
+      val normalizedForm = if (normalize) Some(Text(feat(0))) else None
 
       val semantic =
-        if (isAmbig) tokenized.substring(spaceIdx(12)+1)
-        else tokenized.substring(spaceIdx(11)+1)
+        if (isAmbig) tokenized substring (spaceIdx(12) + 1)
+        else tokenized substring (spaceIdx(11) + 1)
 
-      val token = JumanAnnotator.tokenNode(id, feat, semantic)
+      val token = JumanAnnotator.tokenNode(id, feat, semantic, offsetBegin, offsetEnd)
 
-      if (isAmbig) token.copy(label="tokenAlt") else token
+      if (isAmbig) token copy (label="tokenAlt") else token
     }
 
-    val tokenNodes = runJuman(text).map(tokenToNode)
-    val tokensAnnotation = <tokens>{ makeTokenAltChild(tokenNodes) }</tokens>
+    val tokenNodes = (0 until jumanOutput.size) map { i =>
+      tokenToNode(jumanOutput(i))
+    }
+
+    val tokensAnnotation =
+      <tokens annotators={ name } normalized={ normalize + "" } >{
+        makeTokenAltChild(tokenNodes)
+      }</tokens>
     XMLUtil.addChild(sentence, tokensAnnotation)
   }
 
@@ -108,10 +131,17 @@ class JumanAnnotator(override val name: String, override val props: Properties)
 
 object JumanAnnotator {
 
-  def tokenNode(id: String, feat: Int=>String, misc: String) =
+  def tokenNode(
+    id: String,
+    feat: Int=>String,
+    misc: String,
+    offsetBegin: Int = 0,
+    offsetEnd: Int = 0) =
     <token
       id={ id }
       form={ feat(0) }
+      characterOffsetBegin={ offsetBegin + "" }
+      characterOffsetEnd={ offsetEnd + "" }
       yomi={ feat(1) }
       lemma={ feat(2) }
       pos={ feat(3) }
