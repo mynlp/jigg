@@ -59,7 +59,7 @@ class RegexSentenceAnnotator(override val name: String, override val props: Prop
       val textRemoved = XMLUtil.removeText(e)
       XMLUtil.addChild(textRemoved, <sentences>{ sentences }</sentences>)
     }
- }
+  }
 
   override def requires = Set()
   override def requirementsSatisfied = Set(Requirement.Ssplit)
