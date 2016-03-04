@@ -43,15 +43,6 @@ object Requirement {
 
   case object Tokenize extends Requirement
 
-<<<<<<< HEAD
-  trait TokenizeChild extends Requirement {
-    override def parent = Some(Tokenize)
-  }
-  case object TokenizeWithIPA extends TokenizeChild
-  case object TokenizeWithJuman extends TokenizeChild
-  case object TokenizeWithUnidic extends TokenizeChild
-  case object CoreNLP extends TokenizeChild
-=======
   case object POS extends Requirement
 
   case object Lemma extends Requirement
@@ -59,10 +50,11 @@ object Requirement {
   case object Dependencies extends Requirement
 
   case object Parse extends Requirement
->>>>>>> mynlp/develop
 
   case object Chunk extends Requirement
+
 }
+
 
 object JaRequirement {
 

@@ -53,7 +53,7 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
   // TODO: should document ID be given here?  Somewhere else?
   private[this] val documentIDGen = jigg.util.IDGenerator("d")
 
-  //val annotatorNames = annotators.split("""[,\s]+""") // PU.safeFind("annotators", props).split("""[,\s]+""")
+  val annotatorNames = annotators.split("""[,\s]+""") // PU.safeFind("annotators", props).split("""[,\s]+""")
   val annotatorNamesSuger = {
     var new_annotators = annotators
     var pattern = """\[.+?\]""".r
@@ -69,15 +69,8 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
 
   def createAnnotatorList: List[Annotator] = {
     val annotatorList =
-<<<<<<< HEAD
-      //annotatorNames.map { getAnnotator(_) }.toList
       annotatorNamesSuger.map { getAnnotator(_) }.toList
-    annotatorList.foldLeft(Set[Requirement]()) { (satisfiedSofar, annotator) =>
-=======
-      annotatorNames.map { getAnnotator(_) }.toList
-
     annotatorList.foldLeft(RequirementSet()) { (satisfiedSofar, annotator) =>
->>>>>>> mynlp/develop
       val requires = annotator.requires
 
       val lacked = satisfiedSofar.lackedIn(requires)
@@ -92,6 +85,7 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
     annotatorList
   }
 
+
   /** User may override this method in a subclass to add more own annotators.
     */
 
@@ -105,7 +99,8 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
     "knp" -> classOf[SimpleKNPAnnotator],
     "knpDoc" -> classOf[DocumentKNPAnnotator],
     "ccg" -> classOf[CCGParseAnnotator],
-    "corenlp" -> classOf[StanfordCoreNLPAnnotator]
+    "corenlp" -> classOf[StanfordCoreNLPAnnotator],
+    "berkeley" -> classOf[BerkeleyparserAnnotator]
   )
 
   /** Or also customizable by overriding this method directory, e.g.,

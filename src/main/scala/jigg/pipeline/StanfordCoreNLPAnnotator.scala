@@ -24,7 +24,8 @@ import java.io.OutputStreamWriter
 import java.io.ByteArrayOutputStream
 import java.io.PrintWriter
 import java.io.StringWriter
-import scala.collection.mutable.ListBuffer
+//import scala.collection.mutable.ListBuffer
+//import scala.collection.immutable.Lis
 import scala.collection.JavaConversions._
 import scala.xml._
 import scala.sys.process.Process
@@ -33,11 +34,17 @@ import scala.xml.{Node, Elem, Text, Atom}
 import jigg.util.PropertiesUtil
 import jigg.util.XMLUtil
 import edu.stanford.nlp.pipeline._
+import edu.stanford.nlp.ling.CoreLabel
 import edu.stanford.nlp.trees.Tree
 import edu.stanford.nlp.trees.TreeCoreAnnotations
 import edu.stanford.nlp.trees.TreePrint
 import edu.stanford.nlp.ling.CoreAnnotations
 import edu.stanford.nlp.util.CoreMap
+import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations
+import edu.stanford.nlp.semgraph.SemanticGraph
+import edu.stanford.nlp.trees.GrammaticalRelation
+
+import jigg.util.SecpressionUtil
 
 class StanfordCoreNLPAnnotator(override val name: String, override val props: Properties) extends Annotator {
 
@@ -45,6 +52,7 @@ class StanfordCoreNLPAnnotator(override val name: String, override val props: Pr
   @Prop(gloss = "Use predefined segment pattern newLine|point|pointAndNewLine") var method = "pointAndNewLine"
   readProps()
 
+  val annotator_name = "corenlp"
   val splitRegex = pattern match {
     case "" =>
       method match {
@@ -103,7 +111,10 @@ class StanfordCoreNLPAnnotator(override val name: String, override val props: Pr
     val sentence_text = sentence_map.get(classOf[CoreAnnotations.TextAnnotation])
     var sid = sentenceIDGen.next
     var token_nord: Elem = null
-    var parse_nord: Elem = null
+    var parse_nord: Node = null
+    var dependencies_nord1: Node = null
+    var dependencies_nord2: Node = null
+    var dependencies_nord3: Node = null
 
     val token_maps = sentence_map.get(classOf[CoreAnnotations.TokensAnnotation])
     if( token_maps != null){
@@ -114,77 +125,69 @@ class StanfordCoreNLPAnnotator(override val name: String, override val props: Pr
     }
 
     val parse_tree = sentence_map.get(classOf[TreeCoreAnnotations.TreeAnnotation])
-    if( parse_tree != null){
-      var parse_data = mkParseNode(parse_tree:Tree)
-      parse_nord = <parse>{XML.loadString(parse_data)}</parse>
+    if( parse_tree != null && token_nord != null ){
+       parse_nord = mkParseNode(parse_tree,token_nord,sid)
     }
 
-    Option(<sentence id={ sid }>{ sentence_text }{token_nord}{parse_nord}</sentence>)
+    val dependencies_maps = sentence_map.get(classOf[SemanticGraphCoreAnnotations.BasicDependenciesAnnotation])
+    if(dependencies_maps != null && token_maps != null){
+      dependencies_nord1 = mkDependenciesNode(sentence_map.get(classOf[SemanticGraphCoreAnnotations.BasicDependenciesAnnotation]),"basic-dependencies",token_maps)
+      dependencies_nord2 = mkDependenciesNode(sentence_map.get(classOf[SemanticGraphCoreAnnotations.CollapsedDependenciesAnnotation]),"collapsed-dependencies",token_maps)
+      dependencies_nord3 = mkDependenciesNode(sentence_map.get(classOf[SemanticGraphCoreAnnotations.CollapsedCCProcessedDependenciesAnnotation]),"collapsed-ccprocessed-dependenciess",token_maps)
+    
+    }
+
+    Option(<sentence id={ sid }>{ sentence_text }{token_nord}{parse_nord}{dependencies_nord1}{dependencies_nord2 }{dependencies_nord3 }</sentence>)
   }
 
-  def mkParseNode(parse:Tree): String={
+  def mkDependenciesNode(graph:SemanticGraph ,type_name:String, tokens:java.util.List[CoreLabel]): Node = {
+    val ans = ""
+    var depInfo:Node = <dependencies type={type_name} anntater={annotator_name}></dependencies>
+    for( root <-graph.getRoots()){
+      val rel:String  = GrammaticalRelation.ROOT.getLongName().replaceAll("\\s+", "")
+      var source:Int = 0
+      var target:Int = root.index()
+      val sourceWord:String = "ROOT"
+      val targetWord:String = tokens.get(target - 1).word();
+      val isExtra:Boolean = false;
+      depInfo = addDependencyInfo(depInfo, rel, isExtra, source, sourceWord,-1, target, targetWord, -1)
+    }
+    for( edge <- graph.edgeListSorted()){
+      val rel:String = edge.getRelation().toString().replaceAll("\\s+", "")
+      val source:Int = edge.getSource().index()
+      val target:Int = edge.getTarget().index();
+      val sourceWord:String = tokens.get(source - 1).word();
+      val targetWord:String = tokens.get(target - 1).word();
+      var sourceCopy:Int = edge.getSource().copyCount();
+      var targetCopy:Int = edge.getTarget().copyCount();
+      val isExtra:Boolean = edge.isExtra();
+      depInfo = addDependencyInfo(depInfo, rel, isExtra, source, sourceWord,target, target, targetWord, -targetCopy)
+    }
+     depInfo
+  }
+
+  def addDependencyInfo(depInfo:Node , rel:String , isExtra:Boolean , source:Int , sourceWord:String,  sourceCopy:Int, target:Int, targetWord:String, targetCopy:Int):Node = {
+    var depElem:Node = null
+    if( isExtra) { depElem = <dep type={rel} extra={"true"}></dep> }
+    else { depElem = <dep type={rel}></dep>}
+
+    var govElem:Elem = null
+    var strNum:String = "dd"
+    if( sourceCopy > 0) { govElem = <governor idx = {source.toString} copy = {sourceCopy.toString}> {sourceWord} </governor>}
+    else {govElem = <governor idx={source.toString} >{sourceWord}</governor>}
+    XMLUtil.addChild(depInfo, XMLUtil.addChild(depElem,govElem))
+  }
+
+  def mkParseNode(parse:Tree,tokens:Elem,sid:String): Node ={
     var treeStrWriter:StringWriter = new StringWriter()
     var constituentTreePrinter:TreePrint = sf_options.constituentTreePrinter
     constituentTreePrinter.printTree(parse, new PrintWriter(treeStrWriter, true))
     var parse_Sexp:String = treeStrWriter.toString()
-    S_expression2Xml(parse_Sexp)
+    var tmp:Elem = <parse anntate={annotator_name}></parse>
+    SecpressionUtil.exportXML(parse_Sexp,tokens,tmp,sid)
 
   }
 
-  def S_expression2Xml(input:String):String = {
-
-    class StrStack{
-      private var datalist:ListBuffer[String] = ListBuffer.empty[String]
-      
-      def init()
-      {
-        while(!datalist.isEmpty)datalist.remove(0)
-        datalist
-      }
-      def push(data:String):Int ={
-        data +=: datalist
-        datalist.length
-      }
-
-      def pop():String ={
-        var str = datalist.head
-        datalist.remove(0)
-        str
-      }
-
-      def print():Int = {
-        for(elem<- datalist) println(elem)
-        datalist.size
-      }
-      def size():Int = {
-        datalist.size
-      }
-    }
-    var stk:StrStack = new StrStack
-
-    var XmlStr:String = ""
-    var elements = input.replace("\n","").split("[\\s]+")
-
-    for(elemnt <- elements) {
-      if(elemnt startsWith "("){
-        var tag_name = elemnt.drop(1)
-        if(tag_name == ".") tag_name = "END"
-        stk.push(tag_name)
-        
-        XmlStr += "<"+tag_name+">"
-      }else{
-        var text_data = elemnt
-        var tag_tail = ""
-        while( text_data.endsWith(")")){
-          text_data = text_data.dropRight(1)
-          tag_tail += "</" + stk.pop() + ">"
-        }
-        XmlStr += text_data + tag_tail
-      }
-    }
-    XmlStr
-  }
-  
   def mkTokenNode(token:CoreMap,tkid:String): Option[Elem] ={
 
     var word = token.get(classOf[CoreAnnotations.TextAnnotation])
@@ -195,7 +198,7 @@ class StanfordCoreNLPAnnotator(override val name: String, override val props: Pr
     var Normalizedner = token.get(classOf[CoreAnnotations.NormalizedNamedEntityTagAnnotation])
     var Speaker =token.get(classOf[CoreAnnotations.SpeakerAnnotation])
 
-    Option(<token id= {tkid} word = {word}  lemma = {lemma} pos = {pos} Normalizedner = {Normalizedner} Speaker={Speaker} dummy={"dummy"} />)
+    Option(<token id= {tkid} form = {word}  lemma = {lemma} pos = {pos} Normalizedner = {Normalizedner} Speaker={Speaker} />)
 
 
   }
@@ -203,7 +206,7 @@ class StanfordCoreNLPAnnotator(override val name: String, override val props: Pr
   def tid(sindex: String, tindex: Int) = sindex + "_tok" + tindex
 
   //override def requires = Set()
-  override def requirementsSatisfied = Set(Requirement.CoreNLP)
+  override def requirementsSatisfied = Set(Requirement.Tokenize)
 
   var my_node: Node = null
   var min_option:Int = 9999
