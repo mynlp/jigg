@@ -1,7 +1,7 @@
 package jigg.pipeline
 
 /*
- Copyright 2013-2015 Hiroshi Noji
+ Copyright 2013-2015 Takafumi Sakakibara and Hiroshi Noji
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -59,7 +59,16 @@ class CCGParseAnnotator(override val name: String, override val props: Propertie
 
   def configParsing = {
     System.err.println("The path of CCG parser model: " + InputOptions.loadModelPath)
-    parsing.load
+    try {
+      parsing.load
+    }
+    catch{
+      case e: Exception =>
+        val errorMsg = s"""Failed to start CCG parser. Make sure the model file of CCG is already installed. If not, execute the following command in jigg directory:
+  ./script/download_ccg_model.sh
+"""
+        argumentError("model", errorMsg)
+    }
   }
 
   override def newSentenceAnnotation(sentence: Node) = {
@@ -103,7 +112,7 @@ class CCGParseAnnotator(override val name: String, override val props: Propertie
 
       val rootIDs = deriv.roots.map { p => spanID(point2id(derivID, p)) }.mkString(" ")
 
-      <ccg root={ rootIDs } id={ ccgID } score={ score.toString }>{ spans }</ccg>
+      <ccg annotators={ name } root={ rootIDs } id={ ccgID } score={ score.toString }>{ spans }</ccg>
     }
 
     val ccgs = derivs.zipWithIndex map { case ((deriv, score), i) => ccgAnnotation(i, deriv, score) }
@@ -115,9 +124,9 @@ class CCGParseAnnotator(override val name: String, override val props: Propertie
     val dict = parsing.tagging.dict
     def toTaggedSentence(tokenSeq: NodeSeq) = {
       val terminalSeq = tokenSeq map { token =>
-        val surf = dict.getWordOrCreate(token \ "@surf" toString())
-        val base = dict.getWordOrCreate(token \ "@base" toString())
-        val katsuyou = token \ "@inflectionForm" toString() match {
+        val form = dict.getWordOrCreate(token \ "@form" toString())
+        val lemma = dict.getWordOrCreate(token \ "@lemma" toString())
+        val cForm = token \ "@cForm" toString() match {
           case "*" => "_"; case x => x
         }
         val posSeq = Seq("@pos", "@pos1", "@pos2", "@pos3") map { token \ _ toString() }
@@ -126,9 +135,9 @@ class CCGParseAnnotator(override val name: String, override val props: Propertie
           case idx => posSeq.take(idx).mkString("-")
         }
 
-        val combinedPoS = dict.getPoSOrCreate(pos + "/" + katsuyou)
+        val combinedPoS = dict.getPoSOrCreate(pos + "/" + cForm)
 
-        (surf, base, combinedPoS)
+        (form, lemma, combinedPoS)
       }
       new PoSTaggedSentence(terminalSeq.map(_._1), terminalSeq.map(_._2), terminalSeq.map(_._3))
     }
@@ -168,6 +177,6 @@ class CCGParseAnnotator(override val name: String, override val props: Propertie
     map.toMap
   }
 
-  override def requires = Set(Requirement.TokenizeWithIPA)
-  override def requirementsSatisfied = Set(Requirement.CCG)
+  override def requires = Set(JaRequirement.TokenizeWithIPA)
+  override def requirementsSatisfied = Set(JaRequirement.CCGDerivation)
 }

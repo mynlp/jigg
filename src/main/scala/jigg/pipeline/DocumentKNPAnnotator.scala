@@ -22,130 +22,112 @@ import scala.util.matching.Regex
 import scala.xml._
 import jigg.util.XMLUtil
 
-class DocumentKNPAnnotator(override val name: String, override val props: Properties) extends DocumentAnnotator with KNPAnnotator{
+class DocumentKNPAnnotator(override val name: String, override val props: Properties)
+    extends DocumentAnnotator with KNPAnnotator {
+
   @Prop(gloss = "Use this command to launch KNP (-tab and -anaphora are mandatory and automatically added). Version >= 4.12 is assumed.") var command = "knp"
   readProps()
 
-  //for KNP 4.12 (-ne option is unneed)
-  lazy val knpProcess = new java.lang.ProcessBuilder(command, "-tab", "-anaphora").start
+  val ioQueue = new IOQueue(nThreads)
 
-  /**
-    * Close the external process and the interface
-    */
-  override def close() {
-    knpOut.close()
-    knpIn.close()
-    knpProcess.destroy()
-  }
+  override def close() = ioQueue.close()
 
-  private def corefid(did: String, corefindex:Int) = did + "_coref" + corefindex.toString
-  private def parid(sid: String, parindex:Int) = sid + "_par" + parindex.toString
+  override def defaultArgs = Seq("-tab", "-anaphora")
 
-  def recovJumanOutputWithDocId(jumanTokens:Node, did:String, sid:String) : Seq[String] = {
-    val docIdInfo = "# S-ID:" + did + "-" + sid + " JUMAN:7.01" + "\n" //FIXME
-
-    docIdInfo +: recovJumanOutput(jumanTokens)
-  }
-
+  private def corefId(did: String, corefIdx:Int) = did + "_knpcr" + corefIdx
+  private def predArgId(sid: String, prIdx:Int) = sid + "_knppr" + prIdx
 
   override def newDocumentAnnotation(document: Node): Node = {
+    def rmHyphen(id: String) = id map { case '-' => '_'; case a => a }
+
     val did = (document \ "@id").text
     val sentenceNodes = (document \ "sentences" \ "sentence")
+    val sentenceIds = sentenceNodes map (_ \@ "id")
 
-    val knpResults = sentenceNodes.map{
-      sentenceNode =>
-      val sindex = (sentenceNode \ "@id").text
-      val jumanTokens = (sentenceNode \ "tokens").head
+    def nPrevId(from: Int): Int=>String = { i => sentenceIds(Math.max(from - i, 0)) }
 
-      val jumanStr = recovJumanOutputWithDocId(jumanTokens, did, sindex).mkString
+    val annotatedSentences: NodeSeq = ioQueue.using { io =>
+      sentenceNodes.zipWithIndex map { case (sentenceNode, idx) =>
+        val sentenceId = sentenceIds(idx)
 
-      runKNP(jumanStr)
-    }
+        val docIdInfo =
+          "# S-ID:" + rmHyphen(did) + "-" + rmHyphen(sentenceId) + " JUMAN:7.01" //FIXME
 
-    //sentence-level annotation
-    val annotatedNodes = sentenceNodes.zip(knpResults).map{
-      pair =>
-      val sentenceNode = pair._1
-      val knpResult = pair._2
-      val sid = (sentenceNode \ "@id").text
-
-      annotateSentenceNode(sentenceNode, knpResult, sid)
-    }
-
-    val annotatedDocNode = annotatedNodes.foldLeft(document){
-      (node, annotatedNode) =>
-      XMLUtil.replaceAll(node, "sentence")(sentenceNode =>
-        if ((sentenceNode \ "@id").text == (annotatedNode \ "@id").text)
-          annotatedNode else sentenceNode)
-    }
-
-    val docNodeWithCoref = XMLUtil.addChild(annotatedDocNode, getCoreferences(annotatedDocNode))
-    XMLUtil.replaceAll(docNodeWithCoref, "sentence"){
-      sentenceNode =>
-      XMLUtil.addChild(sentenceNode, getPredicateArgumentRelations(sentenceNode, did))
-    }
-  }
-
-  def getCoreferences(docNode:NodeSeq) = {
-    val eidToBpids = (docNode \\ "basicPhrase").map{ bp =>
-      val bpid = (bp \ "@id").text
-      val feature : String = (bp \ "@features").text
-      val pattern = new Regex("""\<EID:(\d+)\>""", "eid")
-      val eid = pattern.findFirstMatchIn(feature).map(m => m.group("eid").toInt).getOrElse(-1)
-      (eid, bpid)
-    }.groupBy(_._1) // Map[Int, Seq[Int]]
-      .toSeq               // Seq[(Int, Seq[Int])]
-      .sortBy(_._1)
-      .map { case (eid, lst) => (eid, lst.map(_._2).mkString(" ")) } // Seq[Int, String]
-
-    val did = (docNode \ "@id").text
-    val ans = eidToBpids.map{
-      case (eid, bps) =>
-        <coreference id={corefid(did, eid)} basicPhrases={bps} />
-    }
-
-    <coreferences>{ ans }</coreferences>
-  }
-
-  def getPredicateArgumentRelations(sentenceNode:NodeSeq, did:String) = {
-    var parInd = 0
-
-    //<述語項構造:飲む/のむ:動1:ガ/N/麻生太郎/1;ヲ/C/コーヒー/2>
-    //<述語項構造:紅茶/こうちゃ:名1>
-
-    val pattern = new Regex("""\<述語項構造:[^:]+:[^:]+:(.+)\>""", "args")
-    val sid = (sentenceNode \ "@id").text
-
-    val predArgNodes = (sentenceNode \\ "basicPhrase").filter(node => (node \ "@features").text.contains("<述語項構造:")).map{
-      bpNode =>
-      val bpid = (bpNode \ "@id").text
-      val featureStr = (bpNode \ "@features").text
-      val args = pattern.findFirstMatchIn(featureStr).map(m => m.group("args")) //.getOrElse("")
-
-      val ans = args match {
-        case Some(args_str) =>
-          args_str.split(";").map{
-            arg =>
-            val sp = arg.split("/")
-            val label = sp(0)
-            val flag = sp(1)
-            //val name = sp(2)
-            val eid = sp(3).toInt
-
-            val par_ans = <predicateArgumentRelation id={parid(sid, parInd)} predicate={bpid} argument={corefid(did, eid)} label={label} flag={flag} />
-            parInd += 1
-            par_ans
-          }
-        case None => scala.xml.Null
+        val result = runKNP(sentenceNode, Some(docIdInfo), io)
+        val s = annotateSentenceNode(sentenceNode, result, sentenceId, nPrevId(idx))
+        XMLUtil.addChild(s, extractPredArgs(s, did))
       }
-      ans
     }
-    <predicateArgumentRelations>{ predArgNodes }</predicateArgumentRelations>
+    val coreferencesNode = extractCoreferences(annotatedSentences, did)
+
+    val newDoc = XMLUtil.replaceAll (document, "sentences") {
+      _ copy (child = annotatedSentences)
+    }
+
+    XMLUtil addChild (newDoc, coreferencesNode)
   }
 
-  override def requires = Set(Requirement.TokenizeWithJuman)
-  override def requirementsSatisfied = {
-    import Requirement._
-    Set(Chunk, Dependency, BasicPhrase, BasicPhraseDependency, Coreference, PredArg, NamedEntity)
+  def extractCoreferences(sentences: NodeSeq, did: String): Node = {
+    val mentions = (sentences \\ "basicPhrase") map { phrase =>
+      val misc = phrase \@ "misc"
+      misc indexOf ("<EID:") match {
+        case -1 => None
+        case begin =>
+          val eidx = misc substring (begin + 5, misc indexOf (">", begin + 5))
+          val phraseId = phrase \@ "id"
+          Some((eidx.toInt, phraseId))
+      }
+    }
+    val idxToMentions: Seq[(Int, Seq[String])] = mentions.collect {
+      case Some((eidx, phraseId)) => (eidx, phraseId)
+    }.groupBy(_._1).toSeq.sortBy(_._1) map { case (k, v) => (k, v map (_._2)) }
+
+    val nodes = idxToMentions map { case (eidx, mentions) =>
+      <coreference id={corefId(did, eidx)} mentions={ mentions.mkString(" ") } />
+    }
+    <coreferences annotators={ name }>{ nodes }</coreferences>
   }
+
+  def extractPredArgs(sentence: Node, did: String) = {
+
+    val sid = sentence \@ "id"
+    val idGen = jigg.util.LocalIDGenerator { i => predArgId(sid, i) }
+
+    def extractPredArgStr(basicPhrase: Node): Option[String] = {
+      val line = basicPhrase \@ "misc"
+      line indexOf "<述語項構造:" match {
+        case -1 => None
+        case begin =>
+          val end = line indexOf (">", begin + 7) // 7 is the index of char next to :
+          val items = line substring (begin, end) split ":"
+
+          if (items.size > 3) Some(items(3)) else None
+      }
+    }
+
+    def basicPhraseToPredArgs(basicPhrase: Node): NodeSeq =
+      extractPredArgStr(basicPhrase) map { str =>
+        extractPredArgs (str, basicPhrase \@ "id")
+      } getOrElse Seq()
+
+    def extractPredArgs(predArgsStr: String, predId: String): NodeSeq = {
+
+      val nodes = predArgsStr split ";" map (_ split "/") map { items =>
+        val eid = corefId(did, items(3).toInt)
+        <predArg id={ idGen.next } pred={ predId } arg={ eid } deprel={ items(0) }
+        flag={ items(1) }/>
+      }
+      nodes.toSeq
+    }
+
+    val predArgNodes = for (
+      basicPhrase <- sentence \\ "basicPhrase";
+      predArg <- basicPhraseToPredArgs(basicPhrase)
+    ) yield predArg
+
+    <predArgs annotators={ name }>{ predArgNodes }</predArgs>
+  }
+
+  override def requirementsSatisfied =
+    super.requirementsSatisfied | Set(JaRequirement.Coreference, JaRequirement.PredArg)
 }

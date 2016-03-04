@@ -19,33 +19,22 @@ package jigg.pipeline
 import java.util.Properties
 import scala.xml._
 
-class SimpleKNPAnnotator(override val name: String, override val props: Properties) extends SentencesAnnotator with KNPAnnotator{
+class SimpleKNPAnnotator(override val name: String, override val props: Properties)
+    extends SentencesAnnotator with KNPAnnotator {
+
   @Prop(gloss = "Use this command to launch KNP (-tab is automatically added. -anaphora is not compatible with this annotator. In that case, use knpDoc instead). Version >= 4.12 is assumed.") var command = "knp"
   readProps()
 
-  lazy val knpProcess = new java.lang.ProcessBuilder(command, "-tab").start
+  val ioQueue = new IOQueue(nThreads)
 
-  /**
-    * Close the external process and the interface
-    */
-  override def close() {
-    knpOut.close()
-    knpIn.close()
-    knpProcess.destroy()
-  }
+  override def close() = ioQueue.close()
+
+  override def defaultArgs = Seq("-tab")
 
   override def newSentenceAnnotation(sentence: Node): Node = {
-    val sindex = (sentence \ "@id").toString
-    val jumanTokens = (sentence \ "tokens").head
-    val jumanStr = recovJumanOutput(jumanTokens).mkString
-    val knpResult = runKNP(jumanStr)
+    val sentenceId = (sentence \ "@id").toString
 
-    annotateSentenceNode(sentence, knpResult, sindex)
-  }
-
-  override def requires = Set(Requirement.TokenizeWithJuman)
-  override def requirementsSatisfied = {
-    import Requirement._
-    Set(Chunk, Dependency, BasicPhrase, BasicPhraseDependency, NamedEntity)
+    val knpResult = ioQueue.using { io => runKNP(sentence, None, io) }
+    annotateSentenceNode(sentence, knpResult, sentenceId,  _ => sentenceId)
   }
 }
