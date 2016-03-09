@@ -142,7 +142,7 @@ class StanfordCoreNLPAnnotator(override val name: String, override val props: Pr
 
   def mkDependenciesNode(graph:SemanticGraph ,type_name:String, tokens:java.util.List[CoreLabel]): Node = {
     val ans = ""
-    var depInfo:Node = <dependencies type={type_name} anntater={annotator_name}></dependencies>
+    var depInfo:Node = <dependencies type={type_name} annotators={annotator_name}></dependencies>
     for( root <-graph.getRoots()){
       val rel:String  = GrammaticalRelation.ROOT.getLongName().replaceAll("\\s+", "")
       var source:Int = 0
@@ -183,7 +183,7 @@ class StanfordCoreNLPAnnotator(override val name: String, override val props: Pr
     var constituentTreePrinter:TreePrint = sf_options.constituentTreePrinter
     constituentTreePrinter.printTree(parse, new PrintWriter(treeStrWriter, true))
     var parse_Sexp:String = treeStrWriter.toString()
-    var tmp:Elem = <parse anntate={annotator_name}></parse>
+    var tmp:Elem = <parse annotators={annotator_name}></parse>
     SecpressionUtil.exportXML(parse_Sexp,tokens,tmp,sid)
 
   }

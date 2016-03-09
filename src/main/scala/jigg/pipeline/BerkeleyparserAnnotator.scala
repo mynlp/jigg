@@ -42,11 +42,35 @@ import edu.berkeley.nlp.util.Numberer
 import jigg.util.SecpressionUtil
 
 
-class BerkeleyparserAnnotator(override val name: String, override val props: Properties) extends SentencesAnnotator {
+class BerkeleyparserAnnotator(override val name: String, override val props: Properties) extends SentencesAnnotator{
+
+  //override val nThread = 1
+
+  val name_data = name.split(":")
+  var gr_file:String = ""
+  if( name_data.size>1) gr_file = name_data(1)
+    else gr_file = "eng_sm6.gr"
+
+  var bp = new BerkeleyParser()
+    var bpo = new BerkeleyParser.Options()
+    bpo.grFileName = gr_file
+    bpo.goldPOS = false;
+    //bpo.goldPOS = true
+
+    var pData = ParserData.Load(bpo.grFileName )
+    if( pData == null){
+      argumentError("annotators", s"Failed to load grammar from file")
+    }
+    var grammar = pData.getGrammar();
+    var lexicon = pData.getLexicon();
+    Numberer.setNumberers(pData.getNumbs());
+    val threshold = 1.0
+    val parser = new CoarseToFineMaxRuleParser(grammar, lexicon, threshold, -1, bpo.viterbi, bpo.substates, bpo.scores, bpo.accurate, bpo.variational, true, true)
+    var tokenizer = new PTBLineLexer()
 
   override def newSentenceAnnotation(sentence: Node) = {
 
-    val name_data = name.split(":")
+    /*val name_data = name.split(":")
     var gr_file:String = ""
 
     if( name_data.size>1) gr_file = name_data(1)
@@ -67,7 +91,7 @@ class BerkeleyparserAnnotator(override val name: String, override val props: Pro
     Numberer.setNumberers(pData.getNumbs());
     val threshold = 1.0
     val parser = new CoarseToFineMaxRuleParser(grammar, lexicon, threshold, -1, bpo.viterbi, bpo.substates, bpo.scores, bpo.accurate, bpo.variational, true, true)
-    var tokenizer = new PTBLineLexer()
+    var tokenizer = new PTBLineLexer()*/
     var tags = new ArrayList[String]
     var posTags = new ArrayList[String]
 
@@ -100,7 +124,7 @@ class BerkeleyparserAnnotator(override val name: String, override val props: Pro
       TreeStr = TreeStr + parsedTrees.get(i)
     }
     var dummy = <dummy>dummy</dummy>
-    var tmp:Elem = <parse anntate="Berkeleyparser"></parse>
+    var tmp:Elem = <parse annotators="Berkeleyparser"></parse>
     var parse_node = SecpressionUtil.exportXML(TreeStr,tokens,tmp,sentenceID)
     XMLUtil.addChild(sentence, parse_node)
   }
