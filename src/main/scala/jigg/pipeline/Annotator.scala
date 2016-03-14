@@ -38,7 +38,7 @@ trait Annotator extends PropsHolder {
 
   final def prop(key: String): Option[String] = PropertiesUtil.findProperty(name + "." + key, props)
 
-  /** This method access to the global property of nThread to get the number of threads.
+  /** This method access to the global property of nThreads to get the number of threads.
     *
     * The value is used if an annotator is SentenceAnnotator or DocumentAnnotator.
     * One may customize this in an annotator subclass; for example, the following setting
