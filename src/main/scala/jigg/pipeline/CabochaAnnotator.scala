@@ -75,7 +75,7 @@ ${helpMessage}
 
     val tokenIds = tokens map(_ \ "@id" + "")
 
-    jigg.util.XMLUtil.addOrOverrideChild(
+    jigg.util.XMLUtil.addChild(
       sentence,
       Seq(chunksNode(chunks, sid, tokenIds), depsNode(chunks, sid)))
   }
@@ -138,7 +138,7 @@ ${helpMessage}
       val func = tokenIds(chunk.funcIdx)
       <chunk id={ id } tokens={ tokens } head={ head } func={ func } />
     }
-    <chunks>{ nodeSeq }</chunks>
+    <chunks annotators={ name }>{ nodeSeq }</chunks>
   }
 
   def depsNode(chunks: Seq[Chunk], sid:String): Node = {
@@ -151,7 +151,7 @@ ${helpMessage}
       val dep = chunkId(sid, chunk.id)
       <dependency unit="chunk" id={ id } head={ head } dependent={ dep } deprel={ chunk.rel } />
     }
-    <dependencies>{ nodeSeq }</dependencies>
+    <dependencies annotators={ name }>{ nodeSeq }</dependencies>
   }
 
   def chunkId(sid: String, idx: Int) = sid + "_chu" + idx
