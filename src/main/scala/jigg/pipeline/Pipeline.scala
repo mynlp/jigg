@@ -46,9 +46,20 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
 
   readProps()
 
-  lazy val annotatorList = createAnnotatorList
-
-  def close() = annotatorList foreach { _.close() }
+  /** User may override this method in a subclass to add more own annotators.
+    * See also `getAnnotator(name: String)`.
+    */
+  protected val defaultAnnotatorClassMap: Map[String, Class[_]] = Map(
+    "dsplit" -> classOf[RegexDocumentAnnotator],
+    "ssplit" -> classOf[RegexSentenceAnnotator],
+    "kuromoji" -> classOf[KuromojiAnnotator],
+    "mecab" -> classOf[MecabAnnotator],
+    "cabocha" -> classOf[CabochaAnnotator],
+    "juman" -> classOf[JumanAnnotator],
+    "knp" -> classOf[SimpleKNPAnnotator],
+    "knpDoc" -> classOf[DocumentKNPAnnotator],
+    "ccg" -> classOf[CCGParseAnnotator]
+  )
 
   // TODO: should document ID be given here?  Somewhere else?
   private[this] val documentIDGen = jigg.util.IDGenerator("d")
@@ -61,7 +72,11 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
     case (k, v) => (k.drop(k.indexOf('.') + 1), v)
   }.toMap
 
-  def createAnnotatorList: List[Annotator] = {
+  val annotatorList = createAnnotatorList()
+
+  def close() = annotatorList foreach { _.close() }
+
+  def createAnnotatorList(): List[Annotator] = {
     val annotatorList =
       annotatorNames.map { getAnnotator(_) }.toList
 
@@ -76,25 +91,11 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
       satisfiedSofar | annotator.requirementsSatisfied
     }
 
-    annotatorList foreach(_.init)
+    annotatorList foreach (_.init)
     annotatorList
   }
 
-  /** User may override this method in a subclass to add more own annotators.
-    */
-  protected val defaultAnnotatorClassMap: Map[String, Class[_]] = Map(
-    "dsplit" -> classOf[RegexDocumentAnnotator],
-    "ssplit" -> classOf[RegexSentenceAnnotator],
-    "kuromoji" -> classOf[KuromojiAnnotator],
-    "mecab" -> classOf[MecabAnnotator],
-    "cabocha" -> classOf[CabochaAnnotator],
-    "juman" -> classOf[JumanAnnotator],
-    "knp" -> classOf[SimpleKNPAnnotator],
-    "knpDoc" -> classOf[DocumentKNPAnnotator],
-    "ccg" -> classOf[CCGParseAnnotator]
-  )
-
-  /** Or also customizable by overriding this method directory, e.g.,
+  /** Another way to add annotator in a pipeline is to override this method directory:
     *
     * {{{
     * val option = "option"
