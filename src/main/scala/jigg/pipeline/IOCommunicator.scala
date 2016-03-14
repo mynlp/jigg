@@ -149,7 +149,9 @@ trait ProcessCommunicator extends IOCommunicator {
 
   protected def startProcess(): Process =
     control.Exception.allCatch either startWithRedirectError() match {
-      case Right(process) => process
+      case Right(process)
+          if (!ProcessCommunicator.isExited(process)) => process
+      case Right(deadProcess) => startError(new RuntimeException)
       case Left(error) => startError(error)
     }
 
@@ -166,10 +168,13 @@ trait ProcessCommunicator extends IOCommunicator {
 
   protected def checkStartError() = {}
 
-  protected def isExited =
-    try { process.exitValue; true }
-    catch { case e: IllegalThreadStateException => false }
+  protected def isExited = ProcessCommunicator.isExited(process)
+}
 
+object ProcessCommunicator {
+  private def isExited(p: Process) =
+    try { p.exitValue; true }
+    catch { case e: IllegalThreadStateException => false }
 }
 
 /** An example class of IOCommunicator

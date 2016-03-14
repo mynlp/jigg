@@ -34,6 +34,9 @@ class JumanAnnotator(override val name: String, override val props: Properties)
 
   val ioQueue = new IOQueue(nThreads)
 
+  override def launchTesters = Seq(
+    LaunchTester("EOS", _ == "EOS", _ == "EOS"))
+
   def softwareUrl = "http://nlp.ist.i.kyoto-u.ac.jp/index.php?JUMAN"
 
   override def close() = ioQueue.close()

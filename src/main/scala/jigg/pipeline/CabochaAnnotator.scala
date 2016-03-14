@@ -31,6 +31,9 @@ abstract class CabochaAnnotator(override val name: String, override val props: P
 
   val ioQueue = new IOQueue(nThreads)
 
+  override def launchTesters = Seq(
+    LaunchTester("EOS", _ == "EOS", _ == "EOS"))
+
   override def description = {
 
     def keyName = makeFullName("command")

@@ -188,7 +188,7 @@ trait EasyIO extends Annotator {
     private def errorIfFailWriting(writeResult: Either[Throwable, Unit]): Unit =
       writeResult match {
         case Left(e: IOException) =>
-          def remainingMessage = communicator.readAll()
+          def remainingMessage = communicator readAll() mkString "\n"
           val errorMsg = s"""ERROR: Problem occurs in $name.
   ${remainingMessage}
 """
@@ -202,7 +202,8 @@ trait EasyIO extends Annotator {
       output match {
         case Right(results) => results
         case Left((partial, iter)) =>
-          val remainingMsg = (partial.dropRight(1).mkString("\n") ++ readRemaining(iter))
+          val remainingMsg =
+            partial.dropRight(1).mkString("\n") + readRemaining(iter)
           val errorMsg = s"""ERROR: Unexpected output in $name:\n
   ${remainingMsg}
 """
@@ -235,22 +236,64 @@ trait IOCreator extends EasyIO {
 
   def mkIO(): IO = mkIO(mkCommunicator()) // new IO(mkCommunicator())
 
-  def mkCommunicator(): IOCommunicator = new ProcessCommunicator {
+  def mkCommunicator(): IOCommunicator = new InstructiveProcessCommunicator
+
+  class InstructiveProcessCommunicator extends ProcessCommunicator {
     def cmd = command
     def args = defaultArgs
+
     override def startError(e: Throwable) = {
       val commandName = makeFullName("command")
-      val errorMsg = s"""ERROR: Failed to start $name.
-  cmd: ${cmd + args.mkString(" ")}
-
+      val msg = s"""
   If the command is not installed, you can get it from ${softwareUrl}.
   You may also customize the way to launch the process by specifying a
   path to the command, e.g.:
     -${commandName} /path/to/$prefix
 """
-      argumentError("command", errorMsg)
+      launchError(msg)
+    }
+
+    override def checkStartError() = for (LaunchTester(i, u, c) <- launchTesters) {
+      safeWriteWithFlush(i) match {
+        case Left(e) =>
+          val msg = readAll() mkString "\n"
+          launchError(s"output:\n$msg")
+        case _ =>
+      }
+      readUntil(u) match {
+        case Right(results) =>
+        case Left((partial, iter)) =>
+          val remainingMsg: String =
+            partial.dropRight(1).mkString("\n") + readRemaining(iter)
+          launchError(s"output:\n$remainingMsg")
+      }
+    }
+
+    private def launchError(msg: String) = {
+      val fullMsg = s"""ERROR: Failed to start $name.
+  cmd: ${(cmd +: args) mkString " "}
+
+$msg
+"""
+      argumentError("command", fullMsg)
     }
   }
+
+  /** Each launch tester is used to check whether the process
+    * causes no problem in launching.
+    */
+  def launchTesters: Seq[LaunchTester] = Seq()
+
+  /** A tuple of:
+    *
+    * input = example input;
+    * until = read until this line is satisfied;
+    * okOutput = succeed to launch if the output satisfies this predicate.
+    */
+  case class LaunchTester(
+    input: String,
+    until: String=>Boolean,
+    okOutput: String=>Boolean)
 }
 
 /** Supply `IOQueue` class, which enables thread-safe call of external softwares.
