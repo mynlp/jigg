@@ -32,6 +32,9 @@ abstract class MecabAnnotator(override val name: String, override val props: Pro
 
   val ioQueue = new IOQueue(nThreads)
 
+  override def launchTesters = Seq(
+    LaunchTester("EOS", _ == "EOS", _ == "EOS"))
+
   override def description = {
 
     def keyName = makeFullName("command")
@@ -197,7 +200,7 @@ object MecabAnnotator extends AnnotatorCompanion[MecabAnnotator] {
       case SystemDic.jumandic => new JumanDicMecabAnnotator(name, props)
       case SystemDic.unidic => new UnidicMecabAnnotator(name, props)
     } getOrElse {
-      System.out.println(s"Failed to search dictionary file from the current mecab path: ${cmd}. Assume ipadic is used...")
+      System.out.println(s"Failed to search dictionary file from the current mecab path: ${cmd}. Assuming ipadic is used...")
       new IPAMecabAnnotator(name, props)
     }
   }

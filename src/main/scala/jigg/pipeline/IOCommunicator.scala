@@ -26,7 +26,7 @@ import java.io._
 /** IOCommunicator abstracts IO communication mechanism, and provides several utility
   * functions.
   *
-  * An annotator, which relies on an external command, may has a member of this trait.
+  * An annotator, which relies on an external command, may have a member of this trait.
   * When unit testing such annotator, we may use an annotator class which overrides
   * a communicator variable to eliminate dependencies for external resource.
   *

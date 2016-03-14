@@ -26,9 +26,9 @@ trait KNPAnnotator extends Annotator with ParallelIO with IOCreator {
 
   def softwareUrl = "http://nlp.ist.i.kyoto-u.ac.jp/index.php?KNP"
 
-  /** When error occurs (e.g., encountering half spaces), KNP output errors and finish with EOS.
-    * (but the process is still alive, and waiting for new input) This method tries to read the
-    * remaining erorr message until EOS.
+  /** When error occurs (e.g., encountering half spaces), KNP outputs errors and
+    * finishes with EOS (but the process is still alive, and waiting for new
+    * input). This method tries to read the remaining erorr message until EOS.
     */
   override def readRemaining(iter: Iterator[String]) = iter takeWhile {
     l => l != null && l != "EOS"
