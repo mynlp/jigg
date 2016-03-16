@@ -214,7 +214,7 @@ object CabochaAnnotator extends AnnotatorCompanion[CabochaAnnotator] {
       def dicFromCommand: Option[SystemDic] = readFromCommand() flatMap { toSystemDic(_) }
       def dicFromCabocharc: Option[SystemDic] = readFromCabocharc() flatMap { toSystemDic(_) }
       def dicFromHelp: SystemDic = {
-        import System.out.{ println => p }
+        import System.err.{ println => p }
         p(s"WARNING: Failed to find cabocharc from the current command. Please check cabocha-config exists on the same path as cabocha.")
         readDefaultFromHelp() map { foundDefault =>
           p(s"Assume the default posset is used (${foundDefault}).")

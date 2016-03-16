@@ -166,7 +166,7 @@ object KuromojiAnnotator extends AnnotatorCompanion[KuromojiAnnotator] {
       case "juman" => new JumanKuromojiAnnotator(name, props)
       case "unidic" => new UnidicKuromojiAnnotator(name, props)
       case _ =>
-        System.out.println(s"WARNING: Dictionary ${dic} is unsupported in kuromoji. Use ipadic...")
+        System.err.println(s"WARNING: Dictionary ${dic} is unsupported in kuromoji. Use ipadic...")
         new IPAKuromojiAnnotator(name, props)
     }
   }

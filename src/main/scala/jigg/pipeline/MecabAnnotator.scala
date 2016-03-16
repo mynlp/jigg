@@ -200,7 +200,7 @@ object MecabAnnotator extends AnnotatorCompanion[MecabAnnotator] {
       case SystemDic.jumandic => new JumanDicMecabAnnotator(name, props)
       case SystemDic.unidic => new UnidicMecabAnnotator(name, props)
     } getOrElse {
-      System.out.println(s"Failed to search dictionary file from the current mecab path: ${cmd}. Assuming ipadic is used...")
+      System.err.println(s"Failed to search dictionary file from the current mecab path: ${cmd}. Assuming ipadic is used...")
       new IPAMecabAnnotator(name, props)
     }
   }
