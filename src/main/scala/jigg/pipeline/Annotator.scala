@@ -79,6 +79,9 @@ object Annotator {
         xx
     }
   }
+
+  def annotateError(n: Node, name: String, e: Exception): Node =
+    XMLUtil.addChild(n, <error annotator={ name }>{ e + "" }</error>)
 }
 
 /** This is the base trait for all companion object of each Annotator
@@ -110,7 +113,13 @@ trait SentencesAnnotator extends Annotator {
     XMLUtil.replaceAll(annotation, "sentences") { e =>
       val newChild = Annotator.makePar(e.child, nThreads).map { c =>
         assert(c.label == "sentence") // assuming sentences node has only sentence nodes as children
-        newSentenceAnnotation(c)
+
+        try newSentenceAnnotation(c) catch {
+          case e: AnnotationError =>
+            System.err.println(s"Failed to annotate a sentence by $name.")
+            System.err.println(XMLUtil.text(c))
+            Annotator.annotateError(c, name, e)
+        }
       }.seq
       e.copy(child = newChild)
     }
@@ -128,7 +137,12 @@ trait DocumentAnnotator extends Annotator {
     XMLUtil.replaceAll(annotation, "root") { e =>
       val newChild = Annotator.makePar(e.child, nThreads).map { c =>
         c match {
-          case c if c.label == "document" => newDocumentAnnotation(c)
+          case c if c.label == "document" =>
+            try newDocumentAnnotation(c) catch {
+              case e: AnnotationError =>
+                System.err.println(s"Failed to annotate a document by $name.")
+                Annotator.annotateError(c, name, e)
+            }
           case c => c
         }
       }.seq
@@ -138,7 +152,6 @@ trait DocumentAnnotator extends Annotator {
 
   def newDocumentAnnotation(sentence: Node): Node
 }
-
 
 /** Provides IO class, which wraps IOCommunicator, and handles errors during communication.
   *
@@ -188,11 +201,10 @@ trait EasyIO extends Annotator {
     private def errorIfFailWriting(writeResult: Either[Throwable, Unit]): Unit =
       writeResult match {
         case Left(e: IOException) =>
-          def remainingMessage = communicator readAll() mkString "\n"
-          val errorMsg = s"""ERROR: Problem occurs in $name.
-  ${remainingMessage}
-"""
-          argumentError("command", errorMsg)
+          // Failing to write means that process is dead, so we can safely read remaining
+          // inputs. Is this always true?
+          val remainingMsg = communicator readAll() mkString "\n"
+          throw new ProcessError(remainingMsg)
         case Left(e) => throw e
         case _ =>
       }
@@ -204,17 +216,14 @@ trait EasyIO extends Annotator {
         case Left((partial, iter)) =>
           val remainingMsg =
             partial.dropRight(1).mkString("\n") + readRemaining(iter)
-          val errorMsg = s"""ERROR: Unexpected output in $name:\n
-  ${remainingMsg}
-"""
-          argumentError("command", errorMsg)
+          throw new ProcessError(remainingMsg)
       }
   }
 
   /** Internal method.
     *
     * What to process the remaining input iterator when the erorr occur?
-    * Default: do nothing, because it may not finish when input stream is alive.
+    * Default: do nothing, because it may not finish when input stream is still alive.
     */
   def readRemaining(iter: Iterator[String]): String = ""
 }
@@ -310,9 +319,33 @@ trait ParallelIO extends EasyIO {
 
     def using[A](f: IO=>A): A = {
       val io = queue.poll
-      val ret = f(io)
-      queue.put(io)
-      ret
+      try {
+        val ret = f(io)
+        queue.put(io)
+        ret
+      } catch {
+        case e: ProcessError => postProcess(io, e)
+      }
+    }
+
+    /** Check if io is alive, and replace with new one if it is dead.
+      *
+      * This method may possibly be overwritten to close the current io regardless
+      * of the condition. Such device is needed for an annotator, with which it is
+      * difficult to judge whether the input stream is completely read when an error
+      * occurs. In the currently supported annotators, such as KNP, the final line
+      * is always EOS even when an error occurs, so it is guaranteed that no error
+      * is remained in the input stream (for the next sentence).
+      */
+    def postProcess(io: IO, e: ProcessError): Nothing = {
+      if (!io.communicator.isAlive) {
+        io.close()
+        val newIO = mkIO()
+        queue.put(newIO)
+      } else {
+        queue.put(io)
+      }
+      throw e
     }
 
     def close() = queue.asScala foreach (_.close())

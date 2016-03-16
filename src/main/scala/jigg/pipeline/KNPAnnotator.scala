@@ -29,17 +29,7 @@ trait KNPAnnotator extends Annotator with ParallelIO with IOCreator {
   override def launchTesters = Seq(
     LaunchTester("EOS", _ == "EOS", _ startsWith "# S-ID"))
 
-  /** When error occurs (e.g., encountering half spaces), KNP outputs errors and
-    * finishes with EOS (but the process is still alive, and waiting for new
-    * input). This method tries to read the remaining erorr message until EOS.
-    */
-  override def readRemaining(iter: Iterator[String]) = iter takeWhile {
-    l => l != null && l != "EOS"
-  } mkString "\n"
-
   def runKNP(sentence: Node, beginInput: Option[String], io: IO): Seq[String] = {
-    val firstLine: String=>Boolean = s => s.startsWith("# S-ID") && !s.contains("ERROR")
-
     val jumanTokens = (sentence \ "tokens").head
 
     val _output = recoverJumanOutput(jumanTokens)
@@ -47,12 +37,10 @@ trait KNPAnnotator extends Annotator with ParallelIO with IOCreator {
 
     io safeWriteWithFlush jumanOutput
 
-    try io readUntilIf (firstLine, _ == "EOS")
-    catch {
-      case e: ArgumentError =>
-        val raw = XMLUtil.text(sentence)
-        throw new ArgumentError(e.getMessage + "\n\nProblematic sentence: " + raw)
-    }
+    val result = io readUntil (_ == "EOS")
+    if (result(0).startsWith(";;") || result(0).contains("ERROR"))
+      throw new ProcessError(result mkString "\n")
+    else result
   }
 
   def annotateSentenceNode(

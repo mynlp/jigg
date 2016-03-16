@@ -38,6 +38,8 @@ trait IOCommunicator {
   def writeln(line: String): Unit
   def flush(): Unit
 
+  def isAlive: Boolean
+
   def readingIter: Iterator[String]
 
   def closeResource() = {}
@@ -145,6 +147,8 @@ trait ProcessCommunicator extends IOCommunicator {
   }
   def flush() = processOut.flush()
 
+  def isAlive: Boolean = !isExited
+
   def readingIter = Iterator.continually(processIn.readLine())
 
   protected def startProcess(): Process =
@@ -188,6 +192,8 @@ class CommonProcessCommunicator(val cmd: String, val args: Seq[String])
 class StubExternalCommunicator(outputs: Seq[String]) extends IOCommunicator {
 
   def this(output: String) = this(Seq(output))
+
+  def isAlive = true
 
   def write(line: String) = {}
   def writeln(line: String) = {}
