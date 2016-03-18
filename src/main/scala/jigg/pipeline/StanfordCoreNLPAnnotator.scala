@@ -52,6 +52,31 @@ class StanfordCoreNLPAnnotator(override val name: String, override val props: Pr
   @Prop(gloss = "Use predefined segment pattern newLine|point|pointAndNewLine") var method = "pointAndNewLine"
   readProps()
 
+  var Operator2Id: (String)=> Int ={
+    case "ssplit" => 1
+    case "tokenize" => 2
+    case "pos" | "ner" | "lemma" | "parse" | "dcoref" | "sentiment" => 3
+    case _ => -1
+  }
+
+  var name_option = name.split(":")
+  if( name_option.length < 2){
+    sf_option  = "tokenize, ssplit, pos, lemma, ner, parse, dcoref, sentiment"
+  }else{
+    sf_option = name_option(1).replace(";",", ")
+  }
+
+  for( op <- sf_option.split(", ")){
+      var id = Operator2Id(op)
+      if (id < 0){
+        var class_name = name_option(0)
+        argumentError("annotators", s"Unnow opiton $op in class: $class_name")
+      }else{
+        if( id > max_option) max_option = id
+        if( id < min_option) min_option = id
+      }
+    }
+
   val annotator_name = "corenlp"
   val splitRegex = pattern match {
     case "" =>
@@ -69,31 +94,7 @@ class StanfordCoreNLPAnnotator(override val name: String, override val props: Pr
 
 
   override def annotate(node: Node): Node = {
-    var name_option = name.split(":")
-    if( name_option.length < 2){
-      sf_option  = "tokenize, ssplit, pos, lemma, ner, parse, dcoref, sentiment"
-    }else{
-      sf_option = name_option(1).replace(";",", ")
-    }
     my_node = node
-
-    if( name_option.length < 2){
-      sf_option  = "tokenize, ssplit, pos, lemma, ner, parse, dcoref, sentiment"
-    }else{
-      sf_option = name_option(1).replace(";",", ")
-    }
-
-    sf_option.split(", ")
-    for( op <- sf_option.split(", ")){
-      var id = Operator2Id(op)
-      if (id < 0){
-        var class_name = name_option(0)
-        argumentError("annotators", s"Unnow opiton $op in class: $class_name")
-      }else{
-        if( id > max_option) max_option = id
-        if( id < min_option) min_option = id
-      }
-    }
 
     XMLUtil.replaceAll(node, "document") { e =>
       // val sentence_node
@@ -168,7 +169,8 @@ class StanfordCoreNLPAnnotator(override val name: String, override val props: Pr
 
   def addDependencyInfo(depInfo:Node , rel:String , isExtra:Boolean , source:Int , sourceWord:String,  sourceCopy:Int, target:Int, targetWord:String, targetCopy:Int):Node = {
     var depElem:Node = null
-    if( isExtra) { depElem = <dep type={rel} extra={"true"}></dep> }
+
+    if( isExtra) { depElem = <dep unit={rel} extra={"true"}></dep> }
     else { depElem = <dep type={rel}></dep>}
 
     var govElem:Elem = null
@@ -214,12 +216,6 @@ class StanfordCoreNLPAnnotator(override val name: String, override val props: Pr
   var sf_option : String = ""
   var sf_pipline:StanfordCoreNLP = null
   var sf_options:AnnotationOutputter.Options = null
-  var Operator2Id: (String)=> Int ={
-    case "ssplit" => 1
-    case "tokenize" => 2
-    case "pos" | "ner" | "lemma" | "parse" | "dcoref" | "sentiment" => 3
-    case _ => -1
-  }
 
   def runCoreNLP1: Annotation = {
     var text = my_node.text
