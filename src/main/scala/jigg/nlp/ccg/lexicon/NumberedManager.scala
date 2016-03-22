@@ -54,6 +54,8 @@ trait NumberedManager[T<:Numbered[_]] extends Serializable {
 
   def unknown: GetType // this return the value of get() when it failed.
 
+  def entries: Seq[T] = objects.toSeq
+
   // def transformValues(f:T => T) = {
   //   canonicalMap.zipWithIndex.foreach {
   //     case ((k, v), i) => {

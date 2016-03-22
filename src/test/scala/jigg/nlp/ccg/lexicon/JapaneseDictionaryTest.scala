@@ -58,7 +58,7 @@ class JapaneseDictionaryTest extends FunSuite {
     val dict = new JapaneseDictionary(new WordPoS2CategoryDictionary)
     val lexiconPath = findPath("data/Japanese.small.lexicon")
     val templatePath = findPath("data/template.small.lst")
-    dict.readLexicon(lexiconPath, templatePath)
+    JapaneseDictionary.setCategoryDictionaryFromLexicon(dict, lexiconPath, templatePath)
     checkDictionary(dict, "あふれる", "動詞-自立/基本形", Array("S[nm,base]＼NP[ga,nm,ga]", "S[adn,base]＼NP[ga,nm,ga]"))
     checkDictionary(dict, "ふくろう", "副詞-助詞類接続/_", Array("S1／S1", "NP[nc,nm]1／NP[nc,nm]1", "S[nm,stem]"))
   }
@@ -66,7 +66,7 @@ class JapaneseDictionaryTest extends FunSuite {
     val dict = new JapaneseDictionary(new WordSecondFineTag2CategoryDictionary)
     val lexiconPath = findPath("data/Japanese.unkVerb.lexicon")
     val templatePath = findPath("data/template.unkVerb.lst") // this is dummy; the lexicon above need no mappings
-    dict.readLexicon(lexiconPath, templatePath)
+    JapaneseDictionary.setCategoryDictionaryFromLexicon(dict, lexiconPath, templatePath)
 
     val candidates = dict.getCategoryCandidates(dict.getWord("みちご"), dict.getPoS("動詞-非自立/連用形"))
   }

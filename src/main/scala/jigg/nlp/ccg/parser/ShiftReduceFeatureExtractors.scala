@@ -36,7 +36,8 @@ trait Context {
   val q3:Option[Int] = if (state.j+3 < sentence.size) Some(state.j+2) else None
 }
 
-trait FeatureExtractor {
+@SerialVersionUID(1L)
+trait FeatureExtractor extends Serializable {
   def addFeatures(c:Context, features:ArrayBuffer[UF]): Unit
 }
 
@@ -205,7 +206,7 @@ class BasicFinishedExtractor extends FeatureExtractor {
   }
 }
 
-trait FeatureExtractorsBase {
+trait FeatureExtractorsBase extends Serializable {
   def methods: Seq[FeatureExtractor]
   def pos2id: (PoS=>Int) = { pos => pos.id }
 

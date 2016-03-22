@@ -51,7 +51,7 @@ trait SuperTagging extends Problem { outer =>
     dict = newDictionary
 
     System.err.println("Reading CCGBank...")
-    val trainSentences = readSentencesFromCCGBank(trainPath, InputOptions.trainSize, true)
+    val trainSentences = readSentencesFromCCGBank(InputOptions.trainPath, InputOptions.trainSize, true)
     System.err.println("done; # train sentences: " + trainSentences.size)
 
     System.err.println("Setting word -> category mapping...")
@@ -91,7 +91,7 @@ trait SuperTagging extends Problem { outer =>
     load
 
     System.err.println("Reading CCGBank ...")
-    val evalSentences = readSentencesFromCCGBank(developPath, InputOptions.testSize, false)
+    val evalSentences = readSentencesFromCCGBank(InputOptions.developPath, InputOptions.testSize, false)
     val numInstances = evalSentences.foldLeft(0) { _ + _.size }
     System.err.println("done; # evaluating sentences: " + evalSentences.size)
 
@@ -258,7 +258,7 @@ class JapaneseSuperTagging extends SuperTagging {
   def setCategoryDictionaryFromLexiconFiles = {
     val lexiconPath = pathWithBankDirPathAsDefault(InputOptions.lexiconPath, "Japanese.lexicon")
     val templatePath = pathWithBankDirPathAsDefault(InputOptions.templatePath, "template.lst")
-    dict.readLexicon(lexiconPath, templatePath)
+    JapaneseDictionary.setCategoryDictionaryFromLexicon(dict, lexiconPath, templatePath)
   }
 
   override def newCCGBankReader = new CCGBankReader(dict) // default reader

@@ -52,6 +52,8 @@ abstract class Dictionary(val categoryDictionary:CategoryDictionary,
   def getWord(str:String): Word = wordManager.get(str)
   def getWord(id:Int): Word = wordManager(id)
 
+  def vocabulary: Set[String] = wordManager.entries.map(_.v).toSet
+
   def getCategoryOrCreate(str:String): Category = categoryManager.getOrCreate(str)
   def getCategory(str:String): Option[Category] = categoryManager.get(str)
   def getCategory(id:Int): Category = categoryManager(id)

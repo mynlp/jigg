@@ -36,12 +36,14 @@ trait Context {
   def pos(bias:Int):Int  // the same as above
 }
 
-trait FeatureExtractor {
+
+@SerialVersionUID(1L)
+trait FeatureExtractor extends Serializable {
   type Buf = ArrayBuffer[UF]
   def addFeatures(c:Context, features:Buf):Unit
 }
 
-class UnigramWordExtractor(val windowSize:Int) extends FeatureExtractor {
+case class UnigramWordExtractor(val windowSize:Int=5) extends FeatureExtractor {
   require(windowSize % 2 == 1 && windowSize <= 5, "invalid windowSize")
   def addFeatures(c:Context, features:ArrayBuffer[UF]) = {
     features += UnigramWordFeature(c.word(0), Template.w)
@@ -56,7 +58,9 @@ class UnigramWordExtractor(val windowSize:Int) extends FeatureExtractor {
   }
 }
 
-class BigramWordExtractor(val windowSize:Int) extends FeatureExtractor {
+// case class UnigramWordExtractor5() extends UnigramWordExtractor(5)
+
+case class BigramWordExtractor(val windowSize:Int=5) extends FeatureExtractor {
   require(windowSize == 3 || windowSize == 5, "invalid windowSize")
   def addFeatures(c:Context, features:ArrayBuffer[UF]) = {
     if (windowSize >= 3) {
@@ -70,7 +74,9 @@ class BigramWordExtractor(val windowSize:Int) extends FeatureExtractor {
   }
 }
 
-class UnigramPoSExtractor(val windowSize:Int) extends FeatureExtractor {
+// case class BigramWordExtractor5() extends BigramWordExtractor(5)
+
+case class UnigramPoSExtractor(val windowSize:Int=5) extends FeatureExtractor {
   require(windowSize % 2 == 1 && windowSize <= 5, "invalid windowSize")
   def addFeatures(c:Context, features:ArrayBuffer[UF]) = {
     features += UnigramPoSFeature(c.pos(0), Template.p)
@@ -85,7 +91,9 @@ class UnigramPoSExtractor(val windowSize:Int) extends FeatureExtractor {
   }
 }
 
-class BigramPoSExtractor(val windowSize:Int) extends FeatureExtractor {
+// case class UnigramPoSExtractor5() extends UnigramPoSExtractor(5)
+
+case class BigramPoSExtractor(val windowSize:Int=5) extends FeatureExtractor {
   require(windowSize == 3 || windowSize == 5, "invalid windowSize")
   def addFeatures(c:Context, features:ArrayBuffer[UF]) = {
     if (windowSize >= 3) {
@@ -99,14 +107,29 @@ class BigramPoSExtractor(val windowSize:Int) extends FeatureExtractor {
   }
 }
 
+// case class BigramPoSExtractor5() extends BigramPoSExtractor(5)
+
+case class DefaultExtractor() extends FeatureExtractor {
+  val unigram = new UnigramWordExtractor()
+  val unigramPOS = new UnigramPoSExtractor()
+  val bigramPOS = new BigramPoSExtractor()
+
+  def addFeatures(c:Context, features:ArrayBuffer[UF]) = {
+    unigram.addFeatures(c, features)
+    unigramPOS.addFeatures(c, features)
+    bigramPOS.addFeatures(c, features)
+  }
+}
+
 /** User can define his own extractor extends FeatureExtractor.
   * Currently, this class is not thread-safe; If you want to process
   * multiple sentences at a time, you have to prepare k instances
   * of this class.
   */
-class FeatureExtractors(val methods:Seq[FeatureExtractor], val bos:Word, val bosPoS:PoS) {
+class FeatureExtractors(val methods: Seq[FeatureExtractor], val bos: Word, val bosPoS: PoS)
+    extends Serializable {
   //var featureSize = 0
-  var features = new ArrayBuffer[UF]
+  @transient var features = new ArrayBuffer[UF]
 
   class ContextWithBOS(override val sentence:TaggedSentence, override val i:Int) extends Context {
     override def word(bias:Int) = (i + bias) match {
@@ -120,6 +143,8 @@ class FeatureExtractors(val methods:Seq[FeatureExtractor], val bos:Word, val bos
 
   def extractUnlabeledFeatures(sentence:TaggedSentence, i:Int):Seq[UF] = {
     //val features = new ArrayBuffer[UF](featureSize)
+    if (features == null) features = new ArrayBuffer[UF]
+
     features.clear
     features += BiasFeature(Template.bias)
 
@@ -130,15 +155,25 @@ class FeatureExtractors(val methods:Seq[FeatureExtractor], val bos:Word, val bos
   }
 }
 
-class FeatureExtractorsWithCustomPoSLevel(methods:Seq[FeatureExtractor], bos:Word, bosPoS:PoS, val pos2id:(PoS=>Int)) extends FeatureExtractors(methods, bos, bosPoS) {
+class FeatureExtractorsWithCustomPoSLevel(
+  methods: Seq[FeatureExtractor],
+  bos: Word,
+  bosPoS: PoS,
+  val pos2id:(PoS=>Int)) extends FeatureExtractors(methods, bos, bosPoS) {
 
-  class ContextWithCustomPoSLevel(override val sentence:TaggedSentence, override val i:Int) extends ContextWithBOS(sentence, i) {
+  class ContextWithCustomPoSLevel(
+    override val sentence: TaggedSentence,
+    override val i: Int) extends ContextWithBOS(sentence, i) {
     override def pos(bias:Int) = (i + bias) match {
       case p => if (p < 0 || p >= sentence.size) bosPoS.id else pos2id(sentence.pos(p)) }
   }
-  override def context(sentence:TaggedSentence, i:Int):Context = new ContextWithCustomPoSLevel(sentence, i)
+  override def context(sentence: TaggedSentence, i: Int):Context =
+    new ContextWithCustomPoSLevel(sentence, i)
 }
 
 class FeatureExtractorsWithSecondLevelPoS(
-  methods:Seq[FeatureExtractor], bos:Word, bosPoS:PoS,
-  override val pos2id:(PoS=>Int) = { pos => pos.second.id }) extends FeatureExtractorsWithCustomPoSLevel(methods, bos, bosPoS, pos2id)
+  methods: Seq[FeatureExtractor],
+  bos: Word,
+  bosPoS: PoS,
+  override val pos2id:(PoS=>Int) = _.second.id)
+    extends FeatureExtractorsWithCustomPoSLevel(methods, bos, bosPoS, pos2id)
