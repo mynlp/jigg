@@ -29,12 +29,13 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
 
   def prop(key: String) = PU.findProperty(key, properties)
 
-  @Prop(gloss="List of annotator names, e.g., ssplit,mecab ssplit|kuromoji|mecab|cabocha|juman|knp|ccg", required=true) var annotators = ""
+  @Prop(gloss="List of annotator names, e.g., ssplit,mecab dsplit|ssplit|kuromoji|mecab|cabocha|juman|knp|ccg", required=true) var annotators = ""
   @Prop(gloss="Property file") var props = ""
   @Prop(gloss="Input file; if omitted, read from stdin") var file = ""
   @Prop(gloss="Output file; if omitted, `file`.xml is used. Gzipped if suffix is .gz") var output = ""
   @Prop(gloss="Print this message and descriptions of specified annotators, e.g., -help ssplit,mecab") var help = ""
   @Prop(gloss="You can add an abbreviation for a custom annotator class with \"-customAnnotatorClass.xxx path.package\"") var customAnnotatorClass = ""
+  @Prop(gloss="Number of threads for parallel annotation (use all if <= 0)") var nThreads = -1
 
   // A hack to prevent throwing an exception when -help is given but -annotators is not given.
   // annotators is required prop so it has to be non-empty, but it is difficult to tell that if -help is given it is not necessary.
@@ -44,6 +45,21 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
   }
 
   readProps()
+
+  /** User may override this method in a subclass to add more own annotators.
+    * See also `getAnnotator(name: String)`.
+    */
+  protected val defaultAnnotatorClassMap: Map[String, Class[_]] = Map(
+    "dsplit" -> classOf[RegexDocumentAnnotator],
+    "ssplit" -> classOf[RegexSentenceAnnotator],
+    "kuromoji" -> classOf[KuromojiAnnotator],
+    "mecab" -> classOf[MecabAnnotator],
+    "cabocha" -> classOf[CabochaAnnotator],
+    "juman" -> classOf[JumanAnnotator],
+    "knp" -> classOf[SimpleKNPAnnotator],
+    "knpDoc" -> classOf[DocumentKNPAnnotator],
+    "ccg" -> classOf[CCGParseAnnotator]
+  )
 
   // TODO: should document ID be given here?  Somewhere else?
   private[this] val documentIDGen = jigg.util.IDGenerator("d")
@@ -56,34 +72,30 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
     case (k, v) => (k.drop(k.indexOf('.') + 1), v)
   }.toMap
 
-  def createAnnotators: List[Annotator] = {
-    val annotators =
+  val annotatorList = createAnnotatorList()
+
+  def close() = annotatorList foreach { _.close() }
+
+  def createAnnotatorList(): List[Annotator] = {
+    val annotatorList =
       annotatorNames.map { getAnnotator(_) }.toList
 
-    annotators.foldLeft(Set[Requirement]()) { (satisfiedSofar, annotator) =>
+    annotatorList.foldLeft(RequirementSet()) { (satisfiedSofar, annotator) =>
       val requires = annotator.requires
 
-      val lacked = requires &~ (requires & satisfiedSofar)
-      if (!lacked.isEmpty) argumentError("annotators", "annotator %s requires annotators %s".format(annotator.name, lacked.mkString(", ")))
+      val lacked = satisfiedSofar.lackedIn(requires)
+      if (!lacked.isEmpty) argumentError(
+        "annotators",
+        "annotator %s requires annotators %s".format(annotator.name, lacked.mkString(", ")))
 
-      Requirement.add(satisfiedSofar, annotator.requirementsSatisfied)
+      satisfiedSofar | annotator.requirementsSatisfied
     }
-    annotators
+
+    annotatorList foreach (_.init)
+    annotatorList
   }
 
-  /** User may override this method in a subclass to add more own annotators.
-    */
-  protected val defaultAnnotatorClassMap: Map[String, Class[_]] = Map(
-    "ssplit" -> classOf[RegexSentenceAnnotator],
-    "kuromoji" -> classOf[KuromojiAnnotator],
-    "mecab" -> classOf[MecabAnnotator],
-    "cabocha" -> classOf[CabochaAnnotator],
-    "juman" -> classOf[JumanAnnotator],
-    "knp" -> classOf[KNPAnnotator],
-    "ccg" -> classOf[CCGParseAnnotator]
-  )
-
-  /** Or also customizable by overriding this method directory, e.g.,
+  /** Another way to add annotator in a pipeline is to override this method directory:
     *
     * {{{
     * val option = "option"
@@ -109,8 +121,8 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
   def getAnnotatorCompanion(name: String): Option[AnnotatorCompanion[Annotator]] = {
     import scala.reflect.runtime.{currentMirror => cm}
 
-    defaultAnnotatorClassMap get(name) flatMap { clazz =>
-      val symbol = cm.classSymbol(clazz).companionSymbol
+    getAnnotatorClass(name) flatMap { clazz =>
+      val symbol = cm.classSymbol(clazz).companion
       try Some(cm.reflectModule(symbol.asModule).instance.asInstanceOf[AnnotatorCompanion[Annotator]])
       catch { case e: Throwable => None }
     }
@@ -198,10 +210,11 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
   }
 
   private[this] def process[U](f: List[Annotator]=>U) = {
-    val annotators = createAnnotators
-    annotators foreach { _.init }
-    try f(annotators)
-    finally annotators foreach { _.close }
+    f(annotatorList)
+    // val annotators = createAnnotators
+    // annotators foreach { _.init }
+    // try f(annotators)
+    // finally annotators foreach { _.close }
   }
 
   def annotate(reader: BufferedReader, verbose: Boolean = false): Node =
@@ -211,6 +224,8 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
     val root = rootXML(text) // IOUtil.inputIterator(reader).mkString("\n"))
     annotate(root, annotators, verbose)
   }
+
+  def annotate(text: String) = annotateText(text)
 
   protected def annotate(root: Node, annotators: List[Annotator], verbose: Boolean): Node = {
     def annotateRecur(input: Node, unprocessed: List[Annotator]): Node = unprocessed match {
@@ -254,7 +269,7 @@ object Pipeline {
 
     try {
       val pipeline = new Pipeline(props)
-      PU.findProperty("help", props) match {
+      try PU.findProperty("help", props) match {
         case Some(help) =>
           pipeline.printHelp(System.out)
         case None =>
@@ -262,10 +277,12 @@ object Pipeline {
             case "" => pipeline.runFromStdin
             case _ => pipeline.run
           }
-      }
+      } finally pipeline.close()
     } catch {
       case e: ArgumentError =>
         System.err.println(e.getMessage)
+      case e: UnsupportedClassVersionError =>
+        System.err.println(s"Failed to start jigg due to incompatibility of Java version. Installing the latest version of Java would resolve the problem.\n${e.getMessage()}")
     }
   }
 }

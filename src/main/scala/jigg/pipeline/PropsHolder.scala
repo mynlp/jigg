@@ -1,7 +1,7 @@
 package jigg.pipeline
 
 /*
- Copyright 2013-2015 Hiroshi Noji
+ Copyright 2013-2015 Takafumi Sakakibara and Hiroshi Noji
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -78,13 +78,14 @@ trait PropsHolder { outer =>
   private[this] def getNameToGetterSetter = {
     val nameToGetterSetter = new HashMap[String, (Method, Method)]
 
-    val methods = this.getClass.getMethods
+    val methods = this.getClass.getMethods()
     methods foreach { method =>
       method.getAnnotation(classOf[Prop]).asInstanceOf[Prop] match {
         case null =>
         case ann => nameToGetterSetter += (method.getName -> (method, null))
       }
     }
+
     methods foreach {
       case setter if setter.getName.endsWith("_$eq") =>
         val getterName = setter.getName.replace("_$eq", "")
@@ -124,13 +125,15 @@ trait PropsHolder { outer =>
     nameToOptInfo.values.map(_ + "").mkString("\n")
   }
 
-  def argumentError(key: String, msg: String = "") = {
+  def argumentError(key: String, msg: String = "") = throw newArgumentError(key, msg)
+
+  def newArgumentError(key: String, msg: String = "") = {
     val fullName = makeFullName(key)
     val comment = if (msg != "") msg else s"Some problem detected in $fullName."
     val usage = nameToOptInfo get(key) match {
       case Some(optInfo) => optInfo + ""
       case None => s"$fullName is not a valid parameter name. Maybe the implementation is corrupted."
     }
-    throw new ArgumentError(comment + "\n" + usage)
+    new ArgumentError(comment + "\n" + usage)
   }
 }

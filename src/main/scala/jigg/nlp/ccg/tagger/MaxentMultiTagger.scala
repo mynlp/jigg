@@ -68,6 +68,15 @@ class MaxEntMultiTagger(
         case (e, _) => dict.getCategory(e.label)
       }.toSeq
     }.toArray
+
+  def unigramCategoryDistributions(sentence:TaggedSentence): Array[Array[(Category, Float)]] =
+    (0 until sentence.size).map { i =>
+      val instance = getTestInstance(sentence, i)
+      val categories = instance.items.map { x => dict.getCategory(x.label) }
+      val dist = classifier.labelProbs(instance.items)
+
+      categories.zip(dist).sortWith(_._2 > _._2).toArray
+    }.toArray
 }
 
 class MaxEntMultiTaggerTrainer(

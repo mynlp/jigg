@@ -16,11 +16,14 @@ package jigg.nlp.ccg
  limitations under the License.
 */
 
-import java.io.FileWriter
-import scala.collection.mutable.ArrayBuffer
-import scala.sys.process.Process
-import fig.exec.Execution
+
 import lexicon._
+
+import breeze.config.{CommandLineParser, Help}
+
+import scala.sys.process.Process
+
+import java.io.{File, FileWriter, ByteArrayInputStream}
 
 /** Creates Cabocha-formatted CCGBank sentences.
   *
@@ -29,33 +32,51 @@ import lexicon._
   */
 object CCGBankToMecabFormat {
 
-  object Opt extends Options {
-    @Option(gloss="Path to CCGBank file", required=true) var ccgBankPath = ""
-    @Option(gloss="Path to output") var outputPath = ""
-  }
-
-  def main(args:Array[String]) = {
-    val runner = new Runner
-    Execution.run(args, runner, Opt)
-  }
+  case class Opts(
+    @Help(text="Path to CCGBank file") ccgbank: File = new File(""),
+    @Help(text="Path to output") output: File = new File("")
+  )
 
   type Tree = ParseTree[NodeLabel]
 
-  class Runner extends JapaneseSuperTagging with Runnable {
+  def main(args:Array[String]) = {
+    val opts = CommandLineParser.readIn[Opts](args)
 
-    def run = {
-      dict = newDictionary
-      val trees = readParseTreesFromCCGBank(Opt.ccgBankPath, -1, true)
-      val rawString = trees map { parseTreeConverter.toSentenceFromLabelTree(_) } map { _.wordSeq.mkString("") } mkString("\n")
-      val is = new java.io.ByteArrayInputStream(rawString.getBytes("UTF-8"))
-      val out = (Process("cabocha -f1") #< is).lines_!
+    val dict = new JapaneseDictionary()
+    val extractors = TreeExtractor(
+      new JapaneseParseTreeConverter(dict),
+      new CCGBankReader(dict))
 
-      val os = jigg.util.IOUtil.openOut(Opt.outputPath)
-      out foreach { line =>
-        os.write(line + "\n")
-      }
-      os.flush
-      os.close
+    val trees = extractors.readTrees(opts.ccgbank, -1, true)
+    val rawString = trees map (extractors.treeConv.toSentenceFromLabelTree) map (_.wordSeq.mkString("")) mkString ("\n")
+    val is = new java.io.ByteArrayInputStream(rawString.getBytes("UTF-8"))
+    val out = (Process("cabocha -f1") #< is).lineStream_!
+
+    val os = jigg.util.IOUtil.openOut(opts.output.getPath)
+    out foreach { line =>
+      os.write(line + "\n")
     }
+    os.flush
+    os.close
   }
+
+  // type Tree = ParseTree[NodeLabel]
+
+  // class Runner extends JapaneseSuperTagging with Runnable {
+
+  //   def run = {
+  //     dict = newDictionary
+  //     val trees = readParseTreesFromCCGBank(Opt.ccgBankPath, -1, true)
+  //     val rawString = trees map { parseTreeConverter.toSentenceFromLabelTree(_) } map { _.wordSeq.mkString("") } mkString("\n")
+  //     val is = new java.io.ByteArrayInputStream(rawString.getBytes("UTF-8"))
+  //     val out = (Process("cabocha -f1") #< is).lineStream_!
+
+  //     val os = jigg.util.IOUtil.openOut(Opt.outputPath)
+  //     out foreach { line =>
+  //       os.write(line + "\n")
+  //     }
+  //     os.flush
+  //     os.close
+  //   }
+  // }
 }

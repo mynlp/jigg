@@ -1,4 +1,4 @@
-package jigg.nlp.ccg;
+package jigg.nlp
 
 /*
  Copyright 2013-2015 Hiroshi Noji
@@ -16,16 +16,6 @@ package jigg.nlp.ccg;
  limitations under the License.
 */
 
-public class OptionEnumTypes {
-  public enum ModelType { tagger, parser };
-
-  public enum ActionType { train, evaluate, predict };
-
-  public enum Language { japanese, english };
-
-  public enum StepSizeFunction { stepSize1, stepSize2, stepSize3 };
-
-  public enum CategoryLookUpMethod { surfaceOnly, surfaceAndPoS, surfaceAndSecondFineTag, surfaceAndSecondWithConj };
-
-  public enum TaggerTrainAlgorithm { sgd, adaGradL1 };
+package object ccg {
+  type WeightVec = jigg.ml.WeightVector[Float]
 }

@@ -1,7 +1,7 @@
 package jigg.pipeline
 
 /*
- Copyright 2013-2015 Hiroshi Noji
+ Copyright 2013-2015 Takafumi Sakakibara and Hiroshi Noji
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -16,8 +16,7 @@ package jigg.pipeline
  limitations under the License.
 */
 
-import jigg.nlp.ccg.JapaneseShiftReduceParsing
-import jigg.nlp.ccg.{InputOptions, TaggerOptions, ParserOptions}
+import jigg.nlp.ccg.{ParserModel, ParserRunner, SuperTaggerRunner}
 import jigg.nlp.ccg.lexicon.{PoSTaggedSentence, Derivation, Point}
 import jigg.nlp.ccg.tagger.{MaxEntMultiTagger}
 import jigg.nlp.ccg.parser.{TransitionBasedParser, KBestDecoder}
@@ -34,32 +33,31 @@ import scala.collection.mutable.ArrayBuffer
   */
 class CCGParseAnnotator(override val name: String, override val props: Properties) extends SentencesAnnotator {
 
-  val parsing = new JapaneseShiftReduceParsing
-  var tagger: MaxEntMultiTagger = _
-  var decoder: TransitionBasedParser = _
-
   @Prop(gloss = "Path to the trained model (you can omit this if you load a jar which packs models)") var model = ""
   @Prop(gloss = "Pruning parameter in supertagging") var beta = 0.001
   @Prop(gloss = "Maximum category candidates for each by supertagging, -1 for infinity") var maxK = -1
   @Prop(gloss = "Beam size (usually 64 is ok); Recommend to use the same beam size at training the model. This is automatically done if the model is loaded from a model jar.") var beam = 64
   @Prop(gloss = "Outputs k-best derivations if this value > 1") var kBest = 1
-  @Prop(gloss = "Beam size (usually 64 is ok); Recommend to use the same beam size at training the model. This is automatically done if the model is loaded from a model jar.") var preferConnected = false
+  @Prop(gloss = "Output connected derivations first even when unconnected trees have higher scores") var preferConnected = false
   readProps()
 
-  if (model != "") InputOptions.loadModelPath = model
-  TaggerOptions.beta = beta
-  TaggerOptions.maxK = maxK
-  ParserOptions.beam = beam
+  val taggerParams = SuperTaggerRunner.Params(beta, maxK)
+  val params = ParserRunner.Params(beam, preferConnected, taggerParams)
 
-  override def init = {
-    configParsing
-    tagger = parsing.tagging.getTagger
-    decoder = parsing.getPredDecoder
-  }
+  val parserModel = loadModel()
 
-  def configParsing = {
-    System.err.println("The path of CCG parser model: " + InputOptions.loadModelPath)
-    parsing.load
+  val parser = new ParserRunner(parserModel, params)
+
+  def loadModel() = try {
+    model match {
+      case "" => ParserModel.loadFromJar(beam)
+      case path => ParserModel.loadFrom(path)
+    }
+  } catch { case e: Exception =>
+      val errorMsg = s"""Failed to start CCG parser. Make sure the model file of CCG is already installed. If not, execute the following command in jigg directory:
+  ./script/download_ccg_model.sh
+"""
+      argumentError("model", errorMsg)
   }
 
   override def newSentenceAnnotation(sentence: Node) = {
@@ -103,7 +101,7 @@ class CCGParseAnnotator(override val name: String, override val props: Propertie
 
       val rootIDs = deriv.roots.map { p => spanID(point2id(derivID, p)) }.mkString(" ")
 
-      <ccg root={ rootIDs } id={ ccgID } score={ score.toString }>{ spans }</ccg>
+      <ccg annotators={ name } root={ rootIDs } id={ ccgID } score={ score.toString }>{ spans }</ccg>
     }
 
     val ccgs = derivs.zipWithIndex map { case ((deriv, score), i) => ccgAnnotation(i, deriv, score) }
@@ -112,12 +110,14 @@ class CCGParseAnnotator(override val name: String, override val props: Propertie
   }
 
   object SentenceConverter {
-    val dict = parsing.tagging.dict
+
+    val dict = parserModel.taggerModel.dict
+
     def toTaggedSentence(tokenSeq: NodeSeq) = {
       val terminalSeq = tokenSeq map { token =>
-        val surf = dict.getWordOrCreate(token \ "@surf" toString())
-        val base = dict.getWordOrCreate(token \ "@base" toString())
-        val katsuyou = token \ "@inflectionForm" toString() match {
+        val form = dict.getWordOrCreate(token \ "@form" toString())
+        val lemma = dict.getWordOrCreate(token \ "@lemma" toString())
+        val cForm = token \ "@cForm" toString() match {
           case "*" => "_"; case x => x
         }
         val posSeq = Seq("@pos", "@pos1", "@pos2", "@pos3") map { token \ _ toString() }
@@ -126,33 +126,16 @@ class CCGParseAnnotator(override val name: String, override val props: Propertie
           case idx => posSeq.take(idx).mkString("-")
         }
 
-        val combinedPoS = dict.getPoSOrCreate(pos + "/" + katsuyou)
+        val combinedPoS = dict.getPoSOrCreate(pos + "/" + cForm)
 
-        (surf, base, combinedPoS)
+        (form, lemma, combinedPoS)
       }
       new PoSTaggedSentence(terminalSeq.map(_._1), terminalSeq.map(_._2), terminalSeq.map(_._3))
     }
   }
 
-  def getDerivations(sentence: PoSTaggedSentence): Seq[(Derivation, Double)] = {
-    val tagger = parsing.tagging.getTagger
-    val decoder = parsing.getPredDecoder
-
-    val beta = TaggerOptions.beta
-    val maxK = TaggerOptions.maxK
-    val beam = ParserOptions.beam
-    val superTaggedSentence = sentence.assignCands(tagger.candSeq(sentence, beta, maxK))
-
-    decoder match {
-      case decoder: KBestDecoder =>
-        (kBest, preferConnected) match {
-          case (1, true) => Seq(decoder.predictConnected(superTaggedSentence))
-          case (1, false) => Seq(decoder.predict(superTaggedSentence))
-          case (k, prefer) => decoder.predictKbest(k, superTaggedSentence, prefer)
-        }
-      case decoder => Seq(decoder.predict(superTaggedSentence))
-    }
-  }
+  def getDerivations(sentence: PoSTaggedSentence): Seq[(Derivation, Double)] =
+    parser.kBestDerivations(sentence, kBest)
 
   def getPoint2id(derivs: Seq[Derivation]): Map[(Int, Point), Int] = {
     val map = new HashMap[(Int, Point), Int]
@@ -168,6 +151,6 @@ class CCGParseAnnotator(override val name: String, override val props: Propertie
     map.toMap
   }
 
-  override def requires = Set(Requirement.TokenizeWithIPA)
-  override def requirementsSatisfied = Set(Requirement.CCG)
+  override def requires = Set(JaRequirement.TokenizeWithIPA)
+  override def requirementsSatisfied = Set(JaRequirement.CCGDerivation)
 }

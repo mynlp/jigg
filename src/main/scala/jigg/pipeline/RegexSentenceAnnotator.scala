@@ -46,22 +46,23 @@ class RegexSentenceAnnotator(override val name: String, override val props: Prop
 
     XMLUtil.replaceAll(annotation, "document") { e =>
       val line = e.text
-      val sentenceBoundaries = splitRegex.findAllMatchIn(line).map(_.end).toList :+ line.length
-      val sentences = (0 :: sentenceBoundaries).sliding(2) flatMap { case Seq(begin, end) =>
-        val sentence: String = line.substring(begin, end).trim()
-        if (sentence.isEmpty)
-          None
-        else {
-          Option(<sentence id={ sentenceIDGen.next }>{ sentence }</sentence>)
+      val sentenceBoundaries = 0 +: splitRegex.findAllMatchIn(line).map(_.end).toVector :+ line.length
+      val sentences: Vector[Node] =
+        sentenceBoundaries.sliding(2).toVector flatMap { case Seq(begin, end) =>
+          val sentence: String = line.substring(begin, end).trim()
+          if (sentence.isEmpty)
+            None
+          else {
+            Option(<sentence id={ sentenceIDGen.next }>{ sentence }</sentence>)
+          }
         }
-      }
       val textRemoved = XMLUtil.removeText(e)
       XMLUtil.addChild(textRemoved, <sentences>{ sentences }</sentences>)
     }
- }
+  }
 
   override def requires = Set()
-  override def requirementsSatisfied = Set(Requirement.Sentence)
+  override def requirementsSatisfied = Set(Requirement.Ssplit)
 
 }
 
