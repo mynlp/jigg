@@ -16,38 +16,37 @@ package jigg.nlp.ccg
  limitations under the License.
 */
 
-import scala.collection.mutable.ArrayBuffer
-import fig.exec.Execution
 import lexicon._
+
+import breeze.config.{CommandLineParser, Help}
+
+import java.io.{File, FileWriter}
 
 object Cabocha2CoNLL {
 
-  object Opt extends Options {
-    @Option(gloss="Path to CCGBank file", required=true) var ccgBankPath = ""
-    @Option(gloss="Path to Cabocha file (same sentences with the CCGBank file)", required=true) var cabochaPath = ""
-    @Option(gloss="Path to output in CoNLL format") var outputPath = ""
-  }
+  case class Opts(
+    @Help(text="Path to CCGBank file") ccgBank: File = new File(""),
+    @Help(text="Path to Cabocha file (same sentences with the CCGBank file)") cabocha: File = new File(""),
+    @Help(text="Path to output in CoNLL format") output: File = new File("")
+  )
 
   def main(args:Array[String]) = {
-    val runner = new Runner
-    Execution.run(args, runner, Opt)
-  }
+    val opts = CommandLineParser.readIn[Opts](args)
 
-  class Runner extends Runnable {
-    def run = {
-      val dict = new JapaneseDictionary(new Word2CategoryDictionary)
+    val dict = new JapaneseDictionary(new Word2CategoryDictionary)
 
-      val conv = new JapaneseParseTreeConverter(dict)
-      val parseTrees = new CCGBankReader(dict).readParseTrees(Opt.ccgBankPath, -1, true).map { conv.toLabelTree(_) }.toSeq
+    val conv = new JapaneseParseTreeConverter(dict)
+    val parseTrees = new CCGBankReader(dict).readParseTrees(opts.ccgBank.getPath, -1, true).map {
+      conv.toLabelTree(_)
+    }.toSeq
 
-      val sentences = parseTrees map { conv.toSentenceFromLabelTree(_) }
+    val sentences = parseTrees map { conv.toSentenceFromLabelTree(_) }
 
-      val bunsetsuSentences = new CabochaReader(sentences).readSentences(Opt.cabochaPath)
+    val bunsetsuSentences = new CabochaReader(sentences).readSentences(opts.cabocha.getPath)
 
-      val fw = new java.io.FileWriter(Opt.outputPath)
-      bunsetsuSentences.foreach { sent => fw.write(sent.renderInCoNLL + "\n") }
-      fw.flush
-      fw.close
-    }
+    val fw = new FileWriter(opts.output.getPath)
+    bunsetsuSentences.foreach { sent => fw.write(sent.renderInCoNLL + "\n") }
+    fw.flush
+    fw.close
   }
 }

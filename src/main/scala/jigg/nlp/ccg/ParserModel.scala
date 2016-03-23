@@ -73,11 +73,25 @@ object ParserModel {
   }
 
   def loadFrom(path: String): ParserModel = {
-    jigg.util.LogUtil.track("Loading parser model ...") {
+    jigg.util.LogUtil.track(s"Loading parser model in $path ...") {
       val in = jigg.util.IOUtil.openBinIn(path)
       val model = in.readObject.asInstanceOf[ParserModel]
       in.close
       model
     }
   }
+
+  def loadFromJar(beam: Int): ParserModel = {
+    val loader = Thread.currentThread.getContextClassLoader
+    val modelName = defaultModelPath(beam)
+    jigg.util.LogUtil.track("Loading parser model in $modelName ...") {
+      val input = loader.getResourceAsStream(modelName)
+      val in = jigg.util.IOUtil.openZipBinIn(input)
+      val model = in.readObject.asInstanceOf[ParserModel]
+      in.close
+      model
+    }
+  }
+
+  def defaultModelPath(beam: Int) = s"ccg-models/parser/beam=${beam}.ser.gz"
 }

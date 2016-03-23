@@ -16,48 +16,44 @@ package jigg.nlp.ccg
  limitations under the License.
 */
 
-import java.io.FileWriter
+import lexicon._
+
+import breeze.config.{CommandLineParser, Help}
+
 import scala.collection.mutable.ArrayBuffer
 import scala.sys.process.Process
-import fig.exec.Execution
-import lexicon._
+
+import java.io.{File, FileWriter}
+
 
 object CCGBank2EnjuXML {
 
-  object Opt extends Options {
-    @Option(gloss="Path to CCGBank file", required=true) var ccgBankPath = ""
-    @Option(gloss="Path to output (pdf)") var outputPath = ""
-    @Option(gloss="Number of sentences") var numSentences = 50
-  }
+  case class Opts(
+    @Help(text="Path to CCGBank file") ccgBank: File = new File(""),
+    @Help(text="Path to output (xml)") output: File = new File(""),
+    @Help(text="Number of sentences") numSentences: Int = 50
+  )
 
   def main(args:Array[String]) = {
-    val runner = new Runner
-    Execution.run(args, runner, Opt)
-  }
+    val opts = CommandLineParser.readIn[Opts](args)
 
-  type Tree = ParseTree[NodeLabel]
+    val dict = new JapaneseDictionary(new Word2CategoryDictionary)
 
-  class Runner extends Runnable {
+    val conv = new JapaneseParseTreeConverter(dict)
 
-    def run = {
-      val dict = new JapaneseDictionary(new Word2CategoryDictionary)
+    val reader = new CCGBankReader(dict)
 
-      val conv = new JapaneseParseTreeConverter(dict)
+    val instances: Seq[(TaggedSentence, Derivation)] =
+      reader.takeLines(opts.ccgBank.getPath, opts.numSentences).toSeq.map { line =>
+        val trees = reader.readParseFragments(line).map { conv.toLabelTree(_) }
+        (conv.toSentenceFromLabelTrees(trees), conv.toFragmentalDerivation(trees))
+      }
 
-      val reader = new CCGBankReader(dict)
+    val fw = new FileWriter(opts.output.getPath)
 
-      val instances: Seq[(TaggedSentence, Derivation)] =
-        reader.takeLines(Opt.ccgBankPath, Opt.numSentences).toSeq.map { line =>
-          val trees = reader.readParseFragments(line).map { conv.toLabelTree(_) }
-          (conv.toSentenceFromLabelTrees(trees), conv.toFragmentalDerivation(trees))
-        }
+    instances.zipWithIndex foreach { case ((s, d), i) => fw.write(d.renderEnjuXML(s, i) + "\n") }
 
-      val fw = new FileWriter(Opt.outputPath)
-
-      instances.zipWithIndex foreach { case ((s, d), i) => fw.write(d.renderEnjuXML(s, i) + "\n") }
-
-      fw.flush
-      fw.close
-    }
+    fw.flush
+    fw.close
   }
 }

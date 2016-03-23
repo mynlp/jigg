@@ -29,27 +29,37 @@ import java.io.File
 
 class ParserRunner(model: ParserModel, params: ParserRunner.Params) {
 
-  def decode[S<:TaggedSentence](sentences: Array[S]): Array[Derivation] = {
-    val tagger = new SuperTaggerRunner(model.taggerModel, params.tagger)
-    val perceptron = new FixedPerceptron[ActionLabel](model.weights)
-    val decoder = model.mkDecoder(params.beam, perceptron)
+  val tagger = new SuperTaggerRunner(model.taggerModel, params.tagger)
+  val perceptron = new FixedPerceptron[ActionLabel](model.weights)
+  val decoder = model.mkDecoder(params.beam, perceptron)
 
-    val preferConnected = params.preferConnected
+  val preferConnected = params.preferConnected
+
+  def decode[S<:TaggedSentence](sentences: Array[S]): Array[Derivation] = {
 
     val predDerivations = sentences.zipWithIndex map {
       case (sentence, i) =>
-        if (i % 100 == 0) System.err.print(i + "\t/" + sentences.size + " have been processed.\r")
-        val superTaggedSentence = tagger.assignKBest(sentence)
-
-        val derivation = decoder match {
-          case decoder: KBestDecoder if preferConnected =>
-            decoder.predictConnected(superTaggedSentence)
-          case decoder => decoder.predict(superTaggedSentence)
-        }
-        derivation._1
+        if (i % 100 == 0)
+          System.err.print(i + "\t/" + sentences.size + " have been processed.\r")
+        decodeOne(sentence)
     }
     System.err.println()
     predDerivations
+  }
+
+  def decodeOne[S<:TaggedSentence](sentence: S): Derivation =
+    kBestDerivations(sentence, 1)(0)._1
+
+  def kBestDerivations[S<:TaggedSentence](sentence: S, k: Int)
+      : Seq[(Derivation, Double)] = {
+    val superTaggedSentence = tagger.assignKBest(sentence)
+
+    decoder match {
+      case decoder: KBestDecoder =>
+        decoder predictKbest (k, superTaggedSentence, preferConnected)
+      case decoder =>
+        Seq(decoder predict superTaggedSentence)
+    }
   }
 }
 
