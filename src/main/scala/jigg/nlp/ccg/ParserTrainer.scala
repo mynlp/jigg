@@ -116,7 +116,6 @@ object ParserTrainer {
     @Help(text="# iters") numIters: Int = 10,
     @Help(text="Feature extractor") feat: FeatureExtractor = new ZhangExtractor(),
     @Help(text="Additional extractors") more: Seq[FeatureExtractor] = List(),
-    @Help(text="# training instances, -1 for all") trainSize: Int = -1,
     @Help(text="Size of hashed feature") featureSize: Int = 2 << 23,
     @Help(text="Beam size") beam: Int = 32,
     bank: Opts.BankInfo,
