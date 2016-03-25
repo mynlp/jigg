@@ -20,6 +20,7 @@ import java.util.Properties
 import scala.xml._
 import scala.sys.process.Process
 import jigg.util.PropertiesUtil
+import scala.collection.mutable.ListBuffer
 
 abstract class CabochaAnnotator(override val name: String, override val props: Properties)
     extends SentencesAnnotator with ParallelIO with IOCreator {
@@ -61,7 +62,7 @@ ${helpMessage}
 """
   }
 
-  override def defaultArgs = Seq("-f1", "-I1")
+  override def defaultArgs = Seq("-f1", "-I1", "-n1")
   def softwareUrl = "http://taku910.github.io/cabocha/"
 
   override def close() = ioQueue.close()
@@ -74,10 +75,10 @@ ${helpMessage}
     val chunks = resultToChunks(result)
 
     val tokenIds = tokens map(_ \ "@id" + "")
-
+    val res_NER = resultToNER(result,tokens)
     jigg.util.XMLUtil.addOrOverrideChild(
       sentence,
-      Seq(chunksNode(chunks, sid, tokenIds), depsNode(chunks, sid)))
+      Seq(chunksNode(chunks, sid, tokenIds), depsNode(chunks, sid),nerNode(res_NER, sid)))
   }
 
   private def runCabocha(tokens:NodeSeq): Seq[String] = ioQueue.using { io =>
@@ -105,6 +106,92 @@ ${helpMessage}
     }
   }
 
+  private def resultToNER(result: Array[String],tokens: NodeSeq): ListBuffer[Ner] = {
+    var ans:ListBuffer[Ner] = ListBuffer.empty[Ner]
+    var tok_l:ListBuffer[ToK] = ListBuffer.empty[ToK]
+    //var tid_l:ListBuffer[String] = ListBuffe.emptyr[String]
+    
+    for(token <- tokens)
+    {
+      var tid = (token \ "@id").toString
+      var txt = (token \ "@form").toString
+      tok_l += new ToK(tid,txt)
+     
+      
+    }
+
+    for(res <- result){
+
+        if( !(res startsWith "*")){
+          var res_buff = res.split("\t")
+          var w = res_buff(0)
+          var par = res_buff(2)
+          if( par != "O"){
+            var sametok = {
+              var x:Int = -1
+              for( i <- 0 until tok_l.size){
+                var item = tok_l(i)
+                if( item.form == w){
+                  x = i
+                }
+              }
+              if( x >=0){
+                 var tok = tok_l(x)
+                 tok_l.remove(x)
+                 tok
+               }else{
+                 null
+               }
+             }
+           if( sametok ne null){
+              ans += new Ner("",sametok.tid,par)
+              
+            
+           }
+           
+
+
+          }else{
+            var sametok = {
+              var x:Int = -1
+              for( i <- 0 until tok_l.size){
+                var item = tok_l(i)
+                if( item.form == w){
+                  x = i
+                }
+              }
+             if( x >=0){
+                var tok = tok_l(x)
+                tok_l.remove(x)
+                tok
+              }else{
+                null
+             }
+           }
+           if( sametok ne null){
+             var tid = sametok.tid
+              ans(ans.size-1).addtid(tid )
+            
+           }
+         }
+      }
+    }
+    ans
+  }
+
+  class ToK(id:String,txt:String){
+    def tid = id
+    def form = txt
+  }
+  class Ner(tid:String,id:String,txt:String){
+    var org = txt
+    var tids =""
+    def nid = id
+    def addtid( tid:String){
+      tids = tids + " " + tid
+    }
+  }
+  
   case class Chunk(id: Int, headChunk: Int, rel: String,
     head: Int, func: Int, offset: Int, numTokens: Int) {
 
@@ -126,6 +213,20 @@ ${helpMessage}
 
       Chunk(id, headChunk, rel, head, func, offset, numTokens)
     }
+  }
+
+  def nerNode(ners: ListBuffer[Ner],sid:String): Node = {
+    var nodes :String =""
+
+    for( i <- 0 until ners.size){
+      var ner = ners(i)
+      var id:String = ner.nid
+      var tids = ner.tids.trim
+      nodes += "<NE id=\""+id+"\"  tokens=\""+tids+"\" label=\""+ner.org+"\" />"
+      
+    }
+
+    <NEs>{ XML.loadString(nodes)}</NEs>
   }
 
   def chunksNode(chunks: Seq[Chunk], sid:String, tokenIds: Seq[String]): Node = {
