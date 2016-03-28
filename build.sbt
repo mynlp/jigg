@@ -2,7 +2,8 @@ import AssemblyKeys._
 
 assemblySettings
 
-organization := "jp"
+organization := "com.github.mynlp"
+// organization := "jp"
 
 name := "jigg"
 
@@ -34,3 +35,37 @@ libraryDependencies ++= Seq(
   "com.ibm.icu" % "icu4j" % "56.1",
   "org.scalanlp" % "breeze-config_2.10" % "0.9.1"
 )
+
+publishMavenStyle := true
+
+publishTo <<= version { (v: String) =>
+    val nexus = "https://oss.sonatype.org/"
+    if (v.trim.endsWith("SNAPSHOT"))
+      Some("snapshots" at nexus + "content/repositories/snapshots")
+    else
+      Some("releases" at nexus + "service/local/staging/deploy/maven2")
+}
+
+publishArtifact in Test := false
+
+pomIncludeRepository := { _ => false }
+
+pomExtra := <url>https://github.com/mynlp/jigg</url>
+  <licenses>
+    <license>
+      <name>Apache 2</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  <scm>
+    <url>git@github.com:mynlp/jigg.git</url>
+    <connection>scm:git:git@github.com:mynlp/jigg.git</connection>
+  </scm>
+  <developers>
+    <developer>
+      <id>h.nouji@gmail.com</id>
+      <name>Hiroshi Noji</name>
+      <url>https://github.com/nozyh/</url>
+    </developer>
+  </developers>
