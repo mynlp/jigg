@@ -58,13 +58,21 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
     "juman" -> classOf[JumanAnnotator],
     "knp" -> classOf[SimpleKNPAnnotator],
     "knpDoc" -> classOf[DocumentKNPAnnotator],
-    "ccg" -> classOf[CCGParseAnnotator]
+    "ccg" -> classOf[CCGParseAnnotator],
+    "corenlp" -> classOf[StanfordCoreNLPAnnotator],
+    "berkeley" -> classOf[BerkeleyparserAnnotator]
   )
 
   // TODO: should document ID be given here?  Somewhere else?
   private[this] val documentIDGen = jigg.util.IDGenerator("d")
 
   val annotatorNames = annotators.split("""[,\s]+""") // PU.safeFind("annotators", props).split("""[,\s]+""")
+  val annotatorNamesSuger = {
+    var new_annotators = annotators
+    var pattern = """\[.+?\]""".r
+    for(p <- pattern.findAllIn(annotators)) new_annotators = new_annotators.replace(p,p.replace(",",";").replace("[","").replace("]",""))
+    new_annotators.split("""[,\s]+""")
+  }
 
   val customAnnotatorNameToClassPath = PU.filter(properties) {
     case (k, _) => k.startsWith("customAnnotatorClass.")
@@ -78,8 +86,7 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
 
   def createAnnotatorList(): List[Annotator] = {
     val annotatorList =
-      annotatorNames.map { getAnnotator(_) }.toList
-
+      annotatorNamesSuger.map { getAnnotator(_) }.toList
     annotatorList.foldLeft(RequirementSet()) { (satisfiedSofar, annotator) =>
       val requires = annotator.requires
 
@@ -95,7 +102,7 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
     annotatorList
   }
 
-  /** Another way to add annotator in a pipeline is to override this method directory:
+  /** Or also customizable by overriding this method directory, e.g.,
     *
     * {{{
     * val option = "option"
@@ -111,17 +118,46 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
   def getAnnotator(name: String): Annotator = try {
     getAnnotatorCompanion(name) map {
       _.fromProps(name, properties)
-    } getOrElse {
+    } orElse {
       getAnnotatorClass(name) map { clazz =>
-        clazz.getConstructor(classOf[String], classOf[Properties]).newInstance(name, properties).asInstanceOf[Annotator]
-      } getOrElse { argumentError("annotators", s"Failed to search for custom annotator class: $name") }
+        clazz.getConstructor(classOf[String], classOf[Properties])
+          .newInstance(name, properties).asInstanceOf[Annotator]
+      }
+    } orElse {
+      getAnnotatorClassWithOption(name) map {
+        _ fromProps (name, properties)
+      }
+    } getOrElse {
+      argumentError("annotators", s"Failed to search for custom annotator class: $name")
     }
   } catch { case e: java.lang.reflect.InvocationTargetException => throw e.getCause }
+
+  //   getOrElse {
+  //     getAnnotatorClass(name) map { clazz =>
+  //       clazz.getConstructor(classOf[String], classOf[Properties]).newInstance(name, properties).asInstanceOf[Annotator]
+  //       //      } getOrElse { argumentError("annotators", s"Failed to search for custom annotator class: $name") }
+  //     } getOrElse {
+  //       getAnnotatorClassWithOption(name) map{
+  //       _.fromProps(name, properties)
+  //       } getOrElse { argumentError("annotators", s"Failed to search for custom annotator class: $name") }
+  //     }
+  //   }
+  // } catch { case e: java.lang.reflect.InvocationTargetException => throw e.getCause }
 
   def getAnnotatorCompanion(name: String): Option[AnnotatorCompanion[Annotator]] = {
     import scala.reflect.runtime.{currentMirror => cm}
 
     getAnnotatorClass(name) flatMap { clazz =>
+      val symbol = cm.classSymbol(clazz).companion
+      try Some(cm.reflectModule(symbol.asModule).instance.asInstanceOf[AnnotatorCompanion[Annotator]])
+      catch { case e: Throwable => None }
+    }
+  }
+
+  def getAnnotatorClassWithOption(str: String):Option[AnnotatorCompanion[Annotator]] = {
+    import scala.reflect.runtime.{currentMirror => cm}
+    val name = str.split(':')(0)
+    defaultAnnotatorClassMap get(name) flatMap { clazz =>
       val symbol = cm.classSymbol(clazz).companion
       try Some(cm.reflectModule(symbol.asModule).instance.asInstanceOf[AnnotatorCompanion[Annotator]])
       catch { case e: Throwable => None }

@@ -52,7 +52,9 @@ object Requirement {
   case object Parse extends Requirement
 
   case object Chunk extends Requirement
+
 }
+
 
 object JaRequirement {
 
