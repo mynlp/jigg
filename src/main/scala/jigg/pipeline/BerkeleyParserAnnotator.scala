@@ -1,0 +1,200 @@
+package jigg.pipeline
+
+/*
+ Copyright 2013-2015 Hiroshi Noji
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+*/
+
+
+import jigg.util.PropertiesUtil
+import jigg.util.XMLUtil
+
+import java.util.Properties
+
+import scala.xml._
+import scala.collection.mutable.HashMap
+import scala.collection.mutable.ArrayBuffer
+import scala.collection.JavaConverters._
+
+import edu.berkeley.nlp.PCFGLA.{
+  BerkeleyParser, CoarseToFineMaxRuleParser, ParserData, TreeAnnotations}
+
+import edu.berkeley.nlp.syntax.Tree
+import edu.berkeley.nlp.util.{MyMethod, Numberer}
+
+trait BerkeleyParserAnnotator extends SentencesAnnotator {
+
+  override val nThreads = 1
+
+  def threshold = 1.0 // this value is used without explanation in original BerkeleyParser.java
+
+  def keepFunctionLabels = true // but probably the model does not output function labels.
+
+  @Prop(gloss = "Grammar file", required=true) var grFileName = ""
+  @Prop(gloss = "Use annotated POS (by another annotator)") var usePOS =
+    BerkeleyParserAnnotator.defaultUsePOS
+  @Prop(gloss = "Compute viterbi derivation instead of max-rule tree (Default: max-rule)") var viterbi = false
+  @Prop(gloss = "Set thresholds for accuracy. (Default: set thresholds for efficiency)") var accurate = false
+  @Prop(gloss = "Use variational rule score approximation instead of max-rule (Default: false)") var variational = false
+
+  readProps()
+
+  val berkeleyparser = new BerkeleyParser
+
+  val parserData = ParserData Load grFileName
+  if (parserData == null) {
+    argumentError("grFileName", s"Failed to load grammar from $grFileName.")
+  }
+
+  val grammar = parserData.getGrammar
+  val lexicon = parserData.getLexicon
+  Numberer.setNumberers(parserData.getNumbs())
+
+  val parser = new CoarseToFineMaxRuleParser(
+    grammar,
+    lexicon,
+    threshold,
+    -1,
+    viterbi,
+    false, // substates are not supported
+    false, // scores are not supported
+    accurate,
+    variational,
+    true, // copied from BerkeleyParser.java
+    true) // copied from BerkeleyParser.java
+
+
+  def treeToNode(
+    tree: Tree[String],
+    tokenSeq: Seq[Node],
+    sentenceId: String): Node = {
+
+    val trees = tree.getChildren.asScala // ignore root node
+    println(trees)
+
+    var id = -1
+    var tokIdx = -1
+
+    def nextId = { id += 1; sentenceId + "_berksp" + id }
+    def nextTokId = { tokIdx += 1; tokenSeq(tokIdx) \@ "id" }
+
+    val addId = new MyMethod[Tree[String], (String, String)] {
+      def call(t: Tree[String]): (String, String) = t match {
+        case t if t.isPreTerminal => (t.getLabel, nextTokId) // preterminal points to token id; this is ok since `transformNodes` always proceeds left-to-right manner
+        case t if t.isLeaf => (t.getLabel, "")
+        case t => (t.getLabel, nextId)
+      }
+    }
+
+    val treesWithId: Seq[Tree[(String, String)]] =
+      trees map { _ transformNodesUsingNode addId }
+    val root = treesWithId map (_.getLabel._2) mkString " "
+
+    val spans = new ArrayBuffer[Node]
+
+    def traverseTree[A, B](t: Tree[A])(f: Tree[A]=>B): Unit = {
+      f(t)
+      t.getChildren.asScala foreach (traverseTree(_)(f))
+    }
+
+    treesWithId foreach { treeWithId =>
+      traverseTree(treeWithId) { t =>
+        val label = t.getLabel
+        val children = t.getChildren.asScala map (_.getLabel._2) mkString " "
+
+        if (!t.isLeaf && !t.isPreTerminal)
+          spans += <span id={ label._2 } symbol={ label._1 } children={ children } />
+      }
+    }
+    <parse annotators={ name } root={ root }>{ spans }</parse>
+  }
+
+  def parse(sentence: java.util.List[String], pos: java.util.List[String]): Tree[String] = {
+    val deriv = parser.getBestConstrainedParse(sentence, pos, null)
+    TreeAnnotations.unAnnotateTree(deriv)
+    // TreeAnnotations.unAnnotateTree(deriv, keepFunctionLabels), TODO: latest version may require keepFunctionLabel?
+  }
+}
+
+class BerkeleyParserAnnotatorFromToken(
+  override val name: String,
+  override val props: Properties) extends BerkeleyParserAnnotator {
+
+  override def newSentenceAnnotation(sentence: Node) = {
+
+    def addPOS(tokenSeq: NodeSeq, tree: Tree[String]): NodeSeq = {
+      val preterminals = tree.getPreTerminals.asScala
+      (0 until tokenSeq.size) map { i =>
+        XMLUtil.addAttribute(tokenSeq(i), "pos", preterminals(i).getLabel)
+      }
+    }
+
+    val tokens = (sentence \ "tokens").head
+    val tokenSeq = tokens \ "token"
+
+    val tree = parse(tokenSeq.map(_ \@ "form").asJava, null)
+
+    val taggedSeq = addPOS(tokenSeq, tree)
+
+    val newTokens = {
+      val nameAdded = XMLUtil.addAnnotatorName(tokens, name)
+      XMLUtil.replaceChild(nameAdded, taggedSeq)
+    }
+
+    val parseNode = treeToNode(tree, taggedSeq, sentence \@ "id")
+
+    // TODO: this may be customized with props?
+    XMLUtil.addOrOverrideChild(sentence, Seq(newTokens, parseNode))
+  }
+
+  override def requires = Set(Requirement.Tokenize)
+
+  override def requirementsSatisfied = Set(Requirement.POS, Requirement.Parse)
+}
+
+class BerkeleyParserAnnotatorFromPOS(
+  override val name: String,
+  override val props: Properties) extends BerkeleyParserAnnotator {
+
+  override def newSentenceAnnotation(sentence: Node) = {
+    val tokens = sentence \ "tokens"
+    val tokenSeq = tokens \ "token"
+
+    val posSeq = tokenSeq.map(_ \@ "pos").asJava
+
+    val tree = parse(tokenSeq.map(_+"").asJava, posSeq)
+
+    val parseNode = treeToNode(tree, tokenSeq, sentence \@ "id")
+
+    // TODO: is it ok to override in default?
+    XMLUtil.addOrOverrideChild(sentence, Seq(parseNode))
+  }
+
+  override def requires = Set(Requirement.POS)
+
+  override def requirementsSatisfied = Set(Requirement.Parse)
+}
+
+object BerkeleyParserAnnotator extends AnnotatorCompanion[BerkeleyParserAnnotator] {
+
+  def defaultUsePOS = false
+
+  override def fromProps(name: String, props: Properties) = {
+    val usepos = name + ".usePOS"
+    PropertiesUtil.findProperty(usepos, props) getOrElse (defaultUsePOS) match {
+      case true => new BerkeleyParserAnnotatorFromPOS(name, props)
+      case false => new BerkeleyParserAnnotatorFromToken(name, props)
+    }
+  }
+}

@@ -46,21 +46,20 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
 
   readProps()
 
-  /** User may override this method in a subclass to add more own annotators.
-    * See also `getAnnotator(name: String)`.
+  /** These default annotators can be used without manual build.
     */
   protected val defaultAnnotatorClassMap: Map[String, Class[_]] = Map(
     "dsplit" -> classOf[RegexDocumentAnnotator],
     "ssplit" -> classOf[RegexSentenceAnnotator],
-    "kuromoji" -> classOf[KuromojiAnnotator],
+    // "kuromoji" -> classOf[KuromojiAnnotator],
     "mecab" -> classOf[MecabAnnotator],
     "cabocha" -> classOf[CabochaAnnotator],
     "juman" -> classOf[JumanAnnotator],
     "knp" -> classOf[SimpleKNPAnnotator],
     "knpDoc" -> classOf[DocumentKNPAnnotator],
-    "ccg" -> classOf[CCGParseAnnotator],
+    "ccg" -> classOf[CCGParseAnnotator]
     "corenlp" -> classOf[StanfordCoreNLPAnnotator],
-    "berkeley" -> classOf[BerkeleyparserAnnotator]
+    "berkeley" -> classOf[BerkeleyParserAnnotator]
   )
 
   // TODO: should document ID be given here?  Somewhere else?
@@ -121,8 +120,7 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
     } orElse {
       getAnnotatorClass(name) map { clazz =>
         clazz.getConstructor(classOf[String], classOf[Properties])
-          .newInstance(name, properties).asInstanceOf[Annotator]
-      }
+          .newInstance(name, properties).asInstanceOf[Annotator] }
     } orElse {
       getAnnotatorClassWithOption(name) map {
         _ fromProps (name, properties)
@@ -300,6 +298,7 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
 }
 
 object Pipeline {
+
   def main(args: Array[String]): Unit = {
     val props = jigg.util.ArgumentsParser.parse(args.toList)
 

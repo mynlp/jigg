@@ -38,6 +38,24 @@ object XMLUtil {
     case _ => sys.error("Can only add children to elements!")
   }
 
+  def addAttribute(n: Node, k: String, v: String): Node = n match {
+    case e: Elem => e % Attribute(None, k, Text(v), Null)
+    case _ => n
+  }
+
+  def replaceChild(n: Node, newChild: NodeSeq): Node = n match {
+    case e: Elem => e.copy(child=newChild)
+    case _ => n
+  }
+
+  def addAnnotatorName(n: Node, annotator: String): Node = {
+    val newAnnotators = (n \@ "annotators") match {
+      case "" => annotator
+      case sofar => sofar + " " + annotator
+    }
+    addAttribute(n, "annotators", newAnnotators)
+  }
+
   /** The idiom below is borrowed from:
     * http://stackoverflow.com/questions/21391942/eliminate-duplicates-change-label-with-scala-xml-transform-ruletransformer
     * The previous version used `RuleTransformer` and `RewriteRule` but I found it has some problem.
