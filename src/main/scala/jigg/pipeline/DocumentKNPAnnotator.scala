@@ -129,5 +129,5 @@ class DocumentKNPAnnotator(override val name: String, override val props: Proper
   }
 
   override def requirementsSatisfied =
-    super.requirementsSatisfied | Set(JaRequirement.Coreference, JaRequirement.KNPPredArg)
+    super.requirementsSatisfied | Set(Requirement.Coreference, JaRequirement.KNPPredArg)
 }
