@@ -22,8 +22,7 @@ import scala.annotation.tailrec
 import scala.io.Source
 import scala.xml.{XML, Node}
 import jigg.util.LogUtil.{ track, multipleTrack }
-import jigg.util.{PropertiesUtil => PU}
-import jigg.util.IOUtil
+import jigg.util.{PropertiesUtil => PU, IOUtil, XMLUtil}
 
 class Pipeline(val properties: Properties = new Properties) extends PropsHolder {
 
@@ -268,7 +267,13 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
         annotateRecur(newNode, tail)
       case Nil => input
     }
-    annotateRecur(root, annotators)
+
+    def removeTextInDoc(node: Node): Node =
+      XMLUtil.replaceAll(node, "document") { e =>
+        XMLUtil.removeText(e)
+      }
+
+    removeTextInDoc(annotateRecur(root, annotators))
   }
   protected def rootXML(raw: String) = <root><document id={ documentIDGen.next }>{ raw }</document></root>
 

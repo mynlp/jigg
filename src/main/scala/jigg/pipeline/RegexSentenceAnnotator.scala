@@ -48,16 +48,34 @@ class RegexSentenceAnnotator(override val name: String, override val props: Prop
       val line = e.text
       val sentenceBoundaries = 0 +: splitRegex.findAllMatchIn(line).map(_.end).toVector :+ line.length
       val sentences: Vector[Node] =
-        sentenceBoundaries.sliding(2).toVector flatMap { case Seq(begin, end) =>
-          val sentence: String = line.substring(begin, end).trim()
+        sentenceBoundaries.sliding(2).toVector flatMap { case Seq(begin_, end_) =>
+
+          def isSpace(c: Char) = c == ' ' || c == '\t' || c == '\n'
+
+          val snippet = line.substring(begin_, end_)
+          val begin = snippet.indexWhere(!isSpace(_)) match {
+            case -1 => begin_ // space only
+            case offset => begin_ + offset
+          }
+          val end = snippet.reverse.indexWhere(!isSpace(_)) match {
+            case -1 => begin_ // space only
+            case offset => end_ - offset
+          }
+
+          // val sentence: String = line.substring(begin, end).trim()
+          val sentence: String = line.substring(begin, end)
           if (sentence.isEmpty)
             None
           else {
-            Option(<sentence id={ sentenceIDGen.next }>{ sentence }</sentence>)
+            Option(<sentence
+              id={ sentenceIDGen.next }
+              characterOffsetBegin={ begin+"" }
+              characterOffsetEnd={ end+"" }>{ sentence }</sentence>)
           }
         }
-      val textRemoved = XMLUtil.removeText(e)
-      XMLUtil.addChild(textRemoved, <sentences>{ sentences }</sentences>)
+      // val textRemoved = XMLUtil.removeText(e)
+      // XMLUtil.addChild(textRemoved, <sentences>{ sentences }</sentences>)
+      XMLUtil.addChild(e, <sentences>{ sentences }</sentences>)
     }
   }
 

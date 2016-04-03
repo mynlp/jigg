@@ -86,4 +86,21 @@ class RegexSentenceAnnotatorTest extends FunSuite {
     sentences(0).text should be("Taro eats an apple.")
     sentences(1).text should be("Jiro goes to a school.")
   }
+
+  test("character offset value can recover the original text") {
+
+    val properties = new Properties
+    properties.setProperty("ssplit.method", "newLine")
+
+    val text = "\n\n  太郎はリンゴを食べる。\n   \n\n    次郎は学校に行く。  \n  \n    "
+
+    val sentences= segment(text, properties)
+
+    for (s <- sentences) {
+      s.text should be (
+        text.substring(
+          (s \@ "characterOffsetBegin").toInt,
+          (s \@ "characterOffsetEnd").toInt))
+    }
+  }
 }
