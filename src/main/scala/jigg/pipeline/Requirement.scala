@@ -49,10 +49,15 @@ object Requirement {
 
   case object Dependencies extends Requirement
 
+  case object NER extends Requirement
+
+  case object Coreference extends Requirement
+
+  case object PredArg extends Requirement
+
   case object Parse extends Requirement
 
   case object Chunk extends Requirement
-
 }
 
 
@@ -79,13 +84,18 @@ object JaRequirement {
     override val parent = Seq(Requirement.Chunk)
   }
 
+  case object KNPPredArg extends Requirement {
+    override val parent = Seq(Requirement.PredArg)
+  }
+
+  case object BasicPhraseCoreference extends Requirement
+
   case object ChunkDependencies extends Requirement
 
   case object BasicPhrase extends Requirement
   case object BasicPhraseDependencies extends Requirement
-  case object Coreference extends Requirement
-  case object PredArg extends Requirement
-  case object NamedEntity extends Requirement
+  // case object Coreference extends Requirement
+  // case object PredArg extends Requirement
 
   case object CCGDerivation extends Requirement
   case object CCGDependencies extends Requirement
