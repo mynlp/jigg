@@ -9,7 +9,7 @@ name := "jigg"
 
 scalaVersion := "2.11.7"
 
-version := "0.5"
+version := "0.5-SNAPSHOT"
 
 fork in run := true
 
