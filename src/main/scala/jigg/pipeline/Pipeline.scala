@@ -56,9 +56,7 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
     "juman" -> classOf[JumanAnnotator],
     "knp" -> classOf[SimpleKNPAnnotator],
     "knpDoc" -> classOf[DocumentKNPAnnotator],
-    "ccg" -> classOf[CCGParseAnnotator],
-    "corenlp" -> classOf[StanfordCoreNLPAnnotator],
-    "berkeley" -> classOf[BerkeleyParserAnnotator]
+    "ccg" -> classOf[CCGParseAnnotator]
   )
 
   // TODO: should document ID be given here?  Somewhere else?
