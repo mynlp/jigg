@@ -57,9 +57,9 @@ class RegexSentenceAnnotator(override val name: String, override val props: Prop
             case -1 => begin_ // space only
             case offset => begin_ + offset
           }
-          val end = snippet.reverse.indexWhere(!isSpace(_)) match {
-            case -1 => begin_ // space only
-            case offset => end_ - offset
+          val end = snippet.lastIndexWhere(!isSpace(_)) match {
+            case -1 => begin_
+            case offset => begin_ + offset + 1
           }
 
           // val sentence: String = line.substring(begin, end).trim()
