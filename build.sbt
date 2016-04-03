@@ -31,7 +31,6 @@ libraryDependencies ++= Seq(
   "org.scala-lang" % "scala-reflect" % "2.11.7",
   "com.ibm.icu" % "icu4j" % "56.1",
   "org.scalanlp" % "breeze-config_2.10" % "0.9.1",
-  "org.slf4j" % "slf4j-api" % "1.7.20",
   "com.github.mynlp" % "jigg-kuromoji" % "0.1-SNAPSHOT"
 )
 
