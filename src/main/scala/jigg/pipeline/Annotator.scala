@@ -63,6 +63,19 @@ trait Annotator extends PropsHolder {
 
   def buildCommand(cmd: String, args: String*): java.util.List[String] = (cmd.split("\\s+") ++ args).toSeq.asJava
 
+  /** If this annotator can run, returns the set of requirements satisifed with all
+    * annotators up to this. Throw requirementError if requirement check is failed.
+    */
+  def checkRequirements(satisfiedSoFar: RequirementSet): RequirementSet = {
+    satisfiedSoFar.lackedIn(requires) match {
+      case a if a.isEmpty => satisfiedSoFar | requirementsSatisfied
+      case lacked =>
+        throw new RequirementError(
+          "annotator %s requires %s".format(name, lacked.mkString(", "))
+        )
+    }
+  }
+
   def requires = Set.empty[Requirement]
   def requirementsSatisfied = Set.empty[Requirement]
 }

@@ -57,7 +57,7 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
     "juman" -> classOf[JumanAnnotator],
     "knp" -> classOf[SimpleKNPAnnotator],
     "knpDoc" -> classOf[DocumentKNPAnnotator],
-    "ccg" -> classOf[CCGParseAnnotator]
+    "ccg" -> classOf[CCGParseAnnotator],
     "corenlp" -> classOf[StanfordCoreNLPAnnotator],
     "berkeley" -> classOf[BerkeleyParserAnnotator]
   )
@@ -86,15 +86,12 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
   def createAnnotatorList(): List[Annotator] = {
     val annotatorList =
       annotatorNamesSuger.map { getAnnotator(_) }.toList
-    annotatorList.foldLeft(RequirementSet()) { (satisfiedSofar, annotator) =>
-      val requires = annotator.requires
 
-      val lacked = satisfiedSofar.lackedIn(requires)
-      if (!lacked.isEmpty) argumentError(
-        "annotators",
-        "annotator %s requires annotators %s".format(annotator.name, lacked.mkString(", ")))
-
-      satisfiedSofar | annotator.requirementsSatisfied
+    annotatorList.foldLeft(RequirementSet()) { (satisifedSofar, annotator) =>
+      try annotator.checkRequirements(satisifedSofar)
+      catch { case e: RequirementError =>
+        argumentError("annotators", e.getMessage)
+      }
     }
 
     annotatorList foreach (_.init)

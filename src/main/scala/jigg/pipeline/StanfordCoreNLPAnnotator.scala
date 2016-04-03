@@ -27,6 +27,7 @@ import java.io.StringWriter
 //import scala.collection.mutable.ListBuffer
 //import scala.collection.immutable.Lis
 import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import scala.xml._
 import scala.sys.process.Process
 import scala.io.Source
@@ -44,13 +45,20 @@ import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations
 import edu.stanford.nlp.semgraph.SemanticGraph
 import edu.stanford.nlp.trees.GrammaticalRelation
 
+import edu.stanford.nlp.{pipeline => core}
+
 import jigg.util.SecpressionUtil
 
-class StanfordCoreNLPAnnotator(override val name: String, override val props: Properties) extends Annotator {
+class StanfordCoreNLPAnnotator(
+  override val name: String,
+  override val props: Properties) extends Annotator {
 
   @Prop(gloss = "Regular expression to segment lines (if omitted, specified method is used)") var pattern = ""
   @Prop(gloss = "Use predefined segment pattern newLine|point|pointAndNewLine") var method = "pointAndNewLine"
   readProps()
+
+  val annotators: Seq[core.Annotator] = Seq()
+  val annotatorNames: Seq[String] = Seq()
 
   var Operator2Id: (String)=> Int ={
     case "ssplit" => 1
@@ -86,6 +94,7 @@ class StanfordCoreNLPAnnotator(override val name: String, override val props: Pr
         case "pointAndNewLine" => RegexSentenceAnnotator.pointAndNewLine
         case other => argumentError("method")
       }
+
     case pattern =>
       pattern.r
   }
@@ -135,7 +144,7 @@ class StanfordCoreNLPAnnotator(override val name: String, override val props: Pr
       dependencies_nord1 = mkDependenciesNode(sentence_map.get(classOf[SemanticGraphCoreAnnotations.BasicDependenciesAnnotation]),"basic-dependencies",token_maps)
       dependencies_nord2 = mkDependenciesNode(sentence_map.get(classOf[SemanticGraphCoreAnnotations.CollapsedDependenciesAnnotation]),"collapsed-dependencies",token_maps)
       dependencies_nord3 = mkDependenciesNode(sentence_map.get(classOf[SemanticGraphCoreAnnotations.CollapsedCCProcessedDependenciesAnnotation]),"collapsed-ccprocessed-dependenciess",token_maps)
-    
+
     }
 
     Option(<sentence id={ sid }>{ sentence_text }{token_nord}{parse_nord}{dependencies_nord1}{dependencies_nord2 }{dependencies_nord3 }</sentence>)
@@ -207,9 +216,6 @@ class StanfordCoreNLPAnnotator(override val name: String, override val props: Pr
 
   def tid(sindex: String, tindex: Int) = sindex + "_tok" + tindex
 
-  //override def requires = Set()
-  override def requirementsSatisfied = Set(Requirement.Tokenize)
-
   var my_node: Node = null
   var min_option:Int = 9999
   var max_option:Int = -1
@@ -244,7 +250,58 @@ class StanfordCoreNLPAnnotator(override val name: String, override val props: Pr
     case 3 => runCoreNLP1
   }
 
+  override def checkRequirements(satisfiedSoFar: RequirementSet): RequirementSet =
+    (0 until annotators.size).foldLeft(satisfiedSoFar) { (sofar, i) =>
+      val requires = requiresByEach(i)
+      sofar.lackedIn(requires) match {
+        case a if a.isEmpty =>
+          sofar | requirementsSatisfiedByEach(i)
+        case lacked =>
+          throw new RequirementError("annotator %s in %s requires %s"
+            .format(annotatorNames(i), name, lacked.mkString(", ")))
+      }
+    }
+
+  override def requires = requiresByEach(0)
+  override def requirementsSatisfied =
+    requirementsSatisfiedByEach.foldLeft(Set[Requirement]())(_ ++ _)
+
+  private val requiresByEach: Seq[Set[Requirement]] =
+    convRequirements(annotators map (_.requires.asScala.toSet))
+  private val requirementsSatisfiedByEach: Seq[Set[Requirement]] =
+    convRequirements(annotators map (_.requirementsSatisfied.asScala.toSet))
+
+  private def convRequirements(seq: Seq[Set[core.Annotator.Requirement]]):
+      Seq[Set[Requirement]] = {
+
+    def conv(set: Set[core.Annotator.Requirement], name: String): Set[Requirement] =
+      set map (StanfordCoreNLPAnnotator.requirementMap.getOrElse(_,
+        throw new ArgumentError("$name in Stanford CoreNLP is unsupported in jigg.")))
+
+    assert(seq.size == annotatorNames.size)
+    (0 until seq.size) map { i => conv(seq(i), annotatorNames(i)) }
+  }
+
 }
 
-object StanfordCoreNLPAnnotator extends AnnotatorCompanion[StanfordCoreNLPAnnotator]
+object StanfordCoreNLPAnnotator extends AnnotatorCompanion[StanfordCoreNLPAnnotator] {
 
+  val requirementMap: Map[core.Annotator.Requirement, Requirement] = Map(
+    core.Annotator.TOKENIZE_REQUIREMENT -> Requirement.Tokenize,
+    // core.Annotator.CLEAN_XML_REQUIREMENT -> Requirement. // unsupported
+    core.Annotator.SSPLIT_REQUIREMENT -> Requirement.Ssplit,
+    core.Annotator.POS_REQUIREMENT -> Requirement.POS,
+    core.Annotator.LEMMA_REQUIREMENT -> Requirement.Lemma,
+    core.Annotator.NER_REQUIREMENT -> Requirement.NER,
+    // core.Annotator.GENDER_REQUIREMENT -> // unsupported
+    // core.Annotator.TRUECASE_REQUIREMENT -> // unsupported
+    core.Annotator.PARSE_REQUIREMENT -> Requirement.Parse,
+    core.Annotator.DEPENDENCY_REQUIREMENT -> Requirement.Dependencies,
+    // core.Annotator.MENTION_REQUIREMENT -> // unsupported
+    // core.Annotator.ENTITY_MENTIONS_REQUIREMENT -> // unsupported
+    core.Annotator.COREF_REQUIREMENT -> Requirement.Coreference // TODO: maybe we need CoreNLP specific Coreference? for e.g., representing Gender
+  )
+
+  println((new core.POSTaggerAnnotator()).requires.asScala.toSeq(0))
+  println(requirementMap get (new core.POSTaggerAnnotator()).requires.asScala.toSeq(0))
+}

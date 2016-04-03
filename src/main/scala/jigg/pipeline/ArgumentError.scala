@@ -17,3 +17,5 @@ package jigg.pipeline
 */
 
 class ArgumentError(msg: String) extends RuntimeException(msg)
+
+class RequirementError(msg: String) extends RuntimeException(msg)
