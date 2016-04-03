@@ -43,6 +43,10 @@ object XMLUtil {
     case _ => n
   }
 
+  def addAttributes(n: Node, kvs: Map[String, String]): Node = {
+    kvs.foldLeft(n) { case (node, (k, v)) => addAttribute(node, k, v) }
+  }
+
   def replaceChild(n: Node, newChild: NodeSeq): Node = n match {
     case e: Elem => e.copy(child=newChild)
     case _ => n

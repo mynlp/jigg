@@ -64,12 +64,9 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
   // TODO: should document ID be given here?  Somewhere else?
   private[this] val documentIDGen = jigg.util.IDGenerator("d")
 
-  val annotatorNames = annotators.split("""[,\s]+""") // PU.safeFind("annotators", props).split("""[,\s]+""")
-  val annotatorNamesSuger = {
-    var new_annotators = annotators
-    var pattern = """\[.+?\]""".r
-    for(p <- pattern.findAllIn(annotators)) new_annotators = new_annotators.replace(p,p.replace(",",";").replace("[","").replace("]",""))
-    new_annotators.split("""[,\s]+""")
+  val annotatorNames = {
+    val pattern = """[^,\s]+\[[^\[]*\]|[^,\[\]\s]+""".r
+    pattern.findAllIn(annotators).toIndexedSeq
   }
 
   val customAnnotatorNameToClassPath = PU.filter(properties) {
@@ -84,7 +81,7 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
 
   def createAnnotatorList(): List[Annotator] = {
     val annotatorList =
-      annotatorNamesSuger.map { getAnnotator(_) }.toList
+      annotatorNames.map { getAnnotator(_) }.toList
 
     annotatorList.foldLeft(RequirementSet()) { (satisifedSofar, annotator) =>
       try annotator.checkRequirements(satisifedSofar)
@@ -117,26 +114,10 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
       getAnnotatorClass(name) map { clazz =>
         clazz.getConstructor(classOf[String], classOf[Properties])
           .newInstance(name, properties).asInstanceOf[Annotator] }
-    } orElse {
-      getAnnotatorClassWithOption(name) map {
-        _ fromProps (name, properties)
-      }
     } getOrElse {
       argumentError("annotators", s"Failed to search for custom annotator class: $name")
     }
   } catch { case e: java.lang.reflect.InvocationTargetException => throw e.getCause }
-
-  //   getOrElse {
-  //     getAnnotatorClass(name) map { clazz =>
-  //       clazz.getConstructor(classOf[String], classOf[Properties]).newInstance(name, properties).asInstanceOf[Annotator]
-  //       //      } getOrElse { argumentError("annotators", s"Failed to search for custom annotator class: $name") }
-  //     } getOrElse {
-  //       getAnnotatorClassWithOption(name) map{
-  //       _.fromProps(name, properties)
-  //       } getOrElse { argumentError("annotators", s"Failed to search for custom annotator class: $name") }
-  //     }
-  //   }
-  // } catch { case e: java.lang.reflect.InvocationTargetException => throw e.getCause }
 
   def getAnnotatorCompanion(name: String): Option[AnnotatorCompanion[Annotator]] = {
     import scala.reflect.runtime.{currentMirror => cm}
@@ -148,22 +129,17 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
     }
   }
 
-  def getAnnotatorClassWithOption(str: String):Option[AnnotatorCompanion[Annotator]] = {
-    import scala.reflect.runtime.{currentMirror => cm}
-    val name = str.split(':')(0)
-    defaultAnnotatorClassMap get(name) flatMap { clazz =>
-      val symbol = cm.classSymbol(clazz).companion
-      try Some(cm.reflectModule(symbol.asModule).instance.asInstanceOf[AnnotatorCompanion[Annotator]])
-      catch { case e: Throwable => None }
-    }
-  }
-
   def getAnnotatorClass(name: String): Option[Class[_]] = {
-    defaultAnnotatorClassMap get(name) orElse {
-      customAnnotatorNameToClassPath get(name) map { path =>
-        resolveAnnotatorClass(path, name)
+    val noOption = name.indexOf('[') match {
+      case -1 => name
+      case b => name.substring(0, b)
+    }
+    println(noOption)
+    defaultAnnotatorClassMap get(noOption) orElse {
+      customAnnotatorNameToClassPath get(noOption) map { path =>
+        resolveAnnotatorClass(path, noOption)
       } getOrElse {
-        resolveAnnotatorClass(name, name)
+        resolveAnnotatorClass(noOption, noOption)
       }
     }
   }
@@ -241,10 +217,6 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
 
   private[this] def process[U](f: List[Annotator]=>U) = {
     f(annotatorList)
-    // val annotators = createAnnotators
-    // annotators foreach { _.init }
-    // try f(annotators)
-    // finally annotators foreach { _.close }
   }
 
   def annotate(reader: BufferedReader, verbose: Boolean = false): Node =
