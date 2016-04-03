@@ -21,6 +21,7 @@ import java.io.{BufferedReader, BufferedWriter, PrintStream}
 import scala.annotation.tailrec
 import scala.io.Source
 import scala.xml.{XML, Node}
+import scala.collection.JavaConverters._
 import jigg.util.LogUtil.{ track, multipleTrack }
 import jigg.util.{PropertiesUtil => PU, IOUtil, XMLUtil}
 
@@ -67,7 +68,25 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
     pattern.findAllIn(annotators).toIndexedSeq
   }
 
-  val customAnnotatorNameToClassPath = PU.filter(properties) {
+  // Some known annotators, e.g., corenlp, are found from here
+  val knownAnnotatorNameToClassPath: Map[String, String] = {
+    val path = "jigg/pipeline/annotatorPath.properties"
+    val loader = Thread.currentThread.getContextClassLoader
+    val in = loader.getResourceAsStream(path)
+
+    val p = new Properties
+    if (in != null) {
+      val reader = new java.io.InputStreamReader(in, "utf-8")
+      p.load(reader)
+    }
+    p.keys.asScala.toSeq.map(_.toString).map { k =>
+      k -> p.get(k).toString
+    }.toMap
+  }
+
+  println(knownAnnotatorNameToClassPath)
+
+  val customAnnotatorNameToClassPath: Map[String, String] = PU.filter(properties) {
     case (k, _) => k.startsWith("customAnnotatorClass.")
   }.map {
     case (k, v) => (k.drop(k.indexOf('.') + 1), v)
@@ -132,14 +151,24 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
       case -1 => name
       case b => name.substring(0, b)
     }
-    println(noOption)
-    defaultAnnotatorClassMap get(noOption) orElse {
-      customAnnotatorNameToClassPath get(noOption) map { path =>
+    customAnnotatorNameToClassPath get(noOption) flatMap { path =>
+      resolveAnnotatorClass(path, noOption)
+    } orElse {
+      defaultAnnotatorClassMap get(noOption)
+    } orElse {
+      knownAnnotatorNameToClassPath get(noOption) flatMap { path =>
         resolveAnnotatorClass(path, noOption)
-      } getOrElse {
-        resolveAnnotatorClass(noOption, noOption)
       }
+    } orElse {
+      resolveAnnotatorClass(noOption, noOption)
     }
+
+    // orElse {
+    //   knownAnnotatorNameToClassPath get(noOption) map { path =>
+    //     resolveAnnotatorClass(path, noOption)
+    //   }
+    // }
+
   }
 
   private[this] def resolveAnnotatorClass(path: String, name: String): Option[Class[_]] =
