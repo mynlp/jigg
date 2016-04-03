@@ -28,8 +28,16 @@ class RegexDocumentAnnotator(override val name: String, override val props: Prop
   override def annotate(annotation: Node): Node = {
     val raw = annotation.text
 
+    var offset = 0
+
     val documents = raw.split(pattern).map { str =>
-      <document id={ documentIDGen.next }>{ str }</document>
+      val n = <document
+        id={ documentIDGen.next }
+        characterOffsetBegin={ offset+"" }
+        characterOffsetEnd={ offset+str.size+"" }
+      >{ str }</document>
+      offset += str.size
+      n
     }
 
     <root>{ documents }</root>
