@@ -84,8 +84,6 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
     }.toMap
   }
 
-  println(knownAnnotatorNameToClassPath)
-
   val customAnnotatorNameToClassPath: Map[String, String] = PU.filter(properties) {
     case (k, _) => k.startsWith("customAnnotatorClass.")
   }.map {
