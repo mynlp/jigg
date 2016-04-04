@@ -55,7 +55,9 @@ object XMLUtil {
   def addAnnotatorName(n: Node, annotator: String): Node = {
     val newAnnotators = (n \@ "annotators") match {
       case "" => annotator
-      case sofar => sofar + " " + annotator
+      case sofar =>
+        if (sofar.split(' ').contains(annotator)) sofar // already annotated
+        else sofar + " " + annotator
     }
     addAttribute(n, "annotators", newAnnotators)
   }
