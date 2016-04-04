@@ -31,7 +31,8 @@ libraryDependencies ++= Seq(
   "org.scala-lang" % "scala-reflect" % "2.11.7",
   "com.ibm.icu" % "icu4j" % "56.1",
   "org.scalanlp" % "breeze-config_2.10" % "0.9.1",
-  "com.github.mynlp" % "jigg-kuromoji" % "0.1-SNAPSHOT"
+  "com.github.mynlp" % "jigg-kuromoji" % "0.1-SNAPSHOT",
+  "com.github.mynlp" % "jigg-berkeley-parser" % "0.1-SNAPSHOT"
 )
 
 resolvers ++= Seq(
