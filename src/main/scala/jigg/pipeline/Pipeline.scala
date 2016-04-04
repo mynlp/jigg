@@ -51,7 +51,7 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
   protected val defaultAnnotatorClassMap: Map[String, Class[_]] = Map(
     "dsplit" -> classOf[RegexDocumentAnnotator],
     "ssplit" -> classOf[RegexSentenceAnnotator],
-    // "kuromoji" -> classOf[KuromojiAnnotator],
+    "spaceTokenize" -> classOf[SpaceTokenizerAnnotator],
     "mecab" -> classOf[MecabAnnotator],
     "cabocha" -> classOf[CabochaAnnotator],
     "juman" -> classOf[JumanAnnotator],
