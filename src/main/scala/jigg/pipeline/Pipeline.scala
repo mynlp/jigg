@@ -64,8 +64,13 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
   private[this] val documentIDGen = jigg.util.IDGenerator("d")
 
   val annotatorNames = {
+    val p = """\"(.*)\"""".r
+    val _annotators = annotators match {
+      case p(a) => a
+      case _ => annotators
+    }
     val pattern = """[^,\s]+\[[^\[]*\]|[^,\[\]\s]+""".r
-    pattern.findAllIn(annotators).toIndexedSeq
+    pattern.findAllIn(_annotators).toIndexedSeq
   }
 
   // Some known annotators, e.g., corenlp, are found from here
