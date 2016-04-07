@@ -76,8 +76,8 @@ trait Annotator extends PropsHolder {
     }
   }
 
-  def requires = Set.empty[Requirement]
-  def requirementsSatisfied = Set.empty[Requirement]
+  def requires() = Set.empty[Requirement]
+  def requirementsSatisfied() = Set.empty[Requirement]
 }
 
 object Annotator {
