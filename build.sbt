@@ -1,9 +1,28 @@
 import AssemblyKeys._
 
+
+/** If you want to install new annotator, please extend here.
+  *
+  * Each element has the following form:
+  *   key -> (maven id, path to the annotator class).
+  *
+  * If maven id and class path are correct, in the resulting jar (with "sbt assembly"),
+  * one can use the new annotator with the name "key".
+  *
+  * For example now "-annotators berkeleyparser" tries to launch BerkeleyParserAnnotator.
+  */
+val annotatorLibrary = Map(
+  "kuromoji" -> ("com.github.mynlp" % "jigg-kuromoji" % "0.1-SNAPSHOT",
+    "jigg.pipeline.KuromojiAnnotator"),
+  "berkeleyparser" -> ("com.github.mynlp" % "jigg-berkeley-parser" % "0.1-SNAPSHOT",
+    "jigg.pipeline.BerkeleyParserAnnotator"),
+  "corenlp" -> ("com.github.mynlp" % "jigg-stanford-corenlp" % "0.1-SNAPSHOT",
+    "jigg.pipeline.StanfordCoreNLPAnnotator")
+)
+
 assemblySettings
 
 organization := "com.github.mynlp"
-// organization := "jp"
 
 name := "jigg"
 
@@ -30,11 +49,20 @@ libraryDependencies ++= Seq(
   "org.scala-lang.modules" %% "scala-xml" % "1.0.5",
   "org.scala-lang" % "scala-reflect" % "2.11.7",
   "com.ibm.icu" % "icu4j" % "56.1",
-  "org.scalanlp" % "breeze-config_2.10" % "0.9.1",
-  "com.github.mynlp" % "jigg-kuromoji" % "0.1-SNAPSHOT",
-  "com.github.mynlp" % "jigg-berkeley-parser" % "0.1-SNAPSHOT",
-  "com.github.mynlp" % "jigg-stanford-corenlp" % "0.1-SNAPSHOT"
+  "org.scalanlp" % "breeze-config_2.10" % "0.9.1"
 )
+
+libraryDependencies ++= annotatorLibrary.map { case (k, v) => v._1 }.toSeq
+
+lazy val root = (project in file(".")).
+  enablePlugins(BuildInfoPlugin).
+  settings(
+    buildInfoKeys := annotatorLibrary.map { case (k, v) =>
+      BuildInfoKey.action("ann_" + k)(v._2)
+    }.toSeq,
+      // Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
+    buildInfoPackage := "jigg.pipeline.annotator"
+  )
 
 resolvers ++= Seq(
   "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"

@@ -75,17 +75,16 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
 
   // Some known annotators, e.g., corenlp, are found from here
   val knownAnnotatorNameToClassPath: Map[String, String] = {
-    val path = "jigg/pipeline/annotatorPath.properties"
-    val loader = Thread.currentThread.getContextClassLoader
-    val in = loader.getResourceAsStream(path)
-
-    val p = new Properties
-    if (in != null) {
-      val reader = new java.io.InputStreamReader(in, "utf-8")
-      p.load(reader)
+    val buildInfo = annotator.BuildInfo
+    import scala.reflect.runtime.universe._
+    val rm = scala.reflect.runtime.currentMirror
+    val accessors = rm.classSymbol(buildInfo.getClass).toType.decls.collect {
+      case m: MethodSymbol if
+        m.isGetter && m.isPublic && m.name.toString.startsWith("ann_") => m
     }
-    p.keys.asScala.toSeq.map(_.toString).map { k =>
-      k -> p.get(k).toString
+    val instanceMirror = rm.reflect(buildInfo)
+    accessors.map { m =>
+      m.name.toString.drop(4) -> instanceMirror.reflectMethod(m).apply().toString
     }.toMap
   }
 
