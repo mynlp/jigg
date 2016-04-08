@@ -300,19 +300,20 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
 object Pipeline {
 
   def main(args: Array[String]): Unit = {
+
     val props = jigg.util.ArgumentsParser.parse(args.toList)
 
     try {
       val pipeline = new Pipeline(props)
-      try PU.findProperty("help", props) match {
+      PU.findProperty("help", props) match{
         case Some(help) =>
-          pipeline.printHelp(System.out)
+          pipeline.printHelp(System.out) // do not close with help mode
         case None =>
-          pipeline.file match {
+          try pipeline.file match {
             case "" => pipeline.runFromStdin
             case _ => pipeline.run
-          }
-      } finally pipeline.close()
+          } finally pipeline.close()
+      }
     } catch {
       case e: ArgumentError =>
         System.err.println(e.getMessage)
@@ -320,4 +321,5 @@ object Pipeline {
         System.err.println(s"Failed to start jigg due to incompatibility of Java version. Installing the latest version of Java would resolve the problem.\n${e.getMessage()}")
     }
   }
+
 }
