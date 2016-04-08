@@ -50,6 +50,7 @@ object Requirement {
   case object Dependencies extends Requirement
 
   case object NER extends Requirement
+  case object NormalizedNER extends Requirement
 
   case object Coreference extends Requirement
 
