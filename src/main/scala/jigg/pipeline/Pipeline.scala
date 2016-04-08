@@ -168,13 +168,6 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
     } orElse {
       resolveAnnotatorClass(noOption, noOption)
     }
-
-    // orElse {
-    //   knownAnnotatorNameToClassPath get(noOption) map { path =>
-    //     resolveAnnotatorClass(path, noOption)
-    //   }
-    // }
-
   }
 
   private[this] def resolveAnnotatorClass(path: String, name: String): Option[Class[_]] =
