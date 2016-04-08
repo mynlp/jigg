@@ -95,7 +95,10 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
     case (k, v) => (k.drop(k.indexOf('.') + 1), v)
   }.toMap
 
-  val annotatorList = createAnnotatorList()
+  /** To output help message even when annotators do not satisfy requirement dependencies,
+    * we make the annotator list lazy.
+    */
+  lazy val annotatorList = createAnnotatorList()
 
   def close() = annotatorList foreach { _.close() }
 
