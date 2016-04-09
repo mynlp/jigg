@@ -102,7 +102,7 @@ object JaRequirement {
 }
 
 // Requirements specialized for StanfordCoreNLP are included here?
-object Stanfordrequirement {
+object StanfordRequirement {
 
   case object NormalizedNER extends Requirement
 
