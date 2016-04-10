@@ -72,7 +72,7 @@ object Requirement {
   case object CollapsedDependencies extends Requirement {
     override val parent = Seq(Dependencies)
   }
-  case object CollapsedCCDependencies extends Requirement {
+  case object CollapsedCCProcessedDependencies extends Requirement {
     override val parent = Seq(Dependencies)
   }
 }
