@@ -58,6 +58,23 @@ object Requirement {
   case object Parse extends Requirement
 
   case object Chunk extends Requirement
+
+  // mainly prepared for Stanford CoreNLP
+  case object NormalizedNER extends Requirement
+
+  case object StanfordNER extends Requirement {
+    override val parent = Seq(NER, NormalizedNER)
+  }
+
+  case object BasicDependencies extends Requirement {
+    override val parent = Seq(Dependencies)
+  }
+  case object CollapsedDependencies extends Requirement {
+    override val parent = Seq(Dependencies)
+  }
+  case object CollapsedCCDependencies extends Requirement {
+    override val parent = Seq(Dependencies)
+  }
 }
 
 
@@ -99,23 +116,6 @@ object JaRequirement {
 
   case object CCGDerivation extends Requirement
   case object CCGDependencies extends Requirement
-}
-
-// Requirements specialized for StanfordCoreNLP are included here?
-object StanfordRequirement {
-
-  case object NormalizedNER extends Requirement
-
-  case object StanfordNER extends Requirement {
-    override val parent = Seq(Requirement.NER, NormalizedNER)
-  }
-
-  case object BasicDependencies extends Requirement {
-    override val parent = Seq(Requirement.Dependencies)
-  }
-  case object CollapsedDependencies extends Requirement {
-    override val parent = Seq(Requirement.Dependencies)
-  }
 }
 
 /** This set is a specialized set to preserve satisfied requirements. If an element is
