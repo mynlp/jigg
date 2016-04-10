@@ -31,9 +31,9 @@ object Annotation {
 
   object Sentence extends Annotation("s")
 
-  object Token extends Annotation("tok")
+  object Token extends Annotation("t")
 
-  object Dependencies extends Annotation("dep")
+  object Dependency extends Annotation("dep")
 
   object NE extends Annotation("ne")
 
