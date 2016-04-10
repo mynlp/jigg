@@ -27,7 +27,9 @@ abstract class Annotation(val idPrefix: String) {
 
 object Annotation {
 
-  object Document extends Annotation("doc")
+  object Document extends Annotation("d")
+
+  object Sentence extends Annotation("s")
 
   object Token extends Annotation("tok")
 
