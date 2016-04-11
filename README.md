@@ -165,6 +165,27 @@ $ cat input.txt | java -cp jigg-0.6.jar jigg.pipeline.Pipeline -annotators "core
 
 In default, Jigg tries to use as many threads as the machine can use. On my laptop (with 4 cores), when annotating about 1000 sentences, annotation with `-nThreads 1` takes about 154 seconds, which is reduced to 79 seconds with parallel annotaion.
 
+#### Full pipeline
+
+For English, currently the main components in Jigg are Stanford CoreNLP. To run the full pipeline in Stanford CoreNLP, you need to download the model file of it first (if you don't have):
+```bash
+$ wget http://nlp.stanford.edu/software/stanford-english-corenlp-2016-01-10-models.jar
+```
+
+Then, a pipeline to the coreference resolution, for example, can be constructed as follows:
+
+```bash
+$ java -cp jigg-0.6.jar:stanford-english-corenlp-2016-01-10-models.jar jigg.pipeline.Pipeline -annotators "corenlp[tokenize,ssplit,parse,lemma,ner,dcoref]"
+```
+
+This is the usage of Jigg just as a wrapper of Stanford CoreNLP, which may not be interesting. More interesting example is to insert the Berkeley parser into a pipeline of Stanford CoreNLP:
+
+```bash
+$ java -cp jigg-0.6.jar:stanford-english-corenlp-2016-01-10-models.jar jigg.pipeline.Pipeline -annotators "corenlp[tokenize,ssplit],berkeleyparser,corenlp[lemma,ner,dcoref]"
+```
+
+This command replaces the parser component in a CoreNLP pipeline with Berkeley parser. Jigg alleviates to include a NLP tool into a pipeline. In future Jigg will support many existing NLP tools, and the goal is to provide a platform on which a user can freely connect the tools to construct several NLP pipelines.
+
 ### Programmatic usage
 
 Jigg pipeline can also be incorporated another Java or Scala project. The easiest way to do this is add a dependency to Maven.
@@ -196,7 +217,10 @@ import scala.xml.Node
 
 // The behavior of pipeline can be customized with Properties object, which consists of the same options used in command-line usages.
 val props = new Properties
+
 props.setProperty("annotators", "corenlp[tokenize,ssplit],berkeleyparser,corenlp[lemma,ner,dcoref]")
+
+// The path to the model to the Berkeley parser may be necessary.
 props.setProperty("berkeleyparser.grFileName", "/path/to/eng_sm6.gr")
 
 // Pipeline is the main class, which eats Properties object.
