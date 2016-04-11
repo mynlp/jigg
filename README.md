@@ -1,114 +1,240 @@
-# Jigg: NLPパイプラインのための簡易フレームワーク
+# Jigg
 
-Jigg は自然言語処理 (NLP) におけるパイプライン処理を簡単に行うためのフレームワークです。
-現在は日本語を主にサポートしていますが、他の言語も扱うことができます。
-以下のような特徴を持ちます。
+Jigg is a natural language processing pipeline framework on JVM languages (mainly for Scala), which is easy to use and extensible. Using Jigg, one can obtain several linguistic annotations on a given input from POS tagging, parsing, and coreference resolution from command-lines. The main features include:
 
-- JVM 上で動作するため、 Jar ファイル一つをダウンロードするだけで使用可能。
-- 既存の様々なソフトウェアを、 [Stanford CoreNLP](http://nlp.stanford.edu/software/corenlp.shtml) と似たインターフェースによってパイプライン上で組み合わせることができる。
-- Scala もしくは Java により既存ソフトのラッパーなどを用意することで、パイプラインを拡張できる。数十行程度の実装で可能。
-- 日本語 CCG パーザが利用可能。
+- Easy to install: basic components are included in a distributed single jar, so no need to install;
+- Similar interface to [Stanford CoreNLP](http://nlp.stanford.edu/software/corenlp.shtml);
+- Extensible: easy to add new component is a pipeline;
+- Parallel processing: sentence-level annotation is automatically parallelized.
 
-## 使い方
+Jigg is distributed under the [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.html).
 
-### 準備
+## Install
 
-現在のバージョンは 0.4 です。
-レポジトリ内の `jar/jigg-0.4.jar` をパスに通せば、必要な機能を全て使用することができます。
-
-注意: Jigg は Java 1.7 以上のバージョンが必要です。実行に失敗する場合、 Java 1.7 をインストールしてみて下さい。
-また環境によっては Java の文字コードを設定する必要があります。
-必要であれば、事前に
+There is no need to install. Just download the package!
 
 ```bash
-$ export JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF-8
+$ wget https://github.com/mynlp/jigg/releases/download/v0.6/jigg-0.6.tar.gz
+$ tar xvf jigg-0.6.tar.gz
+$ cd jigg-0.6
 ```
 
-と実行するか、 `~/.bashrc` などに、これと同じコマンドを貼付けておいて下さい。
-後者の場合、設定を読み込むためにターミナルの再起動が必要です。
+## Usage
 
-以下の例では CCG パーザを使います。
-CCG パーザは事前にモデルをダウンロードしておく必要があります。
-以下のコマンドを実行しておいて下さい。
+The following command launches Jigg in a shell mode, which parses a given input with Berkeley parser after preprocessing (tokenization and sentence splitting).
 
 ```bash
-./script/download_ccg_model.sh
+$ java -cp jigg-0.6.jar jigg.pipeline.Pipeline -annotators "corenlp[tokenize,ssplit],berkeleyparser"
+[main] INFO edu.stanford.nlp.pipeline.StanfordCoreNLP - Adding annotator tokenize
+...
+> 
 ```
 
-これで ./jar ディレクトリにモデルファイルがダウンロードされ、使えるようになります。
+Let's write some sentences in a line.
 
-### 使用例
-
-以下の例では、パイプで与えられた入力に、 ssplit (文分割)、 [kuromoji](http://www.atilika.org) (形態素解析)、 ccg (CCG 構文解析) を順番に適用し、結果が XML で得られます。
-
-```bash
-$ echo "東京は晴れです。 京都はどうですか。" | java -cp "./jar/*" jigg.pipeline.Pipeline -annotators ssplit,kuromoji,ccg > annotated.xml
+```xml
+> Hello Jigg! This is the first sentence.
+<root>
+  <document id="d0">
+    <sentences>
+      <sentence id="s0" characterOffsetBegin="0" characterOffsetEnd="11">
+        Hello Jigg!
+        <tokens annotators="corenlp berkeleyparser">
+          <token pos="UH" characterOffsetEnd="5" characterOffsetBegin="0" id="t0" form="Hello"/>
+          <token pos="PRP$" characterOffsetEnd="10" characterOffsetBegin="6" id="t1" form="Jigg"/>
+          <token pos="." characterOffsetEnd="11" characterOffsetBegin="10" id="t2" form="!"/>
+        </tokens>
+        <parse annotators="berkeleyparser" root="s0_berksp0">
+          <span id="s0_berksp0" symbol="INTJ" children="t0 t1 t2"/>
+        </parse>
+      </sentence>
+      <sentence id="s1" characterOffsetBegin="12" characterOffsetEnd="39">
+        This is the first sentence.
+        <tokens annotators="corenlp berkeleyparser">
+          <token pos="DT" characterOffsetEnd="4" characterOffsetBegin="0" id="t3" form="This"/>
+          <token pos="VBZ" characterOffsetEnd="7" characterOffsetBegin="5" id="t4" form="is"/>
+          <token pos="DT" characterOffsetEnd="11" characterOffsetBegin="8" id="t5" form="the"/>
+          <token pos="JJ" characterOffsetEnd="17" characterOffsetBegin="12" id="t6" form="first"/>
+          <token pos="NN" characterOffsetEnd="26" characterOffsetBegin="18" id="t7" form="sentence"/>
+          <token pos="." characterOffsetEnd="27" characterOffsetBegin="26" id="t8" form="."/>
+        </tokens>
+        <parse annotators="berkeleyparser" root="s1_berksp0">
+          <span id="s1_berksp0" symbol="S" children="s1_berksp1 s1_berksp2 t8"/>
+          <span id="s1_berksp1" symbol="NP" children="t3"/>
+          <span id="s1_berksp2" symbol="VP" children="t4 s1_berksp3"/>
+          <span id="s1_berksp3" symbol="NP" children="t5 t6 t7"/>
+        </parse>
+      </sentence>
+    </sentences>
+  </document>
+</root>
+> 
 ```
 
-これは正しく動作しますが、次のコマンドは失敗します。
+(Currently) the results are always obtained in a XML format. One can see that Jigg automatically detects sentence boundaries (there are two sentences), and performs tokenization (e.g, period . is recognized as a single word), on which parse tree (`<parse>`) is built.
+
+In Jigg, each NLP tool such as `corenlp` (Stanford CoreNLP) or `berkeleyparser` (Berkeley parser) is called annotator. Jigg helps to construct easily a NLP pipeline by combining several annotators. In the example above, the pipeline is constructed by combining Stanford CoreNLP (which performs tokenization and sentence-splitting) and Berkeley parser (which performs parsing on tokenized sentences).
+
+### Command-line usage
+
+Basic usage is described in the help message:
 
 ```bash
-$ echo "東京は晴れです。 京都はどうですか。" | java -cp "./jar/*" jigg.pipeline.Pipeline -annotators ssplit,ccg > annotated.xml
-annotator ccg requires TokenizeWithIPA
-  annotators                     < str>: List of annotator names, e.g., ssplit,mecab ssplit|kuromoji|mecab|cabocha|juman|knp|ccg (required) [ssplit,ccg]
-```
-
-これは、 CCG パーザが入力として、その手前までで形態素解析が行われていることを前提とするからです。
-Jigg はこのように、コンポーネント (アノテータ) 間のパイプラインの接続がうまくいかない場合には警告を出して終了します。
-
-基本的な使用法は、ヘルプメッセージを参照してください。
-
-```bash
-$ java -cp target/jigg-assembly-0.4.jar jigg.pipeline.Pipeline -help
+$ java -cp jigg-0.6.jar jigg.pipeline.Pipeline -help
 Usage:
-  annotators                     < str>: List of annotator names, e.g., ssplit,mecab ssplit|kuromoji|mecab|cabocha|juman|knp|ccg (required) []
+  annotators                     < str>: List of annotator names, e.g., corenlp[tokenize,ssplit],berkeleyparser (required) []
   file                           < str>: Input file; if omitted, read from stdin []
   props                          < str>: Property file []
-  customAnnotatorClass           < str>: You can add an abbreviation for a custom annotator class with "-customAnnotatorClass.xxx path.package" []
+  nThreads                       < int>: Number of threads for parallel annotation (use all if <= 0) [-1]
   output                         < str>: Output file; if omitted, `file`.xml is used. Gzipped if suffix is .gz []
+  customAnnotatorClass           < str>: You can add an abbreviation for a custom annotator class with "-customAnnotatorClass.xxx path.package" []
   help                           < str>: Print this message and descriptions of specified annotators, e.g., -help ssplit,mecab [true]
+
+Currently the annotators listed below are installed. See the detail of each annotator with "-help annotator_name".
+
+  mecab, ssplit, jaccg, cabocha, spaceTokenize, dsplit, knp, knpDoc, juman
+  kuromoji, berkeleyparser, corenlp
 ```
 
-`-help xxx` でアノテータ名を指定することで、その使用法や仕様などを確認することができます。
+Some annotators, such as mecab, jaccg, kuromoji, etc are specific for Japanese processing. As shown here, more specific description for each annotator is described by giving argument to "-help" option:
 
 ```bash
-$ java -cp target/jigg-assembly-0.4.jar jigg.pipeline.Pipeline -help ssplit,kuromoji
+$ java -cp jigg-0.6.jar jigg.pipeline.Pipeline -help berkeleyparser
 ...
-ssplit:
-  requires                             : []
-  requirementsSatisfied                : [Sentence]
- 
-  ssplit.pattern                 < str>: Regular expression to segment lines (if omitted, specified method is used) []
-  ssplit.method                  < str>: Use predefined segment pattern newLine|point|pointAndNewLine [pointAndNewLine]
- 
-kuromoji:
-  requires                             : [Sentence]
-  requirementsSatisfied                : [TokenizeWithIPA]
+berkeleyparser:
+  requires                             : [Tokenize]
+  requirementsSatisfied                : [POS, Parse]
+
+  berkeleyparser.variational     <bool>: Use variational rule score approximation instead of max-rule (Default: false) [false]
+  berkeleyparser.grFileName      < str>: Grammar file []
+  berkeleyparser.accurate        <bool>: Set thresholds for accuracy. (Default: set thresholds for efficiency) [false]
+  berkeleyparser.usePOS          <bool>: Use annotated POS (by another annotator) [false]
+  berkeleyparser.viterbi         <bool>: Compute viterbi derivation instead of max-rule tree (Default: max-rule) [false]
+
+  A wrapper for Berkeley parser. The feature is that this wrapper is implemented to be
+  thread-safe. To do this, the wrapper keeps many parser instances (the number can be
+  specified by customizing -nThreads).
+
+  The path to the model file can be changed by setting -berkeleyparser.grFileName.
+
+  If -berkeleyparser.usePOS is true, the annotator assumes the POS annotation is already
+  performed, and the parser builds a tree based on the assigned POS tags.
+  Otherwise, the parser performs joint inference of POS tagging and parsing, which
+  is the default behavior.
 ```
 
-各アノテータには、 `requires` と `requirementsSatisfied` というフィールドが設定されています。
-`ssplit` の `requirementsSatisfied` と、 `kuromoji` の `requires` はともに `Sentence` で共通となっています。
-この `requires` は、ここに示した要素が、それまでのアノテータにより満たされてないといけないことを示します。
-この場合、 `Sentence` が満たされたという条件が `ssplit` により与えられ、 `kuromoji` はその条件を前提とします。
-従って、 `-annotators kuromoji` などとすると、 `Sentence` がそれまでに与えられていないため、先ほどの `ssplit,ccg` のときのように、実行に失敗します。
+#### Requirements
 
-## 既存のアノテータ
+Here, `requires` and `reqruiementsSatisfied` describe the role of this annotator (berkeleyparser). Intuitively, the above description says `berkeleyparser` requires that the input text is already tokenized (`Tokenize`), and after the annotation, part-of-speech tags (`POS`) and parse tree (`Parse`) are annotated on each sentence.
 
-現在次のようなアノテータが使用可能です。
-それぞれのアノテータは、 `-x.option yyy` という形式で、オプションを指定できます。
-詳細は `-help xxx` で確認してください。
-また `mecab` などのアノテータを使うには、ソフトウェアがシステムにインストールされている必要があります。
+Jigg checks with these kinds of information whether the given pipeline can be performed safely. For example, the following command will be failed:
 
-  * `ssplit`: 文分割を行います。シンプルな正規表現により実装されており、どのようなパターンで分割を行うかを指定できます。デフォルトでは `。` もしくは改行により分割を行いますが、例えばすでに分割済みの入力を扱う場合、 `-ssplit.method newLine` とすれば、改行のみを文の区切りと見なして処理を行います。
-  * `kuromoji`: インストールせずに使える形態素解析器です。
-  * `mecab`: MeCab で形態素解析を行います。 `kuromoji` の代わりに用いることができます。
-  * `cabocha`: `mecab` で形態素解析済みの文に、文節区切りと文節係り受けを付与します。
-  * `juman`: Juman で形態素解析を行います。
-  * `knp`: KNP の出力を XML に変換して得ます。
-  * `ccg`: CCG の導出木を XML で出力します。各単語には CCG のカテゴリが付与され、それらがどのように繋がるかを辿ることができます。
+```bash
+$ java -cp jigg-0.6.jar jigg.pipeline.Pipeline -annotators berkeleyparser
+annotator berkeleyparser requires Tokenize
+  annotators                     < str>: List of annotator names, e.g., corenlp[tokenize,ssplit],berkeleyparser (required) [berkeleyparser]
+```
 
-## TODO
+The error message says `tokenize` should be performed before running `berkeleyparser`.
 
-- 説明を追加（拡張方法など）
-- 論文へのリンク
-- スライドへのリンク
+#### Parallel processing
+
+In the help message above, we can see that `berkeleyparser` is implemented to be thread-safe. This means we can run Berkeley parser in parallel, which is not supported in the original software. The most of supported annotators in Jigg are implemented as thread-safe, meaning that annotation can be very efficient in multi-core environment.
+
+To perform parallel annotation, first prepare an input document (whatever you want to analyze).
+
+```bash
+$ head input.txt
+John Blair & Co. is close to an agreement to sell its TV station advertising representation operation and program production unit to an investor group led by James H. Rosenfield, a former CBS Inc. executive, industry sources said. Industry sources put the value of the proposed acquisition at more than $100 million. John Blair was acquired last year by Reliance Capital Group Inc., which has been divesting itself of John Blair's major assets. ...
+```
+
+Then run Jigg as follows:
+```bash
+$ java -cp jigg-0.6.jar jigg.pipeline.Pipeline -annotators "corenlp[tokenize,ssplit],berkeleyparser" -file input.txt
+```
+
+Or you can run Jigg in pipe:
+```bash
+$ cat input.txt | java -cp jigg-0.6.jar jigg.pipeline.Pipeline -annotators "corenlp[tokenize,ssplit],berkeleyparser" > output.xml
+```
+
+Parallelization can be prohibited by giving `-nThreads 1` option:
+```bash
+$ cat input.txt | java -cp jigg-0.6.jar jigg.pipeline.Pipeline -annotators "corenlp[tokenize,ssplit],berkeleyparser" -nThreads 1 > output.xml
+```
+
+In default, Jigg tries to use as many threads as the machine can use. On my laptop (with 4 cores), when annotating about 1000 sentences, annotation with `-nThreads 1` takes about ...  seconds, which is doubled with parallel annotation.
+
+### Programmatic usage
+
+Jigg pipeline can also be incorporated another Java or Scala project. The easiest way to do this is add a dependency to Maven.
+
+In Scala, add the following line in the project `build.sbt`.
+
+```scala
+libraryDependencies += "com.github.mynlp" % "jigg" % "0.6"
+```
+
+In Java, add the following lines on `pom.xml`:
+
+```xml
+<dependencies>
+  <dependency>
+    <groupId>com.github.mynlp</groupId>
+    <artifactId>jigg</artifactId>
+    <version>0.6</version>
+  </dependency>
+</dependencies>
+```
+
+Jigg is written in Scala, so Scala is the most preferable choice for a programmatic usage. Jigg supports a very similar interface to Stanford CoreNLP:
+
+```scala
+import jigg.pipeline.Pipeline
+import java.util.Properties
+import scala.xml.Node
+
+// The behavior of pipeline can be customized with Properties object, which consists of the same options used in command-line usages.
+val props = new Properties
+props.setProperty("annotators", "corenlp[tokenize,ssplit],berkeleyparser,corenlp[lemma,ner,dcoref]")
+props.setProperty("berkeleyparser.grFileName", "/path/to/eng_sm6.gr")
+
+// Pipeline is the main class, which eats Properties object.
+val pipeline = new Pipeline(props)
+
+// Set the input text to be analyzed here.
+val text: String = ...
+
+// Get the annotation result in Scala's XML object (Node).
+val annotation: Node = pipeline.annotate(text)
+```
+
+The annotation result is obtained in Scala XML object, on which elements can be searched intuitively with expressions similar to X-path. The followings are an example:
+
+```scala
+val sentences: Seq[Node] = annotation \\ "sentence" // Get all <sentence> elements.
+for (sentence <- sentences) { // for each sentence
+  val tokens = sentence \\ "token"  // get all tokens
+  val nes = sentence \\ "NE"        // get all named entities
+  for (ne <- nes) {
+    val tokenIds = ne \@ "tokens"   // get the "tokens" attribute in a NE.
+
+    val neTokens = tokenIds map { id =>
+      tokens.find(_ \@ "id" == id).get \@ "form" // get surface form of each token consisting the NE
+    }
+    println(neTokens mkString " ")  // print the detected NE
+  }
+}
+```
+
+On the result XML, all annotated elements (e.g., `sentence`, `token`, and `NE`) are assigned unique ids. So element search is basically based on these ids.
+
+
+## Supported annotators
+
+TBA
+
+
+## Implementing new annotator
+
+TBA
