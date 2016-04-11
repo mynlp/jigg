@@ -1,16 +1,15 @@
 import AssemblyKeys._
 
-
-/** If you want to install new annotator, please extend here.
-  *
-  * Each element has the following form:
-  *   key -> (maven id, path to the annotator class).
-  *
-  * If maven id and class path are correct, in the resulting jar (with "sbt assembly"),
-  * one can use the new annotator with the name "key".
-  *
-  * For example now "-annotators berkeleyparser" tries to launch BerkeleyParserAnnotator.
-  */
+// If you want to install new annotator, please extend here.
+//
+// Each element has the following form:
+//   key -> (maven id, path to the annotator class).
+//
+// If maven id and class path are correct, in the resulting jar (with "sbt assembly"),
+// one can use the new annotator with the name "key".
+//
+// For example now "-annotators berkeleyparser" tries to launch BerkeleyParserAnnotator.
+//
 val annotatorLibrary = Map(
   "kuromoji" -> ("com.github.mynlp" % "jigg-kuromoji" % "0.1-SNAPSHOT",
     "jigg.pipeline.KuromojiAnnotator"),
