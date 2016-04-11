@@ -108,8 +108,7 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
 
     s"""${super.description}
 
-Currently the annotators listed below are installed. See the detail of each annotator
-with "-help annotator_name".
+Currently the annotators listed below are installed. See the detail of each annotator with "-help annotator_name".
 
   ${defaultAnnotatorClassMap.keys mkString ", "}
   ${knownAnnotatorNameToClassPath.keys mkString ", "}
