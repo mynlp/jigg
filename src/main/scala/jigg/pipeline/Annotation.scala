@@ -39,6 +39,8 @@ object Annotation {
 
   object Mention extends Annotation("me")
 
+  object Coreference extends Annotation("cr")
+
   object PredArg extends Annotation("pa")
 
   object ParseSpan extends Annotation("sp")
