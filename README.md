@@ -14,7 +14,7 @@ Jigg is distributed under the [Apache License, Version 2.0](http://www.apache.or
 There is no need to install. Just download the package!
 
 ```bash
-$ wget https://github.com/mynlp/jigg/releases/download/v0.6/jigg-0.6.tar.gz
+$ wget https://github.com/mynlp/jigg/releases/download/v-0.6/jigg-0.6.tar.gz
 $ tar xvf jigg-0.6.tar.gz
 $ cd jigg-0.6
 ```
