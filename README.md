@@ -163,7 +163,7 @@ Parallelization can be prohibited by giving `-nThreads 1` option:
 $ cat input.txt | java -cp jigg-0.6.jar jigg.pipeline.Pipeline -annotators "corenlp[tokenize,ssplit],berkeleyparser" -nThreads 1 > output.xml
 ```
 
-In default, Jigg tries to use as many threads as the machine can use. On my laptop (with 4 cores), when annotating about 1000 sentences, annotation with `-nThreads 1` takes about ...  seconds, which is doubled with parallel annotation.
+In default, Jigg tries to use as many threads as the machine can use. On my laptop (with 4 cores), when annotating about 1000 sentences, annotation with `-nThreads 1` takes about 154 seconds, which is reduced to 79 seconds with parallel annotaion.
 
 ### Programmatic usage
 
