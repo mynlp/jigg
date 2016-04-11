@@ -46,6 +46,11 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
 
   readProps()
 
+  def toSerialMode() = {
+    nThreads = 1
+    properties.setProperty("nThreads", "1")
+  }
+
   /** These default annotators can be used without manual build.
     */
   protected val defaultAnnotatorClassMap: Map[String, Class[_]] = Map(
@@ -229,6 +234,9 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
         case l => l
       }
     }
+
+    toSerialMode() // shell mode cannot perform prallel annotaiton
+
     process { annotators =>
       var in = readLine
       while (in != "") {
