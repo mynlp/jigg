@@ -322,25 +322,11 @@ $msg
   *
   * The subclass must implement `mkIO()`; easy way is to mix-in IOCreator
   */
-trait ParallelIO extends EasyIO {
+trait ParallelIO extends EasyIO with ParallelAnnotator {
 
   def mkIO(): IO
 
-  class IOQueue(size: Int) {
-    assert(size > 0)
-    val queue = new LinkedBlockingQueue((0 until size).map(_=>mkIO()).asJava)
-
-    def using[A](f: IO=>A): A = {
-      val io = queue.poll
-      try {
-        val ret = f(io)
-        queue.put(io)
-        ret
-      } catch {
-        case e: ProcessError => postProcess(io, e)
-      }
-    }
-
+  class IOQueue(size: Int) extends ResourceQueue(size, mkIO _) {
     /** Check if io is alive, and replace with new one if it is dead.
       *
       * This method may possibly be overwritten to close the current io regardless
@@ -362,5 +348,28 @@ trait ParallelIO extends EasyIO {
     }
 
     def close() = queue.asScala foreach (_.close())
+  }
+}
+
+trait ParallelAnnotator {
+
+  abstract class ResourceQueue[A](size: Int, mkResource: ()=>A) {
+    assert(size > 0)
+
+    val queue = new LinkedBlockingQueue((0 until size).map(_=>mkResource()).asJava)
+
+    def using[B](f: A=>B): B = {
+      val resource = queue.poll
+      try {
+        val ret = f(resource)
+        queue.put(resource)
+        ret
+      } catch {
+        case e: ProcessError =>
+          postProcess(resource, e)
+      }
+    }
+
+    def postProcess(resource: A, e: ProcessError): Nothing
   }
 }
