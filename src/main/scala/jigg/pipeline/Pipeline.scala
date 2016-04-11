@@ -29,7 +29,7 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
 
   def prop(key: String) = PU.findProperty(key, properties)
 
-  @Prop(gloss="List of annotator names, e.g., ssplit,mecab dsplit|ssplit|kuromoji|mecab|cabocha|juman|knp|ccg", required=true) var annotators = ""
+  @Prop(gloss="List of annotator names, e.g., corenlp[tokenize,ssplit],berkeleyparser", required=true) var annotators = ""
   @Prop(gloss="Property file") var props = ""
   @Prop(gloss="Input file; if omitted, read from stdin") var file = ""
   @Prop(gloss="Output file; if omitted, `file`.xml is used. Gzipped if suffix is .gz") var output = ""
@@ -98,6 +98,23 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
   }.map {
     case (k, v) => (k.drop(k.indexOf('.') + 1), v)
   }.toMap
+
+  override def description = {
+
+    val customAnnotatorsStr = customAnnotatorNameToClassPath.keys match {
+      case Seq() => ""
+      case annotators => annotators mkString ", "
+    }
+
+    s"""${super.description}
+
+Currently the annotators listed below are installed. See the detail of each annotator
+with "-help annotator_name".
+
+  ${defaultAnnotatorClassMap.keys mkString ", "}
+  ${knownAnnotatorNameToClassPath.keys mkString ", "}
+  ${customAnnotatorsStr}"""
+  }
 
   /** To output help message even when annotators do not satisfy requirement dependencies,
     * we make the annotator list lazy.
