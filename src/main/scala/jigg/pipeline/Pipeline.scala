@@ -36,7 +36,7 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
   @Prop(gloss="Print this message and descriptions of specified annotators, e.g., -help ssplit,mecab") var help = ""
   @Prop(gloss="You can add an abbreviation for a custom annotator class with \"-customAnnotatorClass.xxx path.package\"") var customAnnotatorClass = ""
   @Prop(gloss="Number of threads for parallel annotation (use all if <= 0)") var nThreads = -1
-  @Prop(gloss="You can choose the output format as JSON.") var json = ""
+  @Prop(gloss="Output format, [xml/json]. Default value is 'xml'.") var outputFormat = "xml"
 
   // A hack to prevent throwing an exception when -help is given but -annotators is not given.
   // annotators is required prop so it has to be non-empty, but it is difficult to tell that if -help is given it is not necessary.
@@ -204,8 +204,8 @@ Currently the annotators listed below are installed. See the detail of each anno
     }
 
     // If option of json is true, the output of this method is formatted JSON.
-    prop("json") match {
-      case Some(json) => {
+    prop("outputFormat") match {
+      case Some(x) if x == "json" => {
         val outputPath = output match {
           case "" => file + ".json"
           case _ => output
@@ -215,7 +215,7 @@ Currently the annotators listed below are installed. See the detail of each anno
           JSONUtil.writeToJSON(xml,outputPath)
         }
       }
-      case None => { 
+      case _ => { 
         // The output of basic XML.save method is not formatted, so we instead use PrettyPrinter.
         // However, this method have to convert an entire XML into a String object, which would be problematic for huge dataset.
         // XML.save(in + ".xml", xml, "UTF-8")
@@ -254,10 +254,10 @@ Currently the annotators listed below are installed. See the detail of each anno
           case "" => IOUtil.openStandardOut
           case _ => IOUtil.openOut(output)
         }
-        prop("json") match {
-          case Some(json) => 
+        prop("outputFormat") match {
+          case Some(x) if x == "json"  => 
             JSONUtil.writeToJSON(xml,writer)
-          case None => 
+          case _ => 
             writeTo(writer, xml)
         }
         writer.close
@@ -281,11 +281,11 @@ Currently the annotators listed below are installed. See the detail of each anno
       var in = readLine
       while (in != "") {
         val xml = annotate(rootXML(in), annotators, false)
-        prop("json") match {
-          case Some(json) => 
+        prop("outputFormat") match {
+          case Some(x) if x == "json" => 
             val sb = JSONUtil.toJSON(xml)
             println(sb)
-          case None => 
+          case _ => 
             val printer = new scala.xml.PrettyPrinter(500, 2)
             println(printer.format(xml))
         }
