@@ -8,9 +8,6 @@ import scala.collection.mutable.StringBuilder
 object JSONUtil {
 
   object XMLParser {
-    // If text node has newline character, Node.child method doesn't work collectly.
-    def trimNode(x: Node): Node = 
-      XML.loadString(x.toString.split("\n").mkString)
 
     def hasChild(x: Any): Boolean = x match {
       case x: Elem => if (x.child.length > 0) true else false
@@ -26,15 +23,7 @@ object JSONUtil {
       case _ => Nil
     }
 
-    def getText(x: Node): String = {
-      (
-        this.trimNode(x).child.collect {
-          case Text(t) => t
-        }
-      ).map(_.trim).filterNot(_.isEmpty).mkString
-    }
-
-    def isTextNode(x: Node): Boolean = !getText(x).isEmpty
+    def isTextNode(x: Node): Boolean = !XMLUtil.text(x).isEmpty
 
     def getAttributionList(x: Node): Seq[(String, String)] = (
       for{
@@ -85,7 +74,7 @@ object JSONUtil {
         if(XMLParser.isTextNode(i)){
           subsb.append(prefix2)
           prefix2 = ",\n"
-          subsb.append(List("\"text\":\"", XMLParser.getText(i),'"').mkString)
+          subsb.append(List("\"text\":\"", XMLUtil.text(i).trim,'"').mkString)
         }
         if (XMLParser.hasAttribution(i)){
           for(elem <- XMLParser.getAttributionList(i)){
