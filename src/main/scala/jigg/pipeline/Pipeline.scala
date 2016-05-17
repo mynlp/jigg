@@ -32,7 +32,7 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
   @Prop(gloss="List of annotator names, e.g., corenlp[tokenize,ssplit],berkeleyparser", required=true) var annotators = ""
   @Prop(gloss="Property file") var props = ""
   @Prop(gloss="Input file; if omitted, read from stdin") var file = ""
-  @Prop(gloss="Output file; if omitted, `file`.xml is used. Gzipped if suffix is .gz. if JSON mode is selected, suffix is .json") var output = ""
+  @Prop(gloss="Output file; if omitted, `file`.xml is used. Gzipped if suffix is .gz. If JSON mode is selected, suffix is .json") var output = ""
   @Prop(gloss="Print this message and descriptions of specified annotators, e.g., -help ssplit,mecab") var help = ""
   @Prop(gloss="You can add an abbreviation for a custom annotator class with \"-customAnnotatorClass.xxx path.package\"") var customAnnotatorClass = ""
   @Prop(gloss="Number of threads for parallel annotation (use all if <= 0)") var nThreads = -1
@@ -204,8 +204,8 @@ Currently the annotators listed below are installed. See the detail of each anno
     }
 
     // If option of json is true, the output of this method is formatted JSON.
-    prop("outputFormat") match {
-      case Some(x) if x == "json" => {
+    outputFormat match {
+      case "json" => {
         val outputPath = output match {
           case "" => file + ".json"
           case _ => output
@@ -254,8 +254,8 @@ Currently the annotators listed below are installed. See the detail of each anno
           case "" => IOUtil.openStandardOut
           case _ => IOUtil.openOut(output)
         }
-        prop("outputFormat") match {
-          case Some(x) if x == "json"  => 
+        outputFormat match {
+          case "json"  => 
             JSONUtil.writeToJSON(xml,writer)
           case _ => 
             writeTo(writer, xml)
