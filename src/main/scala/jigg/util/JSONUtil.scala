@@ -46,14 +46,13 @@ object JSONUtil {
     val sb = new StringBuilder
 
     sb.append('{')
-    sb.append(List('"',node.label,"\":").mkString)
-    sb.append("{ \"_\":")
+    sb.append(List("\".tag\":\"",node.label,"\",\n").mkString)
+    sb.append("\".child\":")
     sb.append("[\n")
     
     sb.append(serializing(xml))
 
     sb.append("]\n")
-    sb.append('}')
     sb.append("}\n")
 
     sb
@@ -68,13 +67,14 @@ object JSONUtil {
         val retsb = serializing(i)
         subsb.append(prefix)
         prefix = ",\n"
-        subsb.append(List("{ \"", i.label, "\":").mkString)
-        subsb.append("{\n")
+        subsb.append(List("{\".tag\":\"", i.label, "\",\n").mkString)
         var prefix2 = ""
         if(XMLParser.isTextNode(i)){
           subsb.append(prefix2)
+          val text = new StringBuilder
+          Utility.escape(XMLUtil.text(i).trim, text)
           prefix2 = ",\n"
-          subsb.append(List("\"text\":\"", XMLUtil.text(i).trim,'"').mkString)
+          subsb.append(List("\"text\":\"", text, '"').mkString)
         }
         if (XMLParser.hasAttribution(i)){
           for(elem <- XMLParser.getAttributionList(i)){
@@ -86,12 +86,11 @@ object JSONUtil {
 
         if(retsb.length > 0){
           subsb.append(prefix2)
-          subsb.append("\"_\":")
+          subsb.append("\".child\":")
           subsb.append("[\n")
           subsb.append(retsb)
           subsb.append("]\n")
         }
-        subsb.append('}')
         subsb.append('}')
       }
     }
