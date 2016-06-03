@@ -1,9 +1,16 @@
 package jigg.util
 
 import java.io._
+
 import scala.xml._
+
 import scala.io.Source
-import scala.collection.mutable.StringBuilder
+import scala.collection.mutable.{StringBuilder, ArrayBuffer}
+
+import org.json4s._
+import org.json4s.DefaultFormats
+import org.json4s.JsonDSL._
+import org.json4s.jackson.JsonMethods._
 
 object JSONUtil {
 
@@ -23,7 +30,7 @@ object JSONUtil {
       case _ => Nil
     }
 
-    def isTextNode(x: Node): Boolean = !XMLUtil.text(x).isEmpty
+    def isTextNode(x: Node): Boolean = !XMLUtil.text(x).trim.isEmpty
 
     def getAttributionList(x: Node): Seq[(String, String)] = (
       for{
@@ -35,13 +42,13 @@ object JSONUtil {
     def hasAttribution(x: Node): Boolean = !x.attributes.isEmpty
   }
 
-  def toJSON(x: Any): StringBuilder = x match {
+  def toJSON(x: Any): String = x match {
     case x: String if x.endsWith(".xml")    => toJSONFromNode(XML.loadFile(x))
     case x: Elem      => toJSONFromNode(x)
-    case _            => new StringBuilder("")
+    case _            => new String("")
   }
 
-  private def toJSONFromNode(node: Elem): StringBuilder = {
+  private def toJSONFromNode(node: Elem): String = {
     val xml = XML.loadString(node.toString.split("\n").mkString)
     val sb = new StringBuilder
 
@@ -55,7 +62,7 @@ object JSONUtil {
     sb.append("]\n")
     sb.append("}\n")
 
-    sb
+    pretty(render(parse(sb.toString)))
   }
 
   private def serializing[T <: Node](x: T): StringBuilder = {
@@ -105,7 +112,7 @@ object JSONUtil {
         List(outputfile,".json").mkString
     try {
       val writer = IOUtil.openOut(outputfile)
-      writer.write(toJSON(x).toString)
+      writer.write(toJSON(x))
       writer.close()
     } catch {
       case e: FileNotFoundException => 
@@ -116,6 +123,64 @@ object JSONUtil {
   }
 
   def writeToJSON[T <: Node](x: T, os: BufferedWriter): Unit = {
-    os.write(toJSON(x).toString)
+    os.write(toJSON(x))
+  }
+
+  def parseJSON(json: String): JValue = parse(json)
+
+  def loadJSONFile(name: String): JValue = {
+    val sb = new StringBuilder
+    for (line <- Source.fromFile(name).getLines){
+      sb.append(line)
+    }
+    parse(sb.toString)
+  }
+
+  def toXML(json: JValue): Node = {
+    implicit val formats = DefaultFormats
+    val jsonList = json.extract[Map[String, Any]].toList
+    generateXML(jsonList)
+  }
+
+  private def generateXML(x:List[(String, Any)]): Node = {
+    var tagString = ""
+    var textString = ""
+    val attributeList = new ArrayBuffer[(String, String)]
+    val nodeSeq = new ArrayBuffer[Node]
+    var hasChildFlag = false
+    var hasTextFlag = false
+
+    for (i <- x){
+      if (i._1 == ".tag")
+        tagString = i._2.toString
+      else if (i._1 == "text"){
+        hasTextFlag = true
+        textString = i._2.toString
+      }
+      else if (i._1 == ".child"){
+        hasChildFlag = true
+        for (j <- i._2.asInstanceOf[List[Map[String, Any]]])
+          nodeSeq += generateXML(j.toList)
+      }
+      else
+        attributeList += (i._1.toString -> i._2.toString)
+    }
+
+    val node = hasChildFlag match {
+      case true => {
+        hasTextFlag match {
+          case true => <xml>{textString}</xml>.copy(label = tagString)
+          case false => <xml></xml>.copy(label = tagString)
+        }
+      }
+      case false => <xml/>.copy(label = tagString)
+    }
+
+    val fixnode = XMLUtil.addAttributes(node, attributeList.toMap)
+
+    if (hasChildFlag)
+      XMLUtil.addChild(fixnode, scala.xml.NodeSeq.fromSeq(nodeSeq))
+    else
+      fixnode
   }
 }

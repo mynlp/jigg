@@ -7,6 +7,8 @@ import org.scalatest.Matchers._
 
 class JSONUtiltest extends FunSuite{
   import JSONUtil._
+  import scala.xml._
+  import org.json4s._
 
   val node = 
     <root>
@@ -46,11 +48,11 @@ class JSONUtiltest extends FunSuite{
   /**
    * Unit testing toJSON
    */
-  test("toJSON should generate StringBuilder object from scala.xml.Node"){
-    JSONUtil.toJSON(node).getClass should be (classOf[StringBuilder])
+  test("toJSON should generate formatted String object from scala.xml.Node"){
+    JSONUtil.toJSON(node).getClass should be (classOf[String])
   }
 
-  test("toJSON should return empty StringBuilder when not supported type input"){
+  test("toJSON should return empty formatted String when not supported type input"){
 
     JSONUtil.toJSON(1).length should be (0)
     JSONUtil.toJSON(1.0).length should be (0)
@@ -68,5 +70,18 @@ class JSONUtiltest extends FunSuite{
 
   test("isTextNode should be return true when a text node with newline character is input"){
     JSONUtil.XMLParser.isTextNode(textNodeWithNewLine) should be (true)
+  }
+
+  /**
+   * Unit testing JSON to XML
+   */
+  test("toXML should generate xml.Node"){
+    val jsonString = JSONUtil.toJSON(node)
+    val jsonValue = JSONUtil.parseJSON(jsonString)
+    val xmlNode = JSONUtil.toXML(jsonValue)
+
+    jsonString.getClass should be (classOf[String])
+    jsonValue.isInstanceOf[JValue] should be (true)
+    xmlNode.isInstanceOf[Node] should be (true)
   }
 }
