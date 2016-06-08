@@ -309,19 +309,26 @@ class StanfordCoreNLPAnnotator(
       assert(sentences.size == 1)
 
       val currentTokens = sentences(0) \\ "token"
+      val tokenBegins = currentTokens map { t => (t \@ "characterOffsetBegin").toInt }
 
       val coreSentences: Seq[CoreMap] =
         annotation.get(classOf[CoreAnnotations.SentencesAnnotation]).asScala
 
+      var tokenOffset = 0
+
       val sentenceNodes = coreSentences.zipWithIndex map { case (coreSentence, i) =>
-        val tokenBegin: Int =
-          coreSentence get classOf[CoreAnnotations.TokenBeginAnnotation]
-        val tokenEnd: Int = coreSentence get classOf[CoreAnnotations.TokenEndAnnotation]
 
         val characterOffsetBegin =
           coreSentence get classOf[CoreAnnotations.CharacterOffsetBeginAnnotation]
         val characterOffsetEnd =
           coreSentence get classOf[CoreAnnotations.CharacterOffsetEndAnnotation]
+
+        // We recover tokenBegin here because CoreAnnotations.TokenBeginAnnotation
+        // does not necessarily represent the token offset correctly.
+        val tokenBegin = tokenBegins indexWhere (_ == characterOffsetBegin, tokenOffset)
+        val tokenEnd = tokenBegin +
+          (coreSentence get classOf[CoreAnnotations.TokensAnnotation]).size
+        tokenOffset = tokenEnd
 
         val tokens = (tokenBegin until tokenEnd) map { case i =>
           val currentToken = currentTokens(i)
