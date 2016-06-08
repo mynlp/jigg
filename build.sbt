@@ -38,7 +38,8 @@ libraryDependencies ++= Seq(
 
 libraryDependencies ++= (
   stanfordCoreNLPDependencies
-    ++ kuromojiDependencies)
+    ++ kuromojiDependencies
+    ++ berkeleyParserDependencies)
 
 val stanfordCoreNLPDependencies = Seq(
   "org.slf4j" % "slf4j-api" % "1.7.20", // logger
@@ -50,6 +51,10 @@ val kuromojiDependencies = Seq(
   "com.atilika.kuromoji" % "kuromoji-ipadic" % "0.9.0",
   "com.atilika.kuromoji" % "kuromoji-jumandic" % "0.9.0",
   "com.atilika.kuromoji" % "kuromoji-unidic" % "0.9.0"
+)
+
+val berkeleyParserDependencies = Seq(
+  "edu.berkeley.nlp" % "berkeleyparser" % "r32"
 )
 
 libraryDependencies ++= annotatorLibrary.map { case (k, v) => v._1 }.toSeq

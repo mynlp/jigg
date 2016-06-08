@@ -64,6 +64,7 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
     "knpDoc" -> classOf[DocumentKNPAnnotator],
     "jaccg" -> classOf[CCGParseAnnotator],
     "corenlp" -> classOf[StanfordCoreNLPAnnotator],
+    "berkeleyparser" -> classOf[BerkeleyParserAnnotator],
     "kuromoji" -> classOf[KuromojiAnnotator]
   )
 
