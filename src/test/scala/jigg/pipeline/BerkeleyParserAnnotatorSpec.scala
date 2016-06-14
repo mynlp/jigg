@@ -42,7 +42,7 @@ class BerkeleyParserAnnotatorSpec extends BaseAnnotatorSpec {
   }
 
   def emptyFromTokenAnn = new FromTokenAnnotatorStub(new Tree[String]("(ROOT)"))
-  def emptyFromPOSAnn = new FromPOSAnnotatorStub(new Tree[String]("ROOT"))
+  def emptyFromPOSAnn = new FromPOSAnnotatorStub(new Tree[String]("(ROOT)"))
 
   "Annotator" should "output the empty parse for the empty sentence" in {
     val fromToken = emptyFromTokenAnn
