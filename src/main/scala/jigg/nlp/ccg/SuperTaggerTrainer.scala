@@ -108,7 +108,7 @@ object SuperTaggerTrainer {
     @Help(text="Parameter of step size function = t^(-a) (used in sgd)") stepSizeA: Double = 0.2,
     @Help(text="Reguralization strength in AdaGrad") lambda: Double = 0.000000005,
     @Help(text="Which training method is used at optimization? (adaGradL1|sgd)") trainAlg: String = "adaGradL1",
-    @Help(text="# iters") numIters: Int = 10,
+    @Help(text="# iters") numIters: Int = 20,
     @Help(text="Feature extractor") feat: FeatureExtractor = new DefaultExtractor(),
     @Help(text="Additional extractors") more: Seq[FeatureExtractor] = List(),
     // @Help(text="Feature extractors") feats: Seq[FeatureExtractor] = defaultExtractors,
