@@ -30,11 +30,12 @@ import java.io.{File, FileWriter, ByteArrayInputStream}
   * The output of this is required when evaluating bunsetsu-dependency of CCG parser.
   * When new CCGBank is released, currently, we have to manually run this class to get the correct data.
   */
-object CCGBankToMecabFormat {
+object CCGBankToCabochaFormat {
 
   case class Opts(
     @Help(text="Path to CCGBank file") ccgbank: File = new File(""),
-    @Help(text="Path to output") output: File = new File("")
+    @Help(text="Path to output") output: File = new File(""),
+    @Help(text="Cabocha command (path to cabocha)") cabocha: String = "cabocha"
   )
 
   type Tree = ParseTree[NodeLabel]
@@ -50,7 +51,7 @@ object CCGBankToMecabFormat {
     val trees = extractors.readTrees(opts.ccgbank, -1, true)
     val rawString = trees map (extractors.treeConv.toSentenceFromLabelTree) map (_.wordSeq.mkString("")) mkString ("\n")
     val is = new java.io.ByteArrayInputStream(rawString.getBytes("UTF-8"))
-    val out = (Process("cabocha -f1") #< is).lineStream_!
+    val out = (Process(s"${opts.cabocha} -f1") #< is).lineStream_!
 
     val os = jigg.util.IOUtil.openOut(opts.output.getPath)
     out foreach { line =>
@@ -59,24 +60,4 @@ object CCGBankToMecabFormat {
     os.flush
     os.close
   }
-
-  // type Tree = ParseTree[NodeLabel]
-
-  // class Runner extends JapaneseSuperTagging with Runnable {
-
-  //   def run = {
-  //     dict = newDictionary
-  //     val trees = readParseTreesFromCCGBank(Opt.ccgBankPath, -1, true)
-  //     val rawString = trees map { parseTreeConverter.toSentenceFromLabelTree(_) } map { _.wordSeq.mkString("") } mkString("\n")
-  //     val is = new java.io.ByteArrayInputStream(rawString.getBytes("UTF-8"))
-  //     val out = (Process("cabocha -f1") #< is).lineStream_!
-
-  //     val os = jigg.util.IOUtil.openOut(Opt.outputPath)
-  //     out foreach { line =>
-  //       os.write(line + "\n")
-  //     }
-  //     os.flush
-  //     os.close
-  //   }
-  // }
 }
