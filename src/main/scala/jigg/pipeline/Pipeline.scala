@@ -37,6 +37,7 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
   @Prop(gloss="You can add an abbreviation for a custom annotator class with \"-customAnnotatorClass.xxx path.package\"") var customAnnotatorClass = ""
   @Prop(gloss="Number of threads for parallel annotation (use all if <= 0)") var nThreads = -1
   @Prop(gloss="Output format, [xml/json]. Default value is 'xml'.") var outputFormat = "xml"
+  @Prop(gloss="Check requirement, [true/false/warn]. Default value is 'true'.") var checkRequirement = "true"
 
   // A hack to prevent throwing an exception when -help is given but -annotators is not given.
   // annotators is required prop so it has to be non-empty, but it is difficult to tell that if -help is given it is not necessary.
@@ -128,11 +129,32 @@ Currently the annotators listed below are installed. See the detail of each anno
   def createAnnotatorList(): List[Annotator] = {
     val annotatorList =
       annotatorNames.map { getAnnotator(_) }.toList
-
-    annotatorList.foldLeft(RequirementSet()) { (satisifedSofar, annotator) =>
-      try annotator.checkRequirements(satisifedSofar)
-      catch { case e: RequirementError =>
-        argumentError("annotators", e.getMessage)
+    
+    checkRequirement match {
+      case "true" =>{
+        annotatorList.foldLeft(RequirementSet()) { (satisifedSofar, annotator) =>
+          try annotator.checkRequirements(satisifedSofar)
+          catch { case e: RequirementError =>
+            argumentError("annotators", e.getMessage)
+          }
+        }
+      }
+      case "warn" => {
+        annotatorList.foldLeft(RequirementSet()) { (satisifedSofar, annotator) =>
+          try annotator.checkRequirements(satisifedSofar)
+          catch { case e: RequirementError =>
+            println("***** WARNING *****")
+            println(e.getMessage)
+            println("*******************")
+            satisifedSofar
+          }
+        }
+      }
+      case "false" => {
+        println("Skip `checkRequirements` for all annotators.")
+      }
+      case _ =>{
+        argumentError("checkRequirement")
       }
     }
 
