@@ -47,7 +47,6 @@ object JSONUtil {
   def toJSON(x: Node): String = toJSONFromNode(x)
 
   private def toJSONFromNode(node: Node): String = {
-    val xml = XML.loadString(node.toString.split("\n").mkString)
     val sb = new StringBuilder
 
     sb.append('{')
@@ -55,7 +54,7 @@ object JSONUtil {
     sb.append("\".child\":")
     sb.append("[\n")
     
-    sb.append(serializing(xml))
+    sb.append(serializing(node))
 
     sb.append("]\n")
     sb.append("}\n")
