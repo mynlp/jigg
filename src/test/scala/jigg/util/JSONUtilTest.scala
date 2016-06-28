@@ -52,15 +52,6 @@ class JSONUtiltest extends FunSuite{
     JSONUtil.toJSON(node).getClass should be (classOf[String])
   }
 
-  test("toJSON should return empty formatted String when not supported type input"){
-
-    JSONUtil.toJSON(1).length should be (0)
-    JSONUtil.toJSON(1.0).length should be (0)
-    JSONUtil.toJSON(true).length should be (0)
-    JSONUtil.toJSON('a').length should be (0)
-    JSONUtil.toJSON(List("test")).length should be (0)
-  }
-
   /**
    * Unit testing XMLParser 
    */

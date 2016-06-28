@@ -42,13 +42,11 @@ object JSONUtil {
     def hasAttribution(x: Node): Boolean = !x.attributes.isEmpty
   }
 
-  def toJSON(x: Any): String = x match {
-    case x: String if x.endsWith(".xml")    => toJSONFromNode(XML.loadFile(x))
-    case x: Elem      => toJSONFromNode(x)
-    case _            => new String("")
-  }
+  def readJSON(file: String): String = toJSONFromNode(XML.loadFile(file))
 
-  private def toJSONFromNode(node: Elem): String = {
+  def toJSON(x: Node): String = toJSONFromNode(x)
+
+  private def toJSONFromNode(node: Node): String = {
     val xml = XML.loadString(node.toString.split("\n").mkString)
     val sb = new StringBuilder
 
