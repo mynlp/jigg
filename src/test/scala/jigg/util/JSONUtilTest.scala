@@ -9,6 +9,7 @@ class JSONUtiltest extends FunSuite{
   import JSONUtil._
   import scala.xml._
   import org.json4s._
+  import org.json4s.jackson.JsonMethods._
 
   val node = 
     <root>
@@ -25,26 +26,6 @@ class JSONUtiltest extends FunSuite{
       </document>
     </root>
 
-  val textNode = 
-    <sentence id="s0" characterOffsetBegin="0" characterOffsetEnd="11">
-      Hello Jigg!
-      <tokens annotators="corenlp">
-        <token characterOffsetEnd="5" characterOffsetBegin="0" id="t0" form="Hello"/>
-        <token characterOffsetEnd="10" characterOffsetBegin="6" id="t1" form="Jigg"/>
-        <token characterOffsetEnd="11" characterOffsetBegin="10" id="t2" form="!"/>
-      </tokens>
-    </sentence>
-
-  val textNodeWithNewLine = 
-    <sentence id="s0" characterOffsetBegin="0" characterOffsetEnd="11">
-      {"Hello Jigg!\n"}
-      <tokens annotators="corenlp">
-        <token characterOffsetEnd="5" characterOffsetBegin="0" id="t0" form="Hello"/>
-        <token characterOffsetEnd="10" characterOffsetBegin="6" id="t1" form="Jigg"/>
-        <token characterOffsetEnd="11" characterOffsetBegin="10" id="t2" form="!"/>
-      </tokens>
-    </sentence>
-
   /**
    * Unit testing toJSON
    */
@@ -53,22 +34,11 @@ class JSONUtiltest extends FunSuite{
   }
 
   /**
-   * Unit testing XMLParser 
-   */
-  test("isTextNode should be return true when a text node is input"){
-    JSONUtil.XMLParser.isTextNode(textNode) should be (true)
-  }
-
-  test("isTextNode should be return true when a text node with newline character is input"){
-    JSONUtil.XMLParser.isTextNode(textNodeWithNewLine) should be (true)
-  }
-
-  /**
    * Unit testing JSON to XML
    */
   test("toXML should generate xml.Node"){
     val jsonString = JSONUtil.toJSON(node)
-    val jsonValue = JSONUtil.parseJSON(jsonString)
+    val jsonValue = parse(jsonString)
     val xmlNode = JSONUtil.toXML(jsonValue)
 
     jsonString.getClass should be (classOf[String])

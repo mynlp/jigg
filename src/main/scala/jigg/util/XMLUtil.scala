@@ -93,4 +93,23 @@ object XMLUtil {
   def findAll(node: Node, that: String): java.util.List[Node] = node \ that
   def findSub(node: Node, that: String): Node = (node \\ that)(0)
   def findAllSub(node: Node, that: String): java.util.List[Node] = node \\ that
+
+  def hasChild(nodes: NodeSeq): Boolean = nodes match {
+    case x: Elem => x.child.length > 0
+    case _ => nodes forall hasChild
+  }
+
+  def getChildNode(nodes: NodeSeq): Seq[Node] = nodes match {
+    case x: Elem => x.child filter (_.label != "#PCDATA")
+    case x: Seq[_] if x forall (_.isInstanceOf[Node]) =>
+      (x.map(getChildNode(_))).flatten
+    case _ => Nil
+  }
+
+  def getAttributionList(node: Node): Seq[(String, String)] = (
+    for{
+      elem <- node.attributes.seq
+      n = elem.key -> elem.value.toString
+    } yield n
+    ).toSeq
 }
