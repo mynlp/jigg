@@ -99,11 +99,9 @@ object XMLUtil {
     case _ => nodes forall hasChild
   }
 
-  def getChildNode(nodes: NodeSeq): Seq[Node] = nodes match {
+  def getChildNode(nodes: NodeSeq): NodeSeq = nodes match {
     case x: Elem => x.child filter (_.label != "#PCDATA")
-    case x: Seq[_] if x forall (_.isInstanceOf[Node]) =>
-      (x.map(getChildNode(_))).flatten
-    case _ => Nil
+    case x => (x.map(getChildNode(_))).flatten
   }
 
   def getAttributionList(node: Node): Seq[(String, String)] = (
