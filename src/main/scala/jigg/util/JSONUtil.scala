@@ -43,12 +43,10 @@ object JSONUtil {
         prefix = ","
         subsb.append(List("{\".tag\":\"", i.label, "\",").mkString)
         var prefix2 = ""
-        //TODO: delete trim method after the modification of XMLUtil
-        if(!XMLUtil.text(i).trim.isEmpty){
+        if(!XMLUtil.text(i).isEmpty){
           subsb.append(prefix2)
           val text = new StringBuilder
-          //TODO: delete trim method after the modification of XMLUtil
-          Utility.escape(XMLUtil.text(i).trim, text)
+          Utility.escape(XMLUtil.text(i), text)
           prefix2 = ","
           subsb.append(List("\"text\":\"", text, '"').mkString)
         }
