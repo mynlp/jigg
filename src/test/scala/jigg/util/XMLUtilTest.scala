@@ -35,6 +35,7 @@ class XMLUtilTest extends FunSuite {
         </document>
       </root>
 
+
     val newXml = replaceAll(xml, "sentence") { sentence =>
       addChild(sentence, <child>{ "child" }</child>)
     }

@@ -235,7 +235,10 @@ Currently the annotators listed below are installed. See the detail of each anno
         }
 
         track("Writing to %s".format(outputPath + "... ")) {
-          JSONUtil.writeToJSON(xml,outputPath)
+          val jsonString = JSONUtil.toJSON(xml)
+          val os = IOUtil.openOut(outputPath)
+          os.write(jsonString)
+          os.close()
         }
       }
       case _ => { 
@@ -278,9 +281,10 @@ Currently the annotators listed below are installed. See the detail of each anno
           case _ => IOUtil.openOut(output)
         }
         outputFormat match {
-          case "json"  => 
-            JSONUtil.writeToJSON(xml,writer)
-          case _ => 
+          case "json"  =>
+            val jsonString = JSONUtil.toJSON(xml)
+            writer.write(jsonString)
+          case _ =>
             writeTo(writer, xml)
         }
         writer.close
@@ -306,8 +310,8 @@ Currently the annotators listed below are installed. See the detail of each anno
         val xml = annotate(rootXML(in), annotators, false)
         prop("outputFormat") match {
           case Some(x) if x == "json" => 
-            val sb = JSONUtil.toJSON(xml)
-            println(sb)
+            val jsonString = JSONUtil.toJSON(xml)
+            println(jsonString)
           case _ => 
             val printer = new scala.xml.PrettyPrinter(500, 2)
             println(printer.format(xml))
