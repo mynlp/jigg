@@ -194,6 +194,7 @@ object EvalJapaneseParser extends EvalParser {
 
       val tagger = new SuperTaggerRunner(model.taggerModel, settings.decoder.tagger)
 
+      System.err.println("\ndependency accuracies when the gold category is always picked up:")
       val targetIdxs = sentences.zipWithIndex.withFilter { case (s, i) =>
         tagger.assignKBest(s).numCandidatesContainGold == s.size
       }.map(_._2)
