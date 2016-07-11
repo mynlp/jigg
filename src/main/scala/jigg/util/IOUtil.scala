@@ -53,4 +53,22 @@ object IOUtil {
   def openIterator(path: String): Iterator[String] = inputIterator(openIn(path))
   def openStandardIterator: Iterator[String] = inputIterator(openStandardIn)
   def inputIterator(reader: BufferedReader) = Iterator.continually(reader.readLine()).takeWhile(_ != null)
+
+  /** Open the readable resource, and automatically close it when finishing.
+    * Similar to `using` in python.
+    */
+  def reading[A](path: String)(f: Reader=>A) = {
+    val in = openIn(path)
+    f(in)
+    in.close()
+  }
+
+  /** Open the writable resource, and automatically close it when finishing.
+    */
+  def writing[A](path: String)(f: Writer=>A) = {
+    val out = openOut(path)
+    f(out)
+    out.flush
+    out.close()
+  }
 }
