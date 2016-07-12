@@ -33,7 +33,23 @@ trait SyntaxNetAnnotator extends Annotator {
 
   readProps()
 
-  val modelPath = model match {
+  // check the correctness of path
+  override def init() = {
+
+    def wrongPath() =
+      argumentError("path", s"$path is not the correct path to the syntaxnet.")
+
+    val root = new File(path)
+
+    root.listFiles match {
+      case null => wrongPath()
+      case files =>
+        if (!files.contains(new File(root, "bazel-bin"))
+          || !files.contains(new File(root, "syntaxnet"))) wrongPath()
+    }
+  }
+
+  lazy val modelPath = model match {
     case "" =>
       System.err.println("No model path is given for syntaxnet. Defaulting to the parsey_mcparseface model.")
       "syntaxnet/models/parsey_mcparseface" // Note this is relative path from `path`.
