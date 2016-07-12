@@ -28,8 +28,27 @@ import scala.xml._
 
 trait SyntaxNetAnnotator extends Annotator {
 
-  @Prop(gloss = "") var path = "./syntaxnet"
-  @Prop(gloss = "") var model = ""
+  @Prop(gloss = "Path to the syntaxnet directory, which should contain the files of 'bazel-bin', 'bazel-syntaxnet', etc.") var path = "./syntaxnet"
+  @Prop(gloss = "Path to the model of tagger/parser. The default is the parsey_mcparseface found in the given syntaxnet by `path`.") var model = ""
+
+  override def description = s"""${super.description}
+
+  A wrapper for Google SyntaxNet:
+
+    https://github.com/tensorflow/models/tree/master/syntaxnet
+
+  Note that before using this, one must build the system following instructions in
+  README.
+
+  SyntaxNet is a pipeline tool for POS tagging and dependency parsing, and in default,
+  it gives both POS tagging and parsing annotations. But one can also use this annotator
+  to perform only POS tagging or dependency parsing. In this case, use `syntaxnetpos` or
+  `syntaxnetparse`. For example, by
+    `-annotators="corenlp[tokenize,ssplit,pos],syntaxnetparse"`,
+  one can perform dependency parsing by syntaxnet relying on the POS tagging results by
+  Stanford CoreNLP.
+"""
+
 
   readProps()
 
