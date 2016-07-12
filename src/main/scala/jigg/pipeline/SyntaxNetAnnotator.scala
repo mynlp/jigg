@@ -98,30 +98,37 @@ trait SyntaxNetAnnotator extends Annotator {
 
   protected def run(input: String): Stream[String]
 
-  protected def posCmd = makeCmd("tagger-params")
-  protected def parserCmd = makeCmd("parser-params")
+  protected def posCmd = makeCmd("tagger-params", "brain_tagger", "64")
+  protected def parserCmd = makeCmd("parser-params", "brain_parser", "512,512")
 
-  private def makeCmd(param: String) = {
+  private def makeCmd(param: String, prefix: String, hidden: String) = {
     val bin = new File("bazel-bin/syntaxnet/parser_eval")
     Process(s"""${bin} --input=stdin-conll --output=stdout-conll \\
---hidden_layer_sizes=64 --arg_prefix=brain_tagger --graph_builder=structured \\
+--hidden_layer_sizes=${hidden} --arg_prefix=${prefix} --graph_builder=structured \\
 --task_context=${modelPath}/context.pbtxt --model_path=${modelPath}/${param} \\
 --slim_model --batch_size=1024""", Some(new File(path)))
   }
 }
 
-class SyntaxNetPOSAnnotator(override val name: String, override val props: Properties)
-    extends SyntaxNetAnnotator {
+object SyntaxNetAnnotator {
 
-  def toCoNLL(sentence: Node): String =
+  def emptyCoNLL(sentence: Node): String =
     (sentence \ "tokens" \\ "token").zipWithIndex map { case (token, i) =>
       val idx = i + 1
       val form = token \@ "form"
       s"$idx\t$form\t_\t_\t_\t_\t_\t_"
     } mkString "\n"
 
-  def annotateSentence(conll: Seq[Seq[String]], sentence: Node): Node = {
-    val tokens = (sentence \ "tokens").head
+  def taggedCoNLL(sentence: Node): String =
+    (sentence \ "tokens" \\ "token").zipWithIndex map { case (token, i) =>
+      val idx = i + 1
+      val form = token \@ "form"
+      val pos = token \@ "pos"
+      // val cpos = token \@ "cpos"
+      s"$idx\t$form\t_\t_\t$pos\t_\t_\t_"
+    } mkString "\n"
+
+  def POSAnnotatedTokens(conll: Seq[Seq[String]], tokens: Node, name: String): Node = {
     val tokenSeq = tokens \\ "token"
     val newTokenSeq = tokenSeq zip conll map { case (tokenNode, token) =>
       val pos = token(4)
@@ -129,7 +136,34 @@ class SyntaxNetPOSAnnotator(override val name: String, override val props: Prope
       XMLUtil.addAttributes(tokenNode, Map("pos"-> pos, "cpos"->cpos))
     }
     val nameAdded = XMLUtil.addAnnotatorName(tokens, name)
-    val newTokens = XMLUtil.replaceChild(nameAdded, newTokenSeq)
+    XMLUtil.replaceChild(nameAdded, newTokenSeq)
+  }
+
+  def parseAnnotation(conll: Seq[Seq[String]], tokens: Node, name: String): Node = {
+    val tokenSeq = tokens \\ "token"
+    val tokenId = tokenSeq map (_ \@ "id")
+
+    val heads = conll.map(_(6).toInt - 1)
+    val label = conll.map(_(7))
+    val headId = heads map {
+      case -1 => "ROOT"
+      case idx => tokenId(idx)
+    }
+    val depNodeSeq = (0 until headId.size) map { i =>
+      <dependency id={Annotation.Dependency.nextId} head={ headId(i) } dependent={ tokenId(i) } deprel={ label(i) }/>
+    }
+    <dependencies type="basic" annotators={ name }>{ depNodeSeq }</dependencies>
+  }
+}
+
+class SyntaxNetPOSAnnotator(override val name: String, override val props: Properties)
+    extends SyntaxNetAnnotator {
+
+  def toCoNLL(sentence: Node): String = SyntaxNetAnnotator.emptyCoNLL(sentence)
+
+  def annotateSentence(conll: Seq[Seq[String]], sentence: Node): Node = {
+    val tokens = (sentence \ "tokens").head
+    val newTokens = SyntaxNetAnnotator.POSAnnotatedTokens(conll, tokens, name)
     XMLUtil.addOrOverrideChild(sentence, newTokens)
   }
 
@@ -141,20 +175,39 @@ class SyntaxNetPOSAnnotator(override val name: String, override val props: Prope
 
 // Use this trait if one wants to keep the already annotated POS tags
 // (by other annotators).
-// class SyntaxNetParseAnnotator(override val name: String, override val props: Properties)
-//     extends SyntaxNetAnnotator {
+class SyntaxNetParseAnnotator(override val name: String, override val props: Properties)
+    extends SyntaxNetAnnotator {
 
-//   def run(input: String) = Process(s"cat $input") #| parserCmd lineStream_!
+  def toCoNLL(sentence: Node): String = SyntaxNetAnnotator.taggedCoNLL(sentence)
 
-//   override def requires = Set(Requirement.POS)
-//   override def requirementsSatisfied = Set(Requirement.Parse)
-// }
+  def annotateSentence(conll: Seq[Seq[String]], sentence: Node): Node = {
+    val tokens = (sentence \ "tokens").head
+    val parse = SyntaxNetAnnotator.parseAnnotation(conll, tokens, name)
+    XMLUtil.addChild(sentence, parse)
+  }
 
-// class SyntaxNetFullAnnotator(override val name: String, override val props: Properties)
-//     extends SyntaxNetAnnotator {
+  def run(input: String) = (Process(s"cat $input") #| parserCmd).lineStream_!
 
-//   def run(input: String) = Process(s"cat $input") #| posCmd #| parserCmd lineStream_!
+  override def requires = Set(Requirement.POS)
+  override def requirementsSatisfied = Set(Requirement.Parse)
+}
 
-//   override def requires = Set(Requirement.Tokenize)
-//   override def requirementsSatisfied = Set(Requirement.POS, Requirement.Parse)
-// }
+class SyntaxNetFullAnnotator(override val name: String, override val props: Properties)
+    extends SyntaxNetAnnotator {
+
+  def toCoNLL(sentence: Node): String = SyntaxNetAnnotator.emptyCoNLL(sentence)
+
+  def annotateSentence(conll: Seq[Seq[String]], sentence: Node): Node = {
+    val tokens = (sentence \ "tokens").head
+    val newTokens = SyntaxNetAnnotator.POSAnnotatedTokens(conll, tokens, name)
+    val parse = SyntaxNetAnnotator.parseAnnotation(conll, tokens, name)
+
+    val tokenUpdated = XMLUtil.addOrOverrideChild(sentence, newTokens)
+    XMLUtil.addChild(tokenUpdated, parse)
+  }
+
+  def run(input: String) = (Process(s"cat $input") #| posCmd #| parserCmd).lineStream_!
+
+  override def requires = Set(Requirement.Tokenize)
+  override def requirementsSatisfied = Set(Requirement.POS, Requirement.Parse)
+}
