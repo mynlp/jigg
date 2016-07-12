@@ -1,9 +1,3 @@
-import AssemblyKeys._
-
-assemblySettings
-
-// val annotatorLibrary = Map("berkeleyparser" -> ("com.github.mynlp" % "jigg-berkeley-parser" % "0.1-SNAPSHOT",
-//  "jigg.pipeline.BerkeleyParserAnnotator"))
 val annotatorLibrary = Map[String, (ModuleID, String)]()
 
 organization := "com.github.mynlp"
