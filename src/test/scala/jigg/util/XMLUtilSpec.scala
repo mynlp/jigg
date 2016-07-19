@@ -20,13 +20,12 @@ package jigg.pipeline
 
 import java.util.Properties
 
-import org.scalatest.FunSuite
-import org.scalatest.Matchers._
+import org.scalatest._
 
-class XMLUtilTest extends FunSuite {
+class XMLUtilSpec extends FlatSpec with Matchers {
   import XMLUtil._
 
-  test("replaceAll visits all elements") {
+  "replaceAll" should "visit all elements" in {
     val xml =
       <root>
         <document>
@@ -34,7 +33,6 @@ class XMLUtilTest extends FunSuite {
           <sentence id={"s2"}>{ "huga" }</sentence>
         </document>
       </root>
-
 
     val newXml = replaceAll(xml, "sentence") { sentence =>
       addChild(sentence, <child>{ "child" }</child>)
@@ -44,5 +42,24 @@ class XMLUtilTest extends FunSuite {
     sentence.size should be (2)
     (sentence(0) \ "child").text should be ("child")
     (sentence(1) \ "child").text should be ("child")
+  }
+
+  "addOrOverwriteChild" should "override child when only attrs differ" in {
+    val xml = <sentence><dependencies type="basic"/></sentence>
+    val newChild = <dependencies type="collapsed"/>
+
+    val newXml = XMLUtil.addOrOverwriteChild(xml, newChild)
+
+    newXml should be (<sentence><dependencies type="collapsed"/></sentence>)
+  }
+
+  it should "not override child when attrs differ if attr is specified" in {
+    val xml = <sentence><dependencies type="basic"/></sentence>
+    val newChild = <dependencies type="collapsed"/>
+
+    val newXml = XMLUtil.addOrOverwriteChild(xml, newChild, Some("type"))
+
+    newXml should be (
+      <sentence><dependencies type="basic"/><dependencies type="collapsed"/></sentence>)
   }
 }

@@ -26,17 +26,41 @@ object XMLUtil {
     case _ => sys.error("Can only add children to elements!")
   }
 
-  def addOrOverrideChild(n: Node, newChild: NodeSeq): Node = n match {
+  /** If other nodes with the same XML tag as `newChild` exist in `n`, it
+    * overrides the existing elements. If `attr` is set, the element only with the
+    * same value of attribute is recognized as "the same XML tag".
+    *
+    * For example, when `n` constains `<dependencies type="basic">...</dependencies>`,
+    * `<dependencies type="collapsed">...</dependencies>` in `newChild` will be added
+    * if `attr=Some("type")`.
+    */
+  def addOrOverwriteChild(n: Node, newChild: NodeSeq, attr: Option[String] = None): Node
+  = n match {
     case e: Elem =>
       // remove duplicate
-      def addOrOverwrite(orig: NodeSeq): NodeSeq = {
-        val addedLabels = newChild.map(_.label)
-        val uniqueInOrig = orig.filter { n => !addedLabels.contains(n.label) }
+      def addOrOverwrite(origChild: NodeSeq): NodeSeq = {
+        // val addedLabels = newChild.map(_.label)
+        val notInNew: Node => Boolean = attr match {
+          case None =>
+            node => !newChild.exists(_.label == node.label)
+          case Some(a) =>
+            node => {
+              val targetValue = node \@ a
+              !newChild.exists { child =>
+                child.label == node.label && child \@ a == targetValue
+              }
+            }
+        }
+        val uniqueInOrig = origChild.filter(notInNew)
         uniqueInOrig ++ newChild
       }
       e.copy(child = addOrOverwrite(e.child))
     case _ => sys.error("Can only add children to elements!")
   }
+
+  @deprecated(message="Use addOrOverwriteChild instead.", "3.6.1")
+  def addOrOverrideChild(n: Node, newChild: NodeSeq, attr: Option[String] = None): Node =
+    addOrOverwriteChild(n, newChild, attr)
 
   def addAttribute(n: Node, k: String, v: String): Node = n match {
     case e: Elem => e % Attribute(None, k, Text(v), Null)
