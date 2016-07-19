@@ -224,7 +224,7 @@ class SyntaxNetParseAnnotator(override val name: String, override val props: Pro
   def run(input: String) = (Process(s"cat $input") #| parserCmd).lineStream_!
 
   override def requires = Set(Requirement.POS)
-  override def requirementsSatisfied = Set(Requirement.Parse)
+  override def requirementsSatisfied = Set(Requirement.BasicDependencies)
 }
 
 class SyntaxNetFullAnnotator(override val name: String, override val props: Properties)
@@ -244,5 +244,5 @@ class SyntaxNetFullAnnotator(override val name: String, override val props: Prop
   def run(input: String) = (Process(s"cat $input") #| posCmd #| parserCmd).lineStream_!
 
   override def requires = Set(Requirement.Tokenize)
-  override def requirementsSatisfied = Set(Requirement.POS, Requirement.Parse)
+  override def requirementsSatisfied = Set(Requirement.POS, Requirement.BasicDependencies)
 }
