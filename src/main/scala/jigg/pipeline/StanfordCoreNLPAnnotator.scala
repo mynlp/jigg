@@ -673,8 +673,6 @@ class StanfordCoreNLPAnnotator(
 
   // this is not SentenceRequirement as it uses document id and sentence idx
   class BasicDependencies extends StanfordDependencies {
-    // def dependenciesNode(sentence: Node) =
-    //   (sentence \ "dependencies").find(_ \@ "id" == "basic").get
     def setGraph(sentence: CoreMap, graph: SemanticGraph) =
       sentence set (
         classOf[SemanticGraphCoreAnnotations.BasicDependenciesAnnotation], graph)
@@ -686,8 +684,6 @@ class StanfordCoreNLPAnnotator(
   }
 
   class CollapsedDependencies extends StanfordDependencies {
-    // def dependenciesNode(sentence: Node) =
-    //   (sentence \ "dependencies").find(_ \@ "id" == "collapsed").get
     def setGraph(sentence: CoreMap, graph: SemanticGraph) =
       sentence set (
         classOf[SemanticGraphCoreAnnotations.CollapsedDependenciesAnnotation], graph)
@@ -699,8 +695,6 @@ class StanfordCoreNLPAnnotator(
   }
 
   class CollapsedCCProcessedDependencies extends StanfordDependencies {
-    // def dependenciesNode(sentence: Node) =
-    //   (sentence \ "dependencies").find(_ \@ "id" == "collapsed-ccprocessed").get
     def setGraph(sentence: CoreMap, graph: SemanticGraph) =
       sentence set (
         classOf[SemanticGraphCoreAnnotations.CollapsedCCProcessedDependenciesAnnotation],
