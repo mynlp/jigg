@@ -841,7 +841,9 @@ object StanfordCoreNLPAnnotator extends AnnotatorCompanion[StanfordCoreNLPAnnota
       def mkIndexedWord(id: String): IndexedWord = {
         val idx = tokenIdx(id)
         val word = new IndexedWord(docId, sentIdx, idx)
-        word.setValue(tokens(idx - 1) \@ "form")
+        val t = tokens(idx - 1)
+        word.setValue(t \@ "form")
+        word.set(classOf[CoreAnnotations.PartOfSpeechAnnotation], t \@ "pos")
         word
       }
 
