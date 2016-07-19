@@ -608,15 +608,13 @@ class StanfordCoreNLPAnnotator(
             (sentence \ "dependencies").find(_ \@ "type" == depType).get
           val deps = depsNode \ "dependency"
 
-          val roots = depsNode \@ "root"
-
           val typedDeps: java.util.Collection[TypedDependency] = deps.map { dep =>
             val deprel = dep \@ "deprel"
             val head = dep \@ "head"
             val dependent = dep \@ "dependent"
 
             head match {
-              case "root" =>
+              case "ROOT" =>
                 val depWord = new IndexedWord(docId, sentIdx, tokenIdx(dependent))
                 new TypedDependency(ROOT, null, depWord)
               case _ =>
