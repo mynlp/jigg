@@ -70,7 +70,8 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
     "kuromoji" -> classOf[KuromojiAnnotator],
     "syntaxnetpos" -> classOf[SyntaxNetPOSAnnotator],
     "syntaxnetparse" -> classOf[SyntaxNetParseAnnotator],
-    "syntaxnet" -> classOf[SyntaxNetFullAnnotator]
+    "syntaxnet" -> classOf[SyntaxNetFullAnnotator],
+    "collapseddep" -> classOf[StanfordCollapsedDependenciesAnnotator]
   )
 
   // TODO: should document ID be given here?  Somewhere else?
