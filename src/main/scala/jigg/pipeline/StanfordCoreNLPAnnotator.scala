@@ -878,7 +878,7 @@ object StanfordCoreNLPAnnotator extends AnnotatorCompanion[StanfordCoreNLPAnnota
       val dep = tokenSeq(root.index - 1) \@ "id"
       val head = "ROOT"
       <dependency id={Annotation.Dependency.nextId}
-      head={ head } dep={ dep } deprel={ relation }/>
+      head={ head } dependent={ dep } deprel={ relation }/>
     }
     val depNodes: NodeSeq = semgraph.edgeIterable.asScala.toSeq map { edge =>
       val relation = edge.getRelation.getShortName
