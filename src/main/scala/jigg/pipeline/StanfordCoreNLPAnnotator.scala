@@ -55,7 +55,7 @@ class StanfordCoreNLPAnnotator(
     p
   }
 
-  def supportedAnnotators = Seq("tokenize", "ssplit", "pos", "lemma", "ner", "parse", "dcoref")
+  def supportedAnnotators = Seq("tokenize", "ssplit", "pos", "lemma", "ner", "parse", "depparse", "dcoref", "coref")
 
   val coreNLP = new StanfordCoreNLP(coreNLPProps, false)
 
@@ -72,6 +72,7 @@ class StanfordCoreNLPAnnotator(
     Requirement.BasicDependencies -> new BasicDependencies,
     Requirement.CollapsedDependencies -> new CollapsedDependencies,
     Requirement.CollapsedCCProcessedDependencies -> new CollapsedCCProcessedDependencies,
+    Requirement.Mention -> new MentionCandidates,
     Requirement.Coreference -> new Coreference
   )
 
@@ -85,6 +86,7 @@ class StanfordCoreNLPAnnotator(
     Requirement.BasicDependencies,
     Requirement.CollapsedDependencies,
     Requirement.CollapsedCCProcessedDependencies,
+    Requirement.Mention,
     Requirement.Coreference
   )
 
@@ -658,6 +660,18 @@ class StanfordCoreNLPAnnotator(
     def depType: String = StanfordCoreNLPAnnotator.ccCollapsedDepType
   }
 
+  class MentionCandidates extends CoreNLPRequirement {
+
+    def addToCoreMap(annotation: core.Annotation, node: Node) =
+      throw new ArgumentError(
+        "Annotators which rely on mention (maybe coref only?) should be called along with it, e.g., corenlp[mention,coref], not separately.")
+
+    // TODO: Assuming that mention annotator always is used along with coref.
+    // This will immediately cause errors when giving "corenlp[mention],corenlp[coref]".
+    // We now do not assume such separation for now.
+    def addToNode(document: Node, annotation: core.Annotation): Node = document
+  }
+
   class Coreference extends CoreNLPRequirement {
 
     def addToCoreMap(annotation: core.Annotation, node: Node) =
@@ -748,9 +762,10 @@ object StanfordCoreNLPAnnotator extends AnnotatorCompanion[StanfordCoreNLPAnnota
       Seq(R.BasicDependencies,
         R.CollapsedDependencies,
         R.CollapsedCCProcessedDependencies),
-    // core.Annotator.MENTION_REQUIREMENT -> // unsupported
-    // core.Annotator.ENTITY_MENTIONS_REQUIREMENT -> // unsupported
-    core.Annotator.DETERMINISTIC_COREF_REQUIREMENT -> Seq(R.Coreference) // TODO: maybe we need CoreNLP specific Coreference? for e.g., representing Gender
+    core.Annotator.MENTION_REQUIREMENT -> Seq(R.Mention), // unsupported
+    // core.Annotator.ENTITY_MENTIONS_REQUIREMENT -> Seq(R.Mention)  // unsupported
+    core.Annotator.DETERMINISTIC_COREF_REQUIREMENT -> Seq(R.Coreference), // TODO: maybe we need CoreNLP specific Coreference? for e.g., representing Gender
+    core.Annotator.COREF_REQUIREMENT -> Seq(R.Coreference)
   )
 
   val basicDepType = "basic"

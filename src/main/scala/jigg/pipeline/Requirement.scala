@@ -53,6 +53,10 @@ object Requirement {
 
   case object Coreference extends Requirement
 
+  // Now this corresponds to Mention in the CoreNLP, which is (probably) used internally
+  // for saving mention candidates.
+  case object Mention extends Requirement
+
   case object PredArg extends Requirement
 
   case object Parse extends Requirement
