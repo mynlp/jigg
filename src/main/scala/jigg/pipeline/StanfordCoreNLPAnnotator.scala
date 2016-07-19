@@ -644,7 +644,14 @@ class StanfordCoreNLPAnnotator(
       val tokens = (sentence \ "tokens").head
       val tokenSeq = tokens \ "token"
 
-      val depNodes = semgraph.edgeIterable.asScala.toSeq map { edge =>
+      val rootNodes: NodeSeq = semgraph.getRoots.asScala.toSeq map { root =>
+        val relation = GrammaticalRelation.ROOT.getLongName()
+        val dep = tokenSeq(root.index - 1) \@ "id"
+        val head = "ROOT"
+        <dependency id={Annotation.Dependency.nextId}
+          head={ head } dep={ dep } deprel={ relation }/>
+      }
+      val depNodes: NodeSeq = semgraph.edgeIterable.asScala.toSeq map { edge =>
         val relation = edge.getRelation.getShortName
 
         val head = tokenSeq(edge.getGovernor.index - 1) \@ "id"
@@ -654,10 +661,11 @@ class StanfordCoreNLPAnnotator(
           head={ head } dep={ dep } deprel={ relation }/>
       }
       val depsNode =
-        <dependencies type={ depType } annotators={ name }>{ depNodes }</dependencies>
+        <dependencies type={ depType }
+          annotators={ name }>{ rootNodes ++ depNodes }</dependencies>
 
-      // We do not override here as we may add several dependencies with different types
-      XMLUtil.addChild(sentence, depsNode)
+      // We override dependencies only when it has a different type.
+      XMLUtil.addOrOverwriteChild(sentence, depsNode, Some("type"))
     }
 
     protected def setGraph(sentence: CoreMap, graph: SemanticGraph): Unit
