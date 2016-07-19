@@ -586,7 +586,6 @@ class StanfordCoreNLPAnnotator(
 
   // NOTE: CoreNLP's IndexWord is 1-based (maybe 0 is used for (dummy) root)
   trait StanfordDependencies extends SentenceRequirement {
-    import GrammaticalRelation.ROOT
 
     override def addToCoreMap(annotation: core.Annotation, document: Node) = {
       val docId = document \@ "id"
@@ -597,34 +596,9 @@ class StanfordCoreNLPAnnotator(
 
       coreSentences.zip(sentences).zipWithIndex.foreach {
         case ((coreSentence, sentence), sentIdx) =>
-
-          val tokens = sentence \\ "token"
-
-          def tokenIdx: String=>Int = tokens.zipWithIndex.map { case (t, i) =>
-            ((t \@ "id"), i + 1)
-          }.toMap
-
-          val depsNode =
-            (sentence \ "dependencies").find(_ \@ "type" == depType).get
-          val deps = depsNode \ "dependency"
-
-          val typedDeps: java.util.Collection[TypedDependency] = deps.map { dep =>
-            val deprel = dep \@ "deprel"
-            val head = dep \@ "head"
-            val dependent = dep \@ "dependent"
-
-            head match {
-              case "ROOT" =>
-                val depWord = new IndexedWord(docId, sentIdx, tokenIdx(dependent))
-                new TypedDependency(ROOT, null, depWord)
-              case _ =>
-                val headWord = new IndexedWord(docId, sentIdx, tokenIdx(head))
-                val depWord = new IndexedWord(docId, sentIdx, tokenIdx(dependent))
-
-                val relation = GrammaticalRelation.valueOf(deprel)
-                new TypedDependency(relation, headWord, depWord)
-            }
-          }.toIterable.asJavaCollection
+          val typedDeps: java.util.Collection[TypedDependency] =
+            StanfordCoreNLPAnnotator.extractTypedDependencies(
+              sentence, depType, docId, sentIdx).toIterable.asJavaCollection
 
           val graph = new SemanticGraph(typedDeps)
           setGraph(coreSentence, graph)
@@ -635,32 +609,10 @@ class StanfordCoreNLPAnnotator(
     override def addToCoreSentence(coreSentence: CoreMap, sentence: Node): Unit = {}
 
     def newSentenceAnnotation(sentence: Node, coreSentence: CoreMap) = {
-      val sentenceId = sentence \@ "id"
-
       val semgraph = semanticGraph(coreSentence)
 
-      val tokens = (sentence \ "tokens").head
-      val tokenSeq = tokens \ "token"
-
-      val rootNodes: NodeSeq = semgraph.getRoots.asScala.toSeq map { root =>
-        val relation = GrammaticalRelation.ROOT.getLongName()
-        val dep = tokenSeq(root.index - 1) \@ "id"
-        val head = "ROOT"
-        <dependency id={Annotation.Dependency.nextId}
-          head={ head } dep={ dep } deprel={ relation }/>
-      }
-      val depNodes: NodeSeq = semgraph.edgeIterable.asScala.toSeq map { edge =>
-        val relation = edge.getRelation.getShortName
-
-        val head = tokenSeq(edge.getGovernor.index - 1) \@ "id"
-        val dep = tokenSeq(edge.getDependent.index - 1) \@ "id"
-
-        <dependency id={Annotation.Dependency.nextId}
-          head={ head } dep={ dep } deprel={ relation }/>
-      }
-      val depsNode =
-        <dependencies type={ depType }
-          annotators={ name }>{ rootNodes ++ depNodes }</dependencies>
+      val depsNode = StanfordCoreNLPAnnotator.semanticGraphToDependenciesNode(
+        sentence, semgraph, depType, name)
 
       // We override dependencies only when it has a different type.
       XMLUtil.addOrOverwriteChild(sentence, depsNode, Some("type"))
@@ -680,7 +632,7 @@ class StanfordCoreNLPAnnotator(
     def semanticGraph(sentence: CoreMap): SemanticGraph =
       sentence get classOf[SemanticGraphCoreAnnotations.BasicDependenciesAnnotation]
 
-    def depType: String = "basic"
+    def depType: String = StanfordCoreNLPAnnotator.basicDepType
   }
 
   class CollapsedDependencies extends StanfordDependencies {
@@ -691,7 +643,7 @@ class StanfordCoreNLPAnnotator(
     def semanticGraph(sentence: CoreMap): SemanticGraph =
       sentence get classOf[SemanticGraphCoreAnnotations.CollapsedDependenciesAnnotation]
 
-    def depType: String = "collapsed"
+    def depType: String = StanfordCoreNLPAnnotator.collapsedDepType
   }
 
   class CollapsedCCProcessedDependencies extends StanfordDependencies {
@@ -703,7 +655,7 @@ class StanfordCoreNLPAnnotator(
     def semanticGraph(sentence: CoreMap): SemanticGraph =
       sentence get classOf[SemanticGraphCoreAnnotations.CollapsedCCProcessedDependenciesAnnotation]
 
-    def depType: String = "collapsed-ccprocessed"
+    def depType: String = StanfordCoreNLPAnnotator.ccCollapsedDepType
   }
 
   class Coreference extends CoreNLPRequirement {
@@ -801,6 +753,10 @@ object StanfordCoreNLPAnnotator extends AnnotatorCompanion[StanfordCoreNLPAnnota
     core.Annotator.DETERMINISTIC_COREF_REQUIREMENT -> Seq(R.Coreference) // TODO: maybe we need CoreNLP specific Coreference? for e.g., representing Gender
   )
 
+  val basicDepType = "basic"
+  val collapsedDepType = "collapsed"
+  val ccCollapsedDepType = "collapsed-ccprocessed"
+
   /** name may have the form corenlp[tokenize,ssplit]
     */
   override def fromProps(name: String, props: Properties) = {
@@ -846,5 +802,79 @@ object StanfordCoreNLPAnnotator extends AnnotatorCompanion[StanfordCoreNLPAnnota
         "(" + node \@ "symbol" + " " + childNodes.map(makeStr).mkString(" ") + ")"
     }
     "(ROOT " + makeStr(findSpan(root).get) + ")"
+  }
+
+  def extractTypedDependencies(
+    sentence: Node,
+    depType: String,
+    docId: String = "",
+    sentIdx: Int = 0): Seq[TypedDependency] = {
+
+    val tokens = sentence \\ "token"
+
+    val tokenIdx: String=>Int = tokens.zipWithIndex.map { case (t, i) =>
+      ((t \@ "id"), i + 1)
+    }.toMap
+
+    val depsNode = (sentence \ "dependencies").find(_ \@ "type" == depType).get
+
+    (depsNode \ "dependency") map { dep =>
+      val deprel = dep \@ "deprel"
+      val head = dep \@ "head"
+      val dependent = dep \@ "dependent"
+
+      def mkIndexedWord(id: String): IndexedWord = {
+        val idx = tokenIdx(id)
+        val word = new IndexedWord(docId, sentIdx, idx)
+        word.setValue(tokens(idx - 1) \@ "form")
+        word
+      }
+
+      head match {
+        case "ROOT" =>
+          val root = new IndexedWord(docId, sentIdx, 0)
+          root.setValue("ROOT")
+
+          val depWord = mkIndexedWord(dependent)
+          new TypedDependency(GrammaticalRelation.ROOT, root, depWord)
+        case _ =>
+          val headWord = mkIndexedWord(head)
+          val depWord = mkIndexedWord(dependent)
+
+          val relation = GrammaticalRelation.valueOf(deprel)
+          new TypedDependency(relation, headWord, depWord)
+      }
+    }
+  }
+
+  def semanticGraphToDependenciesNode(
+    sentence: Node,
+    semgraph: SemanticGraph,
+    depType: String,
+    name: String) = {
+
+    val sentenceId = sentence \@ "id"
+
+    val tokens = (sentence \ "tokens").head
+    val tokenSeq = tokens \ "token"
+
+    val rootNodes: NodeSeq = semgraph.getRoots.asScala.toSeq map { root =>
+      val relation = GrammaticalRelation.ROOT.getLongName()
+      val dep = tokenSeq(root.index - 1) \@ "id"
+      val head = "ROOT"
+      <dependency id={Annotation.Dependency.nextId}
+      head={ head } dep={ dep } deprel={ relation }/>
+    }
+    val depNodes: NodeSeq = semgraph.edgeIterable.asScala.toSeq map { edge =>
+      val relation = edge.getRelation.getShortName
+
+      val head = tokenSeq(edge.getGovernor.index - 1) \@ "id"
+      val dep = tokenSeq(edge.getDependent.index - 1) \@ "id"
+
+      <dependency id={Annotation.Dependency.nextId}
+      head={ head } dependent={ dep } deprel={ relation }/>
+    }
+    <dependencies type={ depType }
+      annotators={ name }>{ rootNodes ++ depNodes }</dependencies>
   }
 }
