@@ -126,10 +126,11 @@ case class DefaultExtractor() extends FeatureExtractor {
   * multiple sentences at a time, you have to prepare k instances
   * of this class.
   */
+@SerialVersionUID(-5252544061584827186L)
 class FeatureExtractors(val methods: Seq[FeatureExtractor], val bos: Word, val bosPoS: PoS)
     extends Serializable {
   //var featureSize = 0
-  @transient var features = new ArrayBuffer[UF]
+  // @transient var features = new ArrayBuffer[UF]
 
   class ContextWithBOS(override val sentence:TaggedSentence, override val i:Int) extends Context {
     override def word(bias:Int) = (i + bias) match {
@@ -142,8 +143,8 @@ class FeatureExtractors(val methods: Seq[FeatureExtractor], val bos: Word, val b
   def context(sentence:TaggedSentence, i:Int):Context = new ContextWithBOS(sentence, i)
 
   def extractUnlabeledFeatures(sentence:TaggedSentence, i:Int):Seq[UF] = {
-    //val features = new ArrayBuffer[UF](featureSize)
-    if (features == null) features = new ArrayBuffer[UF]
+    val features = new ArrayBuffer[UF]// (featureSize)
+    // if (features == null) features = new ArrayBuffer[UF]
 
     features.clear
     features += BiasFeature(Template.bias)

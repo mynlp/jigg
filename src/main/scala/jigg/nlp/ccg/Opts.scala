@@ -38,11 +38,11 @@ object Opts {
   @Help(text="About category dictionary")
   case class DictParams(
     @Help(text="How to look up category candidates? (for Japanese only) (surfaceOnly|surfaceAndPoS|surfaceAndSecondFineTag|surfaceAndSecondWithConj)")
-      lookupMethod: String = "surfaceAndSecondFineTag",
+      lookupMethod: String = "surfaceAndSecondWithConj",
     @Help(text="Whether using lexicon files to create word -> category mappings")
       useLexiconFiles: Boolean = true,
     @Help(text="Minimum number of occurences for registering as lexicalized entry")
-      unkThreathold: Int = 15
+      unkThreathold: Int = 30
   ) {
 
     val categoryDictinoary = lookupMethod match {

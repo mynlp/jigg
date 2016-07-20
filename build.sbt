@@ -1,25 +1,4 @@
-import AssemblyKeys._
-
-// If you want to install new annotator, please extend here.
-//
-// Each element has the following form:
-//   key -> (maven id, path to the annotator class).
-//
-// If maven id and class path are correct, in the resulting jar (with "sbt assembly"),
-// one can use the new annotator with the name "key".
-//
-// For example now "-annotators berkeleyparser" tries to launch BerkeleyParserAnnotator.
-//
-val annotatorLibrary = Map(
-  "kuromoji" -> ("com.github.mynlp" % "jigg-kuromoji" % "0.1-SNAPSHOT",
-    "jigg.pipeline.KuromojiAnnotator"),
-  "berkeleyparser" -> ("com.github.mynlp" % "jigg-berkeley-parser" % "0.1-SNAPSHOT",
-    "jigg.pipeline.BerkeleyParserAnnotator"),
-  "corenlp" -> ("com.github.mynlp" % "jigg-stanford-corenlp" % "0.1-SNAPSHOT",
-    "jigg.pipeline.StanfordCoreNLPAnnotator")
-)
-
-assemblySettings
+val annotatorLibrary = Map[String, (ModuleID, String)]()
 
 organization := "com.github.mynlp"
 
@@ -27,7 +6,7 @@ name := "jigg"
 
 scalaVersion := "2.11.7"
 
-version := "0.6"
+version := "0.61"
 
 fork in run := true
 
@@ -49,7 +28,28 @@ libraryDependencies ++= Seq(
   "org.scala-lang" % "scala-reflect" % "2.11.7",
   "com.ibm.icu" % "icu4j" % "56.1",
   "org.scalanlp" % "breeze-config_2.10" % "0.9.1",
-  "com.github.mynlp" % "jigg-base" % "0.6"
+  "org.json4s" %% "json4s-jackson" % "3.3.0"
+)
+
+libraryDependencies ++= (
+  stanfordCoreNLPDependencies
+    ++ kuromojiDependencies
+    ++ berkeleyParserDependencies)
+
+val stanfordCoreNLPDependencies = Seq(
+  "org.slf4j" % "slf4j-api" % "1.7.20", // logger
+  "org.slf4j" % "slf4j-simple" % "1.7.6",
+  "edu.stanford.nlp" % "stanford-corenlp" % "3.6.0"
+)
+
+val kuromojiDependencies = Seq(
+  "com.atilika.kuromoji" % "kuromoji-ipadic" % "0.9.0",
+  "com.atilika.kuromoji" % "kuromoji-jumandic" % "0.9.0",
+  "com.atilika.kuromoji" % "kuromoji-unidic" % "0.9.0"
+)
+
+val berkeleyParserDependencies = Seq(
+  "edu.berkeley.nlp" % "berkeleyparser" % "r32"
 )
 
 libraryDependencies ++= annotatorLibrary.map { case (k, v) => v._1 }.toSeq

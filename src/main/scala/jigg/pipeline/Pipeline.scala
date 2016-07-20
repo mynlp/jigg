@@ -23,7 +23,7 @@ import scala.io.Source
 import scala.xml.{XML, Node}
 import scala.collection.JavaConverters._
 import jigg.util.LogUtil.{ track, multipleTrack }
-import jigg.util.{PropertiesUtil => PU, IOUtil, XMLUtil}
+import jigg.util.{PropertiesUtil => PU, IOUtil, XMLUtil, JSONUtil}
 
 class Pipeline(val properties: Properties = new Properties) extends PropsHolder {
 
@@ -32,10 +32,12 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
   @Prop(gloss="List of annotator names, e.g., corenlp[tokenize,ssplit],berkeleyparser", required=true) var annotators = ""
   @Prop(gloss="Property file") var props = ""
   @Prop(gloss="Input file; if omitted, read from stdin") var file = ""
-  @Prop(gloss="Output file; if omitted, `file`.xml is used. Gzipped if suffix is .gz") var output = ""
+  @Prop(gloss="Output file; if omitted, `file`.xml is used. Gzipped if suffix is .gz. If JSON mode is selected, suffix is .json") var output = ""
   @Prop(gloss="Print this message and descriptions of specified annotators, e.g., -help ssplit,mecab") var help = ""
   @Prop(gloss="You can add an abbreviation for a custom annotator class with \"-customAnnotatorClass.xxx path.package\"") var customAnnotatorClass = ""
   @Prop(gloss="Number of threads for parallel annotation (use all if <= 0)") var nThreads = -1
+  @Prop(gloss="Output format, [xml/json]. Default value is 'xml'.") var outputFormat = "xml"
+  @Prop(gloss="Check requirement, [true/false/warn]. Default value is 'true'.") var checkRequirement = "true"
 
   // A hack to prevent throwing an exception when -help is given but -annotators is not given.
   // annotators is required prop so it has to be non-empty, but it is difficult to tell that if -help is given it is not necessary.
@@ -62,7 +64,14 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
     "juman" -> classOf[JumanAnnotator],
     "knp" -> classOf[SimpleKNPAnnotator],
     "knpDoc" -> classOf[DocumentKNPAnnotator],
-    "jaccg" -> classOf[CCGParseAnnotator]
+    "jaccg" -> classOf[CCGParseAnnotator],
+    "corenlp" -> classOf[StanfordCoreNLPAnnotator],
+    "berkeleyparser" -> classOf[BerkeleyParserAnnotator],
+    "kuromoji" -> classOf[KuromojiAnnotator],
+    "syntaxnetpos" -> classOf[SyntaxNetPOSAnnotator],
+    "syntaxnetparse" -> classOf[SyntaxNetParseAnnotator],
+    "syntaxnet" -> classOf[SyntaxNetFullAnnotator],
+    "collapseddep" -> classOf[StanfordCollapsedDependenciesAnnotator]
   )
 
   // TODO: should document ID be given here?  Somewhere else?
@@ -125,11 +134,32 @@ Currently the annotators listed below are installed. See the detail of each anno
   def createAnnotatorList(): List[Annotator] = {
     val annotatorList =
       annotatorNames.map { getAnnotator(_) }.toList
-
-    annotatorList.foldLeft(RequirementSet()) { (satisifedSofar, annotator) =>
-      try annotator.checkRequirements(satisifedSofar)
-      catch { case e: RequirementError =>
-        argumentError("annotators", e.getMessage)
+    
+    checkRequirement match {
+      case "true" =>{
+        annotatorList.foldLeft(RequirementSet()) { (satisifedSofar, annotator) =>
+          try annotator.checkRequirements(satisifedSofar)
+          catch { case e: RequirementError =>
+            argumentError("annotators", e.getMessage)
+          }
+        }
+      }
+      case "warn" => {
+        annotatorList.foldLeft(RequirementSet()) { (satisifedSofar, annotator) =>
+          try annotator.checkRequirements(satisifedSofar)
+          catch { case e: RequirementError =>
+            println("***** WARNING *****")
+            println(e.getMessage)
+            println("*******************")
+            satisifedSofar
+          }
+        }
+      }
+      case "false" => {
+        println("Skip `checkRequirements` for all annotators.")
+      }
+      case _ =>{
+        argumentError("checkRequirement")
       }
     }
 
@@ -200,22 +230,41 @@ Currently the annotators listed below are installed. See the detail of each anno
       annotate(reader, true)
     }
 
-    // The output of basic XML.save method is not formatted, so we instead use PrettyPrinter.
-    // However, this method have to convert an entire XML into a String object, which would be problematic for huge dataset.
-    // XML.save(in + ".xml", xml, "UTF-8")
-    val printer = new scala.xml.PrettyPrinter(500, 2)
+    // If option of json is true, the output of this method is formatted JSON.
+    outputFormat match {
+      case "json" => {
+        val outputPath = output match {
+          case "" => file + ".json"
+          case _ => output
+        }
 
-    val outputPath = output match {
-      case "" => file + ".xml"
-      case _ => output
-    }
+        track("Writing to %s".format(outputPath + "... ")) {
+          val jsonString = JSONUtil.toJSON(xml)
+          val os = IOUtil.openOut(outputPath)
+          os.write(jsonString)
+          os.close()
+        }
+      }
+      case _ => { 
+        // The output of basic XML.save method is not formatted, so we instead use PrettyPrinter.
+        // However, this method have to convert an entire XML into a String object, which would be problematic for huge dataset.
+        // XML.save(in + ".xml", xml, "UTF-8")
+        val printer = new scala.xml.PrettyPrinter(500, 2)
 
-    track("Writing to %s".format(outputPath + "... ")) {
-      val os = IOUtil.openOut(outputPath)
-      writeTo(os, xml)
-      os.close
+        val outputPath = output match {
+          case "" => file + ".xml"
+          case _ => output
+        }
+
+        track("Writing to %s".format(outputPath + "... ")) {
+          val os = IOUtil.openOut(outputPath)
+          writeTo(os, xml)
+          os.close
+        }
+      }
     }
   }
+
   def writeTo(os: BufferedWriter, xml: Node) = {
     val printer = new scala.xml.PrettyPrinter(500, 2)
     val size = (xml \\ "sentences").map(_.child.size).sum
@@ -235,7 +284,13 @@ Currently the annotators listed below are installed. See the detail of each anno
           case "" => IOUtil.openStandardOut
           case _ => IOUtil.openOut(output)
         }
-        writeTo(writer, xml)
+        outputFormat match {
+          case "json"  =>
+            val jsonString = JSONUtil.toJSON(xml)
+            writer.write(jsonString)
+          case _ =>
+            writeTo(writer, xml)
+        }
         writer.close
     }
   }
@@ -257,8 +312,14 @@ Currently the annotators listed below are installed. See the detail of each anno
       var in = readLine
       while (in != "") {
         val xml = annotate(rootXML(in), annotators, false)
-        val printer = new scala.xml.PrettyPrinter(500, 2)
-        println(printer.format(xml))
+        prop("outputFormat") match {
+          case Some(x) if x == "json" => 
+            val jsonString = JSONUtil.toJSON(xml)
+            println(jsonString)
+          case _ => 
+            val printer = new scala.xml.PrettyPrinter(500, 2)
+            println(printer.format(xml))
+        }
         in = readLine
       }
     }

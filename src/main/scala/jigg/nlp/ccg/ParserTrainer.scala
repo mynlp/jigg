@@ -113,7 +113,7 @@ object ParserTrainer {
   case class Params(
     @Help(text="Save model path") model: File = new File("parser.ser.gz"),
     @Help(text="Supertagger model path") taggerModel: File = new File("tagger.ser.gz"),
-    @Help(text="# iters") numIters: Int = 10,
+    @Help(text="# iters") numIters: Int = 15,
     @Help(text="Feature extractor") feat: FeatureExtractor = new ZhangExtractor(),
     @Help(text="Additional extractors") more: Seq[FeatureExtractor] = List(),
     @Help(text="Size of hashed feature") featureSize: Int = 2 << 23,
