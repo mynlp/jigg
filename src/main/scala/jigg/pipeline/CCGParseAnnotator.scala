@@ -28,15 +28,12 @@ import scala.xml._
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.ArrayBuffer
 
-/** Currently this class is ugly; it largely depends on global variables defined in jigg.nlp.ccg.Options.
-  * TODO: revise this class and ShiftReduceParsing class.
-  */
 class CCGParseAnnotator(override val name: String, override val props: Properties) extends SentencesAnnotator {
 
   @Prop(gloss = "Path to the trained model (you can omit this if you load a jar which packs models)") var model = ""
   @Prop(gloss = "Pruning parameter in supertagging") var beta = 0.001
   @Prop(gloss = "Maximum category candidates for each by supertagging, -1 for infinity") var maxK = -1
-  @Prop(gloss = "Beam size (usually 64 is ok); Recommend to use the same beam size at training the model. This is automatically done if the model is loaded from a model jar.") var beam = 64
+  @Prop(gloss = "Beam size (usually 64 is ok); Recommend to use the same beam size as training. This is automatically done if the model is loaded from a model jar.") var beam = 64
   @Prop(gloss = "Outputs k-best derivations if this value > 1") var kBest = 1
   @Prop(gloss = "Output connected derivations first even when unconnected trees have higher scores") var preferConnected = false
   readProps()
@@ -44,9 +41,14 @@ class CCGParseAnnotator(override val name: String, override val props: Propertie
   val taggerParams = SuperTaggerRunner.Params(beta, maxK)
   val params = ParserRunner.Params(beam, preferConnected, taggerParams)
 
-  val parserModel = loadModel()
+  lazy val parserModel = loadModel()
+  lazy val parser = new ParserRunner(parserModel, params)
 
-  val parser = new ParserRunner(parserModel, params)
+  // A hack to prevent loading when -help is given.
+  override def init() = {
+    parserModel
+    parser
+  }
 
   def loadModel() = try {
     model match {
@@ -86,16 +88,14 @@ class CCGParseAnnotator(override val name: String, override val props: Propertie
             case "" => None
             case symbol => Some(Text(symbol))
           }
-          val childIDs = rule.childPoint.points map { p => spanID(point2id(derivID, p)) } match {
-            case Seq() => None
+          val childIDs = rule.childPoint.points map { p =>
+            spanID(point2id(derivID, p))
+          } match {
+            case Seq() => tokenSeq(point.x).attribute("id")
             case ids => Some(Text(ids.mkString(" ")))
           }
-          val terminalID = childIDs match {
-            case None => tokenSeq(point.x).attribute("id")
-            case _ => None
-          }
 
-          spans += <span id={ spanID(pid) } begin={ point.x.toString } end={ point.y.toString } category={ point.category.toString } rule={ ruleSymbol } child={ childIDs } terminal={ terminalID } />
+          spans += <span id={ spanID(pid) } begin={ point.x.toString } end={ point.y.toString } symbol={ point.category.toString } rule={ ruleSymbol } children={ childIDs } />
         }, root)
       }
 

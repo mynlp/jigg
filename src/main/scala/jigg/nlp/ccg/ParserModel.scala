@@ -84,7 +84,7 @@ object ParserModel {
   def loadFromJar(beam: Int): ParserModel = {
     val loader = Thread.currentThread.getContextClassLoader
     val modelName = defaultModelPath(beam)
-    jigg.util.LogUtil.track("Loading parser model in $modelName ...") {
+    jigg.util.LogUtil.track(s"Loading parser model in $modelName ...") {
       val input = loader.getResourceAsStream(modelName)
       val in = jigg.util.IOUtil.openZipBinIn(input)
       val model = in.readObject.asInstanceOf[ParserModel]
