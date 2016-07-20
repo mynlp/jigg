@@ -14,9 +14,9 @@ Jigg is distributed under the [Apache License, Version 2.0](http://www.apache.or
 There is no need to install. Just download the package!
 
 ```bash
-$ wget https://github.com/mynlp/jigg/releases/download/v-0.6/jigg-0.6.tar.gz
-$ tar xvf jigg-0.6.tar.gz
-$ cd jigg-0.6
+$ wget https://github.com/mynlp/jigg/releases/download/v-0.6.1/jigg-0.6.1.tar.gz
+$ tar xvf jigg-0.6.1.tar.gz
+$ cd jigg-0.6.1
 ```
 
 ## Usage
@@ -24,10 +24,10 @@ $ cd jigg-0.6
 The following command launches Jigg in a shell mode, which parses a given input with Berkeley parser after preprocessing (tokenization and sentence splitting).
 
 ```bash
-$ java -cp jigg-0.6.jar jigg.pipeline.Pipeline -annotators "corenlp[tokenize,ssplit],berkeleyparser"
+$ java -cp "*" jigg.pipeline.Pipeline -annotators "corenlp[tokenize,ssplit],berkeleyparser"
 [main] INFO edu.stanford.nlp.pipeline.StanfordCoreNLP - Adding annotator tokenize
 ...
-> 
+>
 ```
 
 Let's write some sentences in a line.
@@ -68,10 +68,10 @@ Let's write some sentences in a line.
     </sentences>
   </document>
 </root>
-> 
+>
 ```
 
-(Currently) the results are always obtained in a XML format. One can see that Jigg automatically detects sentence boundaries (there are two sentences), and performs tokenization (e.g, period . is recognized as a single word), on which parse tree (`<parse>`) is built.
+The default output format of Jigg is XML (Jigg also supports JSON output, but it still has some issues). One can see that Jigg automatically detects sentence boundaries (there are two sentences), and performs tokenization (e.g, period . is recognized as a single word), on which parse tree (`<parse>`) is built.
 
 In Jigg, each NLP tool such as `corenlp` (Stanford CoreNLP) or `berkeleyparser` (Berkeley parser) is called annotator. Jigg helps to construct easily a NLP pipeline by combining several annotators. In the example above, the pipeline is constructed by combining Stanford CoreNLP (which performs tokenization and sentence-splitting) and Berkeley parser (which performs parsing on tokenized sentences).
 
@@ -80,26 +80,27 @@ In Jigg, each NLP tool such as `corenlp` (Stanford CoreNLP) or `berkeleyparser` 
 Basic usage is described in the help message:
 
 ```bash
-$ java -cp jigg-0.6.jar jigg.pipeline.Pipeline -help
+$ java -cp "*" jigg.pipeline.Pipeline -help
 Usage:
-  annotators                     < str>: List of annotator names, e.g., corenlp[tokenize,ssplit],berkeleyparser (required) []
+  outputFormat                   < str>: Output format, [xml/json]. Default value is 'xml'. [xml]
+  annotators                     < str>: List of annotator names, e.g., corenlp[tokenize,ssplit],berkeleyparser (required) [ssplit,kuromoji,jaccg]
+  checkRequirement               < str>: Check requirement, [true/false/warn]. Default value is 'true'. [true]
   file                           < str>: Input file; if omitted, read from stdin []
   props                          < str>: Property file []
   nThreads                       < int>: Number of threads for parallel annotation (use all if <= 0) [-1]
-  output                         < str>: Output file; if omitted, `file`.xml is used. Gzipped if suffix is .gz []
+  output                         < str>: Output file; if omitted, `file`.xml is used. Gzipped if suffix is .gz. If JSON mode is selected, suffix is .json []
   customAnnotatorClass           < str>: You can add an abbreviation for a custom annotator class with "-customAnnotatorClass.xxx path.package" []
   help                           < str>: Print this message and descriptions of specified annotators, e.g., -help ssplit,mecab [true]
 
 Currently the annotators listed below are installed. See the detail of each annotator with "-help annotator_name".
 
-  mecab, ssplit, jaccg, cabocha, spaceTokenize, dsplit, knp, knpDoc, juman
-  kuromoji, berkeleyparser, corenlp
+  mecab, ssplit, jaccg, cabocha, berkeleyparser, spaceTokenize, kuromoji, syntaxnetpos, dsplit, knp, corenlp, knpDoc, juman, syntaxnetparse, syntaxnet
 ```
 
 Some annotators, such as mecab, jaccg, kuromoji, etc are specific for Japanese processing. As shown here, more specific description for each annotator is described by giving argument to "-help" option:
 
 ```bash
-$ java -cp jigg-0.6.jar jigg.pipeline.Pipeline -help berkeleyparser
+$ java -cp "*" jigg.pipeline.Pipeline -help berkeleyparser
 ...
 berkeleyparser:
   requires                             : [Tokenize]
@@ -130,7 +131,7 @@ Here, `requires` and `reqruiementsSatisfied` describe the role of this annotator
 Jigg checks with these kinds of information whether the given pipeline can be performed safely. For example, the following command will be failed:
 
 ```bash
-$ java -cp jigg-0.6.jar jigg.pipeline.Pipeline -annotators berkeleyparser
+$ java -cp "*" jigg.pipeline.Pipeline -annotators berkeleyparser
 annotator berkeleyparser requires Tokenize
   annotators                     < str>: List of annotator names, e.g., corenlp[tokenize,ssplit],berkeleyparser (required) [berkeleyparser]
 ```
@@ -150,17 +151,17 @@ John Blair & Co. is close to an agreement to sell its TV station advertising rep
 
 Then run Jigg as follows:
 ```bash
-$ java -cp jigg-0.6.jar jigg.pipeline.Pipeline -annotators "corenlp[tokenize,ssplit],berkeleyparser" -file input.txt
+$ java -cp "*" jigg.pipeline.Pipeline -annotators "corenlp[tokenize,ssplit],berkeleyparser" -file input.txt
 ```
 
 Or you can run Jigg in pipe:
 ```bash
-$ cat input.txt | java -cp jigg-0.6.jar jigg.pipeline.Pipeline -annotators "corenlp[tokenize,ssplit],berkeleyparser" > output.xml
+$ cat input.txt | java -cp "*" jigg.pipeline.Pipeline -annotators "corenlp[tokenize,ssplit],berkeleyparser" > output.xml
 ```
 
 Parallelization can be prohibited by giving `-nThreads 1` option:
 ```bash
-$ cat input.txt | java -cp jigg-0.6.jar jigg.pipeline.Pipeline -annotators "corenlp[tokenize,ssplit],berkeleyparser" -nThreads 1 > output.xml
+$ cat input.txt | java -cp "*" jigg.pipeline.Pipeline -annotators "corenlp[tokenize,ssplit],berkeleyparser" -nThreads 1 > output.xml
 ```
 
 In default, Jigg tries to use as many threads as the machine can use. On my laptop (with 4 cores), when annotating about 1000 sentences, annotation with `-nThreads 1` takes about 154 seconds, which is reduced to 79 seconds with parallel annotaion.
@@ -175,13 +176,13 @@ $ wget http://nlp.stanford.edu/software/stanford-english-corenlp-2016-01-10-mode
 Then, a pipeline to the coreference resolution, for example, can be constructed as follows:
 
 ```bash
-$ java -cp jigg-0.6.jar:stanford-english-corenlp-2016-01-10-models.jar jigg.pipeline.Pipeline -annotators "corenlp[tokenize,ssplit,parse,lemma,ner,dcoref]"
+$ java -cp "*" jigg.pipeline.Pipeline -annotators "corenlp[tokenize,ssplit,parse,lemma,ner,dcoref]"
 ```
 
 This is the usage of Jigg just as a wrapper of Stanford CoreNLP, which may not be interesting. More interesting example is to insert the Berkeley parser into a pipeline of Stanford CoreNLP:
 
 ```bash
-$ java -cp jigg-0.6.jar:stanford-english-corenlp-2016-01-10-models.jar jigg.pipeline.Pipeline -annotators "corenlp[tokenize,ssplit],berkeleyparser,corenlp[lemma,ner,dcoref]"
+$ java -cp "*" jigg.pipeline.Pipeline -annotators "corenlp[tokenize,ssplit],berkeleyparser,corenlp[lemma,ner,dcoref]"
 ```
 
 This command replaces the parser component in a CoreNLP pipeline with Berkeley parser. Jigg alleviates to include a NLP tool into a pipeline. In future Jigg will support many existing NLP tools, and the goal is to provide a platform on which a user can freely connect the tools to construct several NLP pipelines.
@@ -193,7 +194,7 @@ Jigg pipeline can also be incorporated another Java or Scala project. The easies
 In Scala, add the following line in the project `build.sbt`.
 
 ```scala
-libraryDependencies += "com.github.mynlp" % "jigg" % "0.6"
+libraryDependencies += "com.github.mynlp" % "jigg" % "0.6.1"
 ```
 
 In Java, add the following lines on `pom.xml`:
@@ -203,7 +204,7 @@ In Java, add the following lines on `pom.xml`:
   <dependency>
     <groupId>com.github.mynlp</groupId>
     <artifactId>jigg</artifactId>
-    <version>0.6</version>
+    <version>0.6.1</version>
   </dependency>
 </dependencies>
 ```
@@ -262,3 +263,8 @@ TBA
 ## Implementing new annotator
 
 TBA
+
+## Release note
+
+- 0.6.1: New annotators (syntaxnet, coref in corenlp, etc); JSON output (still incomplete); bug fixes.
+- 0.6.0: The initial official release.
