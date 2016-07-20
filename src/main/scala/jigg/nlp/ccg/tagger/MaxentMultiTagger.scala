@@ -29,7 +29,7 @@ class MaxEntMultiTagger(
   val classifier: LogLinearClassifier[Int],
   val dict: Dictionary) {
 
-  val reusableFeatureIdxs = new ArrayBuffer[Int]
+  // val reusableFeatureIdxs = new ArrayBuffer[Int]
 
   trait Instance {
     def items:Array[Example[Int]]
@@ -47,15 +47,17 @@ class MaxEntMultiTagger(
     TestInstance(getItems(features, candidateLabels, { f => indexer.get(f) }))
 
   def getItems(features:Array[UF], candidateLabels:Array[Int], f2index:(LF => Int)): Array[Example[Int]] = candidateLabels map { label =>
-    //val indexes = new Array[Int](features.size)
-    reusableFeatureIdxs.clear
+    val indexes = new ArrayBuffer[Int](features.size)
+    // reusableFeatureIdxs.clear
     var i = 0
     while (i < features.size) {
       val f = f2index(features(i).assignLabel(label))
-      if (f >= 0) reusableFeatureIdxs += f // discard -1 = unknown features
+      // if (f >= 0) reusableFeatureIdxs += f // discard -1 = unknown features
+      if (f > 0) indexes += f
       i += 1
     }
-    Example(reusableFeatureIdxs.toArray, label)
+    // Example(reusableFeatureIdxs.toArray, label)
+    Example(indexes.toArray, label)
   }
   def candSeq(sentence:TaggedSentence, beta:Double, maxK: Int): Array[Seq[Category]] =
     (0 until sentence.size).map { i =>
