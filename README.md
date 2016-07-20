@@ -9,6 +9,8 @@ Jigg is a natural language processing pipeline framework on JVM languages (mainl
 
 Jigg is distributed under the [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.html).
 
+The core ideas and software designs are described in detail in [our paper](http://mynlp.github.io/jigg/data/jigg-acl2016.pdf).
+
 ## Install
 
 There is no need to install. Just download the package!
@@ -263,6 +265,12 @@ TBA
 ## Implementing new annotator
 
 TBA
+
+## Citating in papers
+
+If you use any of the parser models in research publications, please cite:
+
+> Hiroshi Noji and Yusuke Miayo. 2016. [Jigg: A Framework for an Easy Natural Language Processing Pipeline](http://mynlp.github.io/jigg/data/jigg-acl2016.pdf). In Proceedings of the 54th Annual Meeting of the Association for Computational Linguistics: System Demonstrations.
 
 ## Release note
 
