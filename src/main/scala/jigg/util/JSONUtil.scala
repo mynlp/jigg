@@ -5,7 +5,7 @@ import java.io._
 import scala.xml._
 
 import scala.io.Source
-import scala.collection.mutable.{StringBuilder, ArrayBuffer}
+import scala.collection.mutable.{ArrayBuffer, StringBuilder}
 
 import org.json4s._
 import org.json4s.DefaultFormats
@@ -18,18 +18,55 @@ object JSONUtil {
 
   private def toJSONFromNode(node: Node): String = {
     val sb = new StringBuilder
-
+    val escapedsb = new StringBuilder
+    val returnsb = new StringBuilder
     sb.append('{')
     sb.append(List("\".tag\":\"",node.label,"\",").mkString)
     sb.append("\".child\":")
     sb.append("[")
-    
     sb.append(serializing(node))
-
     sb.append("]")
     sb.append("}")
+    val returnString = pretty(render(parse(escapeString(sb.toString,escapedsb).toString)))
+    returnString
+  }
 
-    pretty(render(parse(sb.toString)))
+  /**
+    * Append escaped string as 's'.
+    * This method is borrowed from xml.Utility.escape
+    */
+  final def escapeString(text: String, s: StringBuilder): StringBuilder = {
+    val length = text.length
+    var pos = 0
+    while (pos < length){
+      text.charAt(pos) match {
+        case '\\' => s.append("\\\\")
+        case c => if (c >= ' ') s.append(c)
+      }
+      pos += 1
+    }
+    s
+  }
+
+  final def unEscapeString(text: String, s: StringBuilder): StringBuilder = {
+    val length = text.length
+    val backslash = "\\\\"
+    var pos = 0
+    while (pos < length){
+      val head = text.substring(pos, length).indexOf(backslash)
+      println(head)
+      if (head < 0) {
+        s.append(text.substring(pos, length))
+        pos = length
+      }
+      else {
+        val temp = text.substring(pos, head)
+        s.append(temp)
+        s.append('\\')
+        pos += head + backslash.length
+      }
+    }
+    s
   }
 
   private def serializing[T <: Node](x: T): StringBuilder = {
