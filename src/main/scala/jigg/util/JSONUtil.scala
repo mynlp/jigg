@@ -27,46 +27,7 @@ object JSONUtil {
     sb.append(serializing(node))
     sb.append("]")
     sb.append("}")
-    val returnString = pretty(render(parse(escapeString(sb.toString,escapedsb).toString)))
-    returnString
-  }
-
-  /**
-    * Append escaped string as 's'.
-    * This method is borrowed from xml.Utility.escape
-    */
-  final def escapeString(text: String, s: StringBuilder): StringBuilder = {
-    val length = text.length
-    var pos = 0
-    while (pos < length){
-      text.charAt(pos) match {
-        case '\\' => s.append("\\\\")
-        case c => if (c >= ' ') s.append(c)
-      }
-      pos += 1
-    }
-    s
-  }
-
-  final def unEscapeString(text: String, s: StringBuilder): StringBuilder = {
-    val length = text.length
-    val backslash = "\\\\"
-    var pos = 0
-    while (pos < length){
-      val head = text.substring(pos, length).indexOf(backslash)
-      println(head)
-      if (head < 0) {
-        s.append(text.substring(pos, length))
-        pos = length
-      }
-      else {
-        val temp = text.substring(pos, head)
-        s.append(temp)
-        s.append('\\')
-        pos += head + backslash.length
-      }
-    }
-    s
+    pretty(render(parse(sb.toString.replace("\\","\\\\"))))
   }
 
   private def serializing[T <: Node](x: T): StringBuilder = {
