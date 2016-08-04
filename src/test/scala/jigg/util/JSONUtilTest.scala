@@ -5,44 +5,60 @@ package jigg.pipeline
 import org.scalatest.FunSuite
 import org.scalatest.Matchers._
 
-class JSONUtiltest extends FunSuite{
+class JSONUtilSpec extends FunSuite{
   import JSONUtil._
   import scala.xml._
   import org.json4s._
   import org.json4s.jackson.JsonMethods._
 
-  val node = 
+  val testNode =
     <root>
       <document id={"d0"}>
-        <sentences>
-          <sentence characterOffsetEnd={"10"} characterOffsetBegin={"0"} id={"s0"}>
-            Test Node
-            <tokens annotators={"corenlp"}>
-              <token form={"Test"} id={"t0"} characterOffsetBegin={"0"} characterOffsetEnd={"5"}/>
-              <token form={"Node"} id={"t1"} characterOffsetBegin={"5"} characterOffsetEnd={"10"}/>
-            </tokens>
-          </sentence>
-        </sentences>
+        Test Node
       </document>
     </root>
+  val goldJSONString =
+    """
+      {
+        ".tag" : "root",
+        ".child" : [ {
+          ".tag" : "document",
+          "id" : "d0",
+          "text" : "Test Node"
+        } ]
+      }
+    """
+  val goldJSON = parse(goldJSONString.stripMargin)
 
+  /**
+    * For handling a backslash.
+    */
+  val testNodeForBackslash =
+    <root>
+      <document id={"d0\\N"}>
+        Test Node
+      </document>
+    </root>
+  val goldJSONForBackSlashString =
+    """{".tag":"root",".child":
+      [{".tag":"document","id":"d0\\N","text":"Test Node"}
+      ]
+    }"""
+  val goldJSONForBackSlash = parse(goldJSONForBackSlashString.stripMargin)
   /**
    * Unit testing toJSON
    */
   test("toJSON should generate formatted String object from scala.xml.Node"){
-    JSONUtil.toJSON(node).getClass should be (classOf[String])
+    parse(JSONUtil.toJSON(testNode)) should be (goldJSON)
+    parse(JSONUtil.toJSON(testNodeForBackslash)) should be (goldJSONForBackSlash)
   }
-
   /**
    * Unit testing JSON to XML
    */
   test("toXML should generate xml.Node"){
-    val jsonString = JSONUtil.toJSON(node)
-    val jsonValue = parse(jsonString)
-    val xmlNode = JSONUtil.toXML(jsonValue)
-
-    jsonString.getClass should be (classOf[String])
-    jsonValue.isInstanceOf[JValue] should be (true)
-    xmlNode.isInstanceOf[Node] should be (true)
+    val xmlFromJSON = JSONUtil.toXML(goldJSON)
+    val xmlFromJSONWithBackslash = JSONUtil.toXML(goldJSONForBackSlash)
+    xmlFromJSON should be (<root><document id={"d0"}>{"Test Node"}</document></root>)
+    xmlFromJSONWithBackslash should be (<root><document id={"d0\\N"}>{"Test Node"}</document></root>)
   }
 }

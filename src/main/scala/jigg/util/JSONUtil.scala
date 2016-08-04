@@ -5,7 +5,7 @@ import java.io._
 import scala.xml._
 
 import scala.io.Source
-import scala.collection.mutable.{StringBuilder, ArrayBuffer}
+import scala.collection.mutable.{ArrayBuffer, StringBuilder}
 
 import org.json4s._
 import org.json4s.DefaultFormats
@@ -18,18 +18,19 @@ object JSONUtil {
 
   private def toJSONFromNode(node: Node): String = {
     val sb = new StringBuilder
-
+    val escapedsb = new StringBuilder
+    val returnsb = new StringBuilder
     sb.append('{')
     sb.append(List("\".tag\":\"",node.label,"\",").mkString)
     sb.append("\".child\":")
     sb.append("[")
-    
     sb.append(serializing(node))
-
     sb.append("]")
     sb.append("}")
-
-    pretty(render(parse(sb.toString)))
+    // The "parse" method can't handle the string with a single backslash,
+    // because the "JString" class can't accept such kind of string.
+    // To escape this issue, we replace "\\" -> "\\\\" before throwing it to the "parse" method.
+    pretty(render(parse(sb.toString.replace("\\","\\\\"))))
   }
 
   private def serializing[T <: Node](x: T): StringBuilder = {
