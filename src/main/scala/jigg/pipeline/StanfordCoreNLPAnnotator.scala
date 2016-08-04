@@ -59,7 +59,7 @@ class StanfordCoreNLPAnnotator(
 
   val coreNLP = new StanfordCoreNLP(coreNLPProps, false)
 
-  val annotators = // annotatorNames map (coreNLP.getPool.get)
+  val annotators: Seq[core.Annotator] = // annotatorNames map (coreNLP.getPool.get)
     annotatorNames map StanfordCoreNLP.getExistingAnnotator
 
   val requirementMap: Map[Requirement, CoreNLPRequirement] = Map(
