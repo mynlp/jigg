@@ -17,7 +17,7 @@ There is no need to install. Just download the package!
 
 ```bash
 $ wget https://github.com/mynlp/jigg/releases/download/v-0.6.1/jigg-0.6.1.tar.gz
-$ tar xvf jigg-0.6.1.tar.gz
+$ tar xzf jigg-0.6.1.tar.gz
 $ cd jigg-0.6.1
 ```
 
