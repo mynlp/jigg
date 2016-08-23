@@ -81,6 +81,8 @@ object JSONUtil {
     generateXML(jsonList)
   }
 
+  private val unescapeMap = Utility.Escapes.escMap map { case (c, s) => s -> c.toString}
+
   private def generateXML(x:Map[String, Any]): Node = {
 
     val tagString = x get ".tag" // Option[Any], but this should always exist.
@@ -90,10 +92,18 @@ object JSONUtil {
         .map(generateXML) } getOrElse List()
     val attrs: Map[String, String] =
       x.filter { case (k, v) => k != ".tag" && k != "text" && k != ".child" }
-         .map { case (k, v) => (k, v.toString) }
+        // Since the `&` character contained in an escaped string, e.g. `&gt;`,
+        // is automatically escaped, the returned nodes is not semantically equal
+        // to the original nodes.
+        // To avoid this issues, all such strings is unescaped before throw into
+        // the XMLUtil.addAttributes method.
+        .map { case (k, v) =>
+        (k, unescapeMap.foldLeft(v.toString){(text, pair) => text.replaceAll(pair._1, pair._2)})}
 
     val node = textString match {
-      case Some(text) => <xml>{text}</xml>
+      // Same as generating the `attrs` map.
+      case Some(text) =>
+        <xml>{unescapeMap.foldLeft(text.toString){(text, pair) => text.replaceAll(pair._1, pair._2)}}</xml>
       case None => <xml/>
     }
 

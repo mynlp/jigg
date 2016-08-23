@@ -24,6 +24,7 @@ import scala.xml.{XML, Node}
 import scala.collection.JavaConverters._
 import jigg.util.LogUtil.{ track, multipleTrack }
 import jigg.util.{PropertiesUtil => PU, IOUtil, XMLUtil, JSONUtil}
+import org.json4s.jackson.JsonMethods
 
 class Pipeline(val properties: Properties = new Properties) extends PropsHolder {
 
@@ -38,6 +39,7 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
   @Prop(gloss="Number of threads for parallel annotation (use all if <= 0)") var nThreads = -1
   @Prop(gloss="Output format, [xml/json]. Default value is 'xml'.") var outputFormat = "xml"
   @Prop(gloss="Check requirement, [true/false/warn]. Default value is 'true'.") var checkRequirement = "true"
+  @Prop(gloss="Input format, [text/xml/json]. Default value is 'text'.") var inputFormat = "text"
 
   // A hack to prevent throwing an exception when -help is given but -annotators is not given.
   // annotators is required prop so it has to be non-empty, but it is difficult to tell that if -help is given it is not necessary.
@@ -148,15 +150,13 @@ Currently the annotators listed below are installed. See the detail of each anno
         annotatorList.foldLeft(RequirementSet()) { (satisifedSofar, annotator) =>
           try annotator.checkRequirements(satisifedSofar)
           catch { case e: RequirementError =>
-            println("***** WARNING *****")
-            println(e.getMessage)
-            println("*******************")
+            System.out.println(s"[warn] %s".format(e.getMessage))
             satisifedSofar
           }
         }
       }
       case "false" => {
-        println("Skip `checkRequirements` for all annotators.")
+        System.out.println("[warn] SKIP `checkRequirements` for all selected annotators.")
       }
       case _ =>{
         argumentError("checkRequirement")
@@ -312,8 +312,8 @@ Currently the annotators listed below are installed. See the detail of each anno
       var in = readLine
       while (in != "") {
         val xml = annotate(rootXML(in), annotators, false)
-        prop("outputFormat") match {
-          case Some(x) if x == "json" => 
+        outputFormat match {
+          case "json" =>
             val jsonString = JSONUtil.toJSON(xml)
             println(jsonString)
           case _ => 
@@ -329,8 +329,14 @@ Currently the annotators listed below are installed. See the detail of each anno
     f(annotatorList)
   }
 
-  def annotate(reader: BufferedReader, verbose: Boolean = false): Node =
-    annotateText(IOUtil.inputIterator(reader).mkString("\n"), verbose)
+  def annotate(reader: BufferedReader, verbose: Boolean = false): Node = inputFormat match {
+    case "text" => annotateText (IOUtil.inputIterator (reader).mkString ("\n"), verbose)
+    case "xml" =>
+      process { annotators => annotate(XMLUtil.unFormattedXML(XML.load(reader)), annotators, verbose) }
+    case "json" =>
+      process { annotators => annotate(JSONUtil.toXML(JsonMethods.parse(reader)), annotators, verbose) }
+    case _ => argumentError("inputFormat")
+  }
 
   def annotateText(text: String, verbose: Boolean = false): Node = process { annotators =>
     val root = rootXML(text) // IOUtil.inputIterator(reader).mkString("\n"))
