@@ -136,33 +136,28 @@ Currently the annotators listed below are installed. See the detail of each anno
   def createAnnotatorList(): List[Annotator] = {
     val annotatorList =
       annotatorNames.map { getAnnotator(_) }.toList
-    
-    checkRequirement match {
-      case "true" =>{
-        annotatorList.foldLeft(RequirementSet()) { (satisifedSofar, annotator) =>
-          try annotator.checkRequirements(satisifedSofar)
-          catch { case e: RequirementError =>
-            argumentError("annotators", e.getMessage)
-          }
-        }
+
+    def check(procError: (RequirementError, RequirementSet) => RequirementSet) =
+      annotatorList.foldLeft(RequirementSet()) { (satisfiedSoFar, annotator) =>
+        try annotator.checkRequirements(satisfiedSoFar)
+        catch { case e: RequirementError => procError(e, satisfiedSoFar)}
       }
-      case "warn" => {
-        annotatorList.foldLeft(RequirementSet()) { (satisifedSofar, annotator) =>
-          try annotator.checkRequirements(satisifedSofar)
-          catch { case e: RequirementError =>
-            System.out.println(s"[warn] %s".format(e.getMessage))
-            satisifedSofar
-          }
-        }
+
+    checkRequirement match {
+      case "true" => check { (e, satisfiedSoFar) =>
+        argumentError("annotators", e.getMessage)
+      }
+      case "warn" => check { (e, satisfiedSoFar) =>
+        System.out.println(s"[warn] %s".format(e.getMessage))
+        satisfiedSoFar
       }
       case "false" => {
-        System.out.println("[warn] SKIP `checkRequirements` for all selected annotators.")
+        System.err.println(s"[warn] SKIP `checkRequirements` for all selected annotators.")
       }
       case _ =>{
         argumentError("checkRequirement")
       }
     }
-
     annotatorList foreach (_.init)
     annotatorList
   }

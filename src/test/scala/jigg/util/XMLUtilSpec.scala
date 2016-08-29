@@ -67,7 +67,7 @@ class XMLUtilSpec extends FlatSpec with Matchers {
     val printer = new scala.xml.PrettyPrinter(500, 2)
     val xml = <sentences><sentence>First sentence</sentence><sentence>Second sentence</sentence></sentences>
     val formattedNodeString = printer.format(xml)
-    val childNode = getChildNode(scala.xml.XML.loadString(formattedNodeString))
+    val childNode = getNonEmptyChild(scala.xml.XML.loadString(formattedNodeString))
 
     childNode should be (
       scala.xml.NodeSeq.fromSeq(Seq(<sentence>First sentence</sentence>, <sentence>Second sentence</sentence>))

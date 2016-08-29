@@ -119,13 +119,13 @@ object XMLUtil {
   def findAllSub(node: Node, that: String): java.util.List[Node] = node \\ that
 
   def hasChild(nodes: NodeSeq): Boolean = nodes match {
-    case x: Elem => getChildNode(x).length > 0
+    case x: Elem => getNonEmptyChild(x).length > 0
     case _ => nodes forall hasChild
   }
 
-  def getChildNode(nodes: NodeSeq): NodeSeq = nodes match {
+  def getNonEmptyChild(nodes: NodeSeq): NodeSeq = nodes match {
     case x: Elem => x.child filterNot (_.isAtom)
-    case x => (x.map(getChildNode(_))).flatten
+    case x => (x.map(getNonEmptyChild(_))).flatten
   }
 
   def getAttributionList(node: Node): Seq[(String, String)] = (
@@ -141,7 +141,7 @@ object XMLUtil {
     * To avoid this issue, we create a new XML object using by the XMLUtil.getChildNode method.
     */
   def unFormattedXML(node: Node): Node = {
-    val childNode = getChildNode(node)
+    val childNode = getNonEmptyChild(node)
     def recurse(nodes: NodeSeq): NodeSeq = nodes map { n =>
       val text = XMLUtil.text(n)
       // To maintain the original text, we define an new node.
@@ -150,10 +150,10 @@ object XMLUtil {
         case t => <xml>{t}</xml>
       }
       val children = n match {
-        case n if getChildNode(n).filterNot(x => hasChild(x)).length == 0 =>
-          recurse(getChildNode(n))
+        case n if getNonEmptyChild(n).filterNot(x => hasChild(x)).length == 0 =>
+          recurse(getNonEmptyChild(n))
         case n =>
-          getChildNode(n).filterNot(x => hasChild(x))
+          getNonEmptyChild(n).filterNot(x => hasChild(x))
       }
       addChild(newNode.copy(label = n.label, attributes = n.attributes), children)
     }
