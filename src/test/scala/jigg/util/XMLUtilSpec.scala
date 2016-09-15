@@ -86,12 +86,14 @@ class XMLUtilSpec extends FlatSpec with Matchers {
                 <token form="First"/>
                 <token form="sentence"/>
               </tokens>
+              <NEs/>
             </sentence>
             <sentence>Second sentence
               <tokens>
                 <token form="Second"/>
                 <token form="sentence"/>
               </tokens>
+              <NEs/>
             </sentence>
           </sentences>
         </document>
@@ -101,7 +103,9 @@ class XMLUtilSpec extends FlatSpec with Matchers {
 
     val unFormattedNode = unFormattedXML(formattedNode)
 
-    formattedNode should not be (<root><document><sentences><sentence>First sentence<tokens><token form="First"/><token form="sentence"/></tokens></sentence><sentence>Second sentence<tokens><token form="Second"/><token form="sentence"/></tokens></sentence></sentences></document></root>)
-    unFormattedNode should be (<root><document><sentences><sentence>First sentence<tokens><token form="First"/><token form="sentence"/></tokens></sentence><sentence>Second sentence<tokens><token form="Second"/><token form="sentence"/></tokens></sentence></sentences></document></root>)
+    println(printer.format(unFormattedNode))
+
+    formattedNode should not be (<root><document><sentences><sentence>First sentence<tokens><token form="First"/><token form="sentence"/></tokens><NEs/></sentence><sentence>Second sentence<tokens><token form="Second"/><token form="sentence"/></tokens><NEs/></sentence></sentences></document></root>)
+    unFormattedNode should be (<root><document><sentences><sentence>First sentence<tokens><token form="First"/><token form="sentence"/></tokens><NEs/></sentence><sentence>Second sentence<tokens><token form="Second"/><token form="sentence"/></tokens><NEs/></sentence></sentences></document></root>)
   }
 }
