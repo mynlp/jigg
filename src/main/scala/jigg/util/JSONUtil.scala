@@ -36,7 +36,7 @@ object JSONUtil {
   private def serializing[T <: Node](x: T): StringBuilder = {
     val subsb = new StringBuilder
     if(XMLUtil.hasChild(x)){
-      val childNode = XMLUtil.getChildNode(x)
+      val childNode = XMLUtil.getNonEmptyChild(x)
       var prefix = ""
       for (i <- childNode){
         val retsb = serializing(i)
@@ -81,8 +81,17 @@ object JSONUtil {
     generateXML(jsonList)
   }
 
-  private def generateXML(x:Map[String, Any]): Node = {
+  // Since the `&` character contained in an escaped string, e.g. `&gt;`,
+  // is automatically escaped, the returned nodes is not semantically equal
+  // to the original nodes.
+  // To avoid this issues, all such strings is unescaped before throw into
+  // the XMLUtil.addAttributes method.
+  private def replaceAllEscape(x: String): String = {
+    val unescapeMap = Utility.Escapes.escMap map { case (c, s) => s -> c.toString}
+    unescapeMap.foldLeft(x) { (text, pair) => text.replaceAll(pair._1,pair._2)}
+  }
 
+  private def generateXML(x:Map[String, Any]): Node = {
     val tagString = x get ".tag" // Option[Any], but this should always exist.
     val textString = x get "text" // This might be None.
     val children: List[Node] =
@@ -90,10 +99,11 @@ object JSONUtil {
         .map(generateXML) } getOrElse List()
     val attrs: Map[String, String] =
       x.filter { case (k, v) => k != ".tag" && k != "text" && k != ".child" }
-         .map { case (k, v) => (k, v.toString) }
+        .map { case (k, v) => (k, replaceAllEscape(v.toString))}
 
     val node = textString match {
-      case Some(text) => <xml>{text}</xml>
+      case Some(text) =>
+        <xml>{replaceAllEscape(text.toString)}</xml>
       case None => <xml/>
     }
 

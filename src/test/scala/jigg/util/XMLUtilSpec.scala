@@ -62,4 +62,48 @@ class XMLUtilSpec extends FlatSpec with Matchers {
     newXml should be (
       <sentence><dependencies type="basic"/><dependencies type="collapsed"/></sentence>)
   }
+
+  "getChildNode" should "eliminate an empty element from formatted node" in {
+    val printer = new scala.xml.PrettyPrinter(500, 2)
+    val xml = <sentences><sentence>First sentence</sentence><sentence>Second sentence</sentence></sentences>
+    val formattedNodeString = printer.format(xml)
+    val childNode = getNonEmptyChild(scala.xml.XML.loadString(formattedNodeString))
+
+    childNode should be (
+      scala.xml.NodeSeq.fromSeq(Seq(<sentence>First sentence</sentence>, <sentence>Second sentence</sentence>))
+    )
+  }
+
+  "unFormattedXML" should "create a new XML object not containing empty elements" in {
+    import scala.xml.{XML, PrettyPrinter}
+    val printer = new PrettyPrinter(500, 2)
+    val xml =
+      <root>
+        <document>
+          <sentences>
+            <sentence>First sentence
+              <tokens>
+                <token form="First"/>
+                <token form="sentence"/>
+              </tokens>
+              <NEs/>
+            </sentence>
+            <sentence>Second sentence
+              <tokens>
+                <token form="Second"/>
+                <token form="sentence"/>
+              </tokens>
+              <NEs/>
+            </sentence>
+          </sentences>
+        </document>
+      </root>
+    val formattedNodeString = printer.format(xml)
+    val formattedNode = XML.loadString(formattedNodeString)
+
+    val unFormattedNode = unFormattedXML(formattedNode)
+
+    formattedNode should not be (<root><document><sentences><sentence>First sentence<tokens><token form="First"/><token form="sentence"/></tokens><NEs/></sentence><sentence>Second sentence<tokens><token form="Second"/><token form="sentence"/></tokens><NEs/></sentence></sentences></document></root>)
+    unFormattedNode should be (<root><document><sentences><sentence>First sentence<tokens><token form="First"/><token form="sentence"/></tokens><NEs/></sentence><sentence>Second sentence<tokens><token form="Second"/><token form="sentence"/></tokens><NEs/></sentence></sentences></document></root>)
+  }
 }

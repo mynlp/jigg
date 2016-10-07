@@ -1,0 +1,23 @@
+{
+  ".tag" : "root",
+  ".child" : [ {
+    ".tag" : "document",
+    "id" : "d0",
+    ".child" : [ {
+      ".tag" : "sentences",
+      ".child" : [ {
+        ".tag" : "sentence",
+        "text" : "自転車で走っている少女を見た",
+        "id" : "s0",
+        "characterOffsetBegin" : "0",
+        "characterOffsetEnd" : "14"
+      }, {
+        ".tag" : "sentence",
+        "text" : "テレビで走っている少女を見た",
+        "id" : "s1",
+        "characterOffsetBegin" : "15",
+        "characterOffsetEnd" : "29"
+      } ]
+    } ]
+  } ]
+}

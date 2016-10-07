@@ -1,0 +1,35 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<root>
+  <document id="d0">
+    <sentences>
+      <sentence characterOffsetEnd="14" characterOffsetBegin="0" id="s0">
+        自転車で走っている少女を見た
+        <tokens annotators="kuromoji">
+          <token pron="ジテンシャ" yomi="ジテンシャ" lemma="自転車" cForm="*" cType="*" pos3="*" pos2="*" pos1="一般" pos="名詞" characterOffsetEnd="3" characterOffsetBegin="0" form="自転車" id="s0_0"/>
+          <token pron="デ" yomi="デ" lemma="で" cForm="*" cType="*" pos3="*" pos2="一般" pos1="格助詞" pos="助詞" characterOffsetEnd="4" characterOffsetBegin="3" form="で" id="s0_1"/>
+          <token pron="ハシッ" yomi="ハシッ" lemma="走る" cForm="連用タ接続" cType="五段・ラ行" pos3="*" pos2="*" pos1="自立" pos="動詞" characterOffsetEnd="6" characterOffsetBegin="4" form="走っ" id="s0_2"/>
+          <token pron="テ" yomi="テ" lemma="て" cForm="*" cType="*" pos3="*" pos2="*" pos1="接続助詞" pos="助詞" characterOffsetEnd="7" characterOffsetBegin="6" form="て" id="s0_3"/>
+          <token pron="イル" yomi="イル" lemma="いる" cForm="基本形" cType="一段" pos3="*" pos2="*" pos1="非自立" pos="動詞" characterOffsetEnd="9" characterOffsetBegin="7" form="いる" id="s0_4"/>
+          <token pron="ショージョ" yomi="ショウジョ" lemma="少女" cForm="*" cType="*" pos3="*" pos2="*" pos1="一般" pos="名詞" characterOffsetEnd="11" characterOffsetBegin="9" form="少女" id="s0_5"/>
+          <token pron="ヲ" yomi="ヲ" lemma="を" cForm="*" cType="*" pos3="*" pos2="一般" pos1="格助詞" pos="助詞" characterOffsetEnd="12" characterOffsetBegin="11" form="を" id="s0_6"/>
+          <token pron="ミ" yomi="ミ" lemma="見る" cForm="連用形" cType="一段" pos3="*" pos2="*" pos1="自立" pos="動詞" characterOffsetEnd="13" characterOffsetBegin="12" form="見" id="s0_7"/>
+          <token pron="タ" yomi="タ" lemma="た" cForm="基本形" cType="特殊・タ" pos3="*" pos2="*" pos1="*" pos="助動詞" characterOffsetEnd="14" characterOffsetBegin="13" form="た" id="s0_8"/>
+        </tokens>
+      </sentence>
+      <sentence characterOffsetEnd="29" characterOffsetBegin="15" id="s1">
+        テレビで走っている少女を見た
+        <tokens annotators="kuromoji">
+          <token pron="テレビ" yomi="テレビ" lemma="テレビ" cForm="*" cType="*" pos3="*" pos2="*" pos1="一般" pos="名詞" characterOffsetEnd="3" characterOffsetBegin="0" form="テレビ" id="s1_0"/>
+          <token pron="デ" yomi="デ" lemma="で" cForm="*" cType="*" pos3="*" pos2="一般" pos1="格助詞" pos="助詞" characterOffsetEnd="4" characterOffsetBegin="3" form="で" id="s1_1"/>
+          <token pron="ハシッ" yomi="ハシッ" lemma="走る" cForm="連用タ接続" cType="五段・ラ行" pos3="*" pos2="*" pos1="自立" pos="動詞" characterOffsetEnd="6" characterOffsetBegin="4" form="走っ" id="s1_2"/>
+          <token pron="テ" yomi="テ" lemma="て" cForm="*" cType="*" pos3="*" pos2="*" pos1="接続助詞" pos="助詞" characterOffsetEnd="7" characterOffsetBegin="6" form="て" id="s1_3"/>
+          <token pron="イル" yomi="イル" lemma="いる" cForm="基本形" cType="一段" pos3="*" pos2="*" pos1="非自立" pos="動詞" characterOffsetEnd="9" characterOffsetBegin="7" form="いる" id="s1_4"/>
+          <token pron="ショージョ" yomi="ショウジョ" lemma="少女" cForm="*" cType="*" pos3="*" pos2="*" pos1="一般" pos="名詞" characterOffsetEnd="11" characterOffsetBegin="9" form="少女" id="s1_5"/>
+          <token pron="ヲ" yomi="ヲ" lemma="を" cForm="*" cType="*" pos3="*" pos2="一般" pos1="格助詞" pos="助詞" characterOffsetEnd="12" characterOffsetBegin="11" form="を" id="s1_6"/>
+          <token pron="ミ" yomi="ミ" lemma="見る" cForm="連用形" cType="一段" pos3="*" pos2="*" pos1="自立" pos="動詞" characterOffsetEnd="13" characterOffsetBegin="12" form="見" id="s1_7"/>
+          <token pron="タ" yomi="タ" lemma="た" cForm="基本形" cType="特殊・タ" pos3="*" pos2="*" pos1="*" pos="助動詞" characterOffsetEnd="14" characterOffsetBegin="13" form="た" id="s1_8"/>
+        </tokens>
+      </sentence>
+    </sentences>
+  </document>
+</root>
