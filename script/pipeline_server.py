@@ -14,10 +14,17 @@ class Pipeline(object):
     def __init__(self, args):
         cmd = "java %s" % args
         logger.info(cmd)
-        
+        logger.info("Setting up a pipeline...")
+
         self.pipeline = pexpect.spawn(cmd)
-        self.pipeline.expect("> ", timeout=500)
-        logger.info("Model load done!")
+        try:
+            self.pipeline.expect("> ", timeout=500)
+        except pexpect.exceptions.EOF:
+            logger.error("Failed to set up the pipeline! Maybe the arguments given to jigg are corrupted?")
+            logger.error(self.pipeline.before)
+            exit(1)
+
+        logger.info(self.pipeline.before)
 
     def parse(self, text):
         logger.info(text)
@@ -26,11 +33,11 @@ class Pipeline(object):
                 self.pipeline.read_nonblocking (4000, 0.3)
             except pexpect.TIMEOUT:
                 break
-        
+
         self.pipeline.sendline(text)
 
         # How much time should we give the parser to parse it?
-        # the idea here is that you increase the timeout as a 
+        # the idea here is that you increase the timeout as a
         # function of the text's length.
         # anything longer than 5 seconds requires that you also
         # increase timeout=5 in jsonrpc.py
@@ -54,17 +61,10 @@ class Pipeline(object):
                     continue
             except pexpect.EOF:
                 break
-        
+
         logger.info("%s\n%s" % ('='*40, incoming))
 
-        # try:
-        #     results = parse_parser_results(incoming)
-        # except Exception, e:
-        #     if VERBOSE: 
-        #         logger.debug(traceback.format_exc())
-        #     raise e
-
-        start = incoming.find("<sentences>")
+        start = incoming.find("<root>")
         incoming = incoming[start:]
         return incoming
 
@@ -72,7 +72,7 @@ if __name__ == '__main__':
     """
     Example usage:
 
-    ./script/pipeline_server.py  -P "-Xmx4g -cp transccg-0.2.jar enju.pipeline.Pipeline -annotators ssplit,kuromoji -numKbest 3"
+    ./script/pipeline_server.py  -P "-Xmx4g -cp jigg-*.jar jigg.pipeline.Pipeline -annotators corenlp[tokenize,ssplit] -corenlp.tokenize.whitespace true"
     
     """
     
@@ -82,7 +82,7 @@ if __name__ == '__main__':
     parser.add_option('-H', '--host', default='127.0.0.1',
                       help='Host to serve on (default: 127.0.0.1. Use 0.0.0.0 to make public)')
     parser.add_option('-P', '--pipeline',
-                      help='arguments required to run transccg pipeline.')
+                      help='arguments required to run a jigg pipeline.')
     options, args = parser.parse_args()
 
     server = SimpleXMLRPCServer((options.host, int(options.port)), logRequests=True)
