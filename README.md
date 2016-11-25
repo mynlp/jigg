@@ -16,9 +16,9 @@ The core ideas and software designs are described in detail in [our paper](http:
 There is no need to install. Just download the package!
 
 ```bash
-$ wget https://github.com/mynlp/jigg/releases/download/v-0.6.1/jigg-0.6.1.tar.gz
-$ tar xzf jigg-0.6.1.tar.gz
-$ cd jigg-0.6.1
+$ wget https://github.com/mynlp/jigg/releases/download/v-0.6.2/jigg-0.6.2.tar.gz
+$ tar xzf jigg-0.6.2.tar.gz
+$ cd jigg-0.6.2
 ```
 
 ## Usage
@@ -196,7 +196,7 @@ Jigg pipeline can also be incorporated another Java or Scala project. The easies
 In Scala, add the following line in the project `build.sbt`.
 
 ```scala
-libraryDependencies += "com.github.mynlp" % "jigg" % "0.6.1"
+libraryDependencies += "com.github.mynlp" % "jigg" % "0.6.2"
 ```
 
 In Java, add the following lines on `pom.xml`:
@@ -206,7 +206,7 @@ In Java, add the following lines on `pom.xml`:
   <dependency>
     <groupId>com.github.mynlp</groupId>
     <artifactId>jigg</artifactId>
-    <version>0.6.1</version>
+    <version>0.6.2</version>
   </dependency>
 </dependencies>
 ```
@@ -274,5 +274,6 @@ If you use any of the parser models in research publications, please cite:
 
 ## Release note
 
+- 0.6.1: Bug fixes.
 - 0.6.1: New annotators (syntaxnet, coref in corenlp, etc); JSON output (still incomplete); bug fixes.
 - 0.6.0: The initial official release.
