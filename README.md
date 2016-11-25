@@ -99,7 +99,7 @@ Currently the annotators listed below are installed. See the detail of each anno
   mecab, ssplit, jaccg, cabocha, berkeleyparser, spaceTokenize, kuromoji, syntaxnetpos, dsplit, knp, corenlp, knpDoc, juman, syntaxnetparse, syntaxnet
 ```
 
-Some annotators, such as mecab, jaccg, kuromoji, etc are specific for Japanese processing. As shown here, more specific description for each annotator is described by giving argument to "-help" option:
+Some annotators, such as mecab, jaccg, kuromoji, etc. are specific for Japanese processing. As shown here, more specific description for each annotator is described by giving argument to `-help` option:
 
 ```bash
 $ java -cp "*" jigg.pipeline.Pipeline -help berkeleyparser
@@ -166,7 +166,7 @@ Parallelization can be prohibited by giving `-nThreads 1` option:
 $ cat input.txt | java -cp "*" jigg.pipeline.Pipeline -annotators "corenlp[tokenize,ssplit],berkeleyparser" -nThreads 1 > output.xml
 ```
 
-In default, Jigg tries to use as many threads as the machine can use. On my laptop (with 4 cores), when annotating about 1000 sentences, annotation with `-nThreads 1` takes about 154 seconds, which is reduced to 79 seconds with parallel annotaion.
+By default, Jigg tries to use as many threads as the machine can use. On my laptop (with 4 cores), when annotating about 1000 sentences, annotation with `-nThreads 1` takes about 154 seconds, which is reduced to 79 seconds with parallel annotation.
 
 #### Full pipeline
 
@@ -211,7 +211,7 @@ In Java, add the following lines on `pom.xml`:
 </dependencies>
 ```
 
-Jigg is written in Scala, so Scala is the most preferable choice for a programmatic usage. Jigg supports a very similar interface to Stanford CoreNLP:
+Jigg is written in Scala, so Scala is the most preferable choice for a programmatic usage. Jigg provides a very similar interface to Stanford CoreNLP:
 
 ```scala
 import jigg.pipeline.Pipeline
@@ -266,7 +266,7 @@ TBA
 
 TBA
 
-## Citating in papers
+## Citing in papers
 
 If you use any of the parser models in research publications, please cite:
 
