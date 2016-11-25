@@ -55,11 +55,11 @@ class StanfordCoreNLPAnnotator(
     p
   }
 
-  def supportedAnnotators = Seq("tokenize", "ssplit", "pos", "lemma", "ner", "parse", "depparse", "dcoref", "coref")
+  def supportedAnnotators = Seq("tokenize", "ssplit", "pos", "lemma", "ner", "regexner", "parse", "depparse", "dcoref", "coref")
 
   val coreNLP = new StanfordCoreNLP(coreNLPProps, false)
 
-  val annotators = // annotatorNames map (coreNLP.getPool.get)
+  val annotators: Seq[core.Annotator] = // annotatorNames map (coreNLP.getPool.get)
     annotatorNames map StanfordCoreNLP.getExistingAnnotator
 
   val requirementMap: Map[Requirement, CoreNLPRequirement] = Map(
@@ -95,8 +95,14 @@ class StanfordCoreNLPAnnotator(
 
   private val requiresByEach: Seq[Set[Requirement]] =
     convRequirements(annotators map (_.requires.asScala.toSet))
-  private val requirementsSatisfiedByEach: Seq[Set[Requirement]] =
-    convRequirements(annotators map (_.requirementsSatisfied.asScala.toSet))
+  private val requirementsSatisfiedByEach: Seq[Set[Requirement]] = {
+    def reqSet(a: core.Annotator): Set[core.Annotator.Requirement] = a match {
+      case a: core.TokensRegexNERAnnotator =>
+        Set(StanfordCoreNLPAnnotator.REGEX_REQUIREMENT)
+      case _ => a.requirementsSatisfied.asScala.toSet
+    }
+    convRequirements(annotators map reqSet)
+  }
 
   private def convRequirements(seq: Seq[Set[core.Annotator.Requirement]]):
       Seq[Set[Requirement]] = {
@@ -494,8 +500,9 @@ class StanfordCoreNLPAnnotator(
         tags(i - 1) != tags(i)
       }
 
-      val neSpans: Seq[(Int, Int)] = (0 until segments.size) filter {
-        i => tags(segments(i))._1 != "O"
+      val neSpans: Seq[(Int, Int)] = (0 until segments.size) filter { i =>
+        val t = tags(segments(i))._1
+        t != "O" && t != null
       } map { i =>
         val begin = segments(i)
         val end = i match {
@@ -748,6 +755,11 @@ object StanfordCoreNLPAnnotator extends AnnotatorCompanion[StanfordCoreNLPAnnota
 
   val R = Requirement
 
+  // This is an imaginary requirement for representing requirement satisfied by
+  // TokensRegexNERAnnotator. This is required because in the original class
+  // "satisfied" field is empty so we cannot know whether any annotation is performed.
+  val REGEX_REQUIREMENT = new core.Annotator.Requirement("JIGG_REGEX_REQUIREMENT")
+
   val requirementMap: Map[core.Annotator.Requirement, Seq[Requirement]] = Map(
     core.Annotator.TOKENIZE_REQUIREMENT -> Seq(R.Tokenize),
     // core.Annotator.CLEAN_XML_REQUIREMENT -> // unsupported
@@ -755,6 +767,7 @@ object StanfordCoreNLPAnnotator extends AnnotatorCompanion[StanfordCoreNLPAnnota
     core.Annotator.POS_REQUIREMENT -> Seq(R.POS),
     core.Annotator.LEMMA_REQUIREMENT -> Seq(R.Lemma),
     core.Annotator.NER_REQUIREMENT -> Seq(R.StanfordNER),
+    REGEX_REQUIREMENT -> Seq(R.StanfordNER),
     // core.Annotator.GENDER_REQUIREMENT -> // unsupported
     // core.Annotator.TRUECASE_REQUIREMENT -> // unsupported
     core.Annotator.PARSE_REQUIREMENT -> Seq(R.Parse),

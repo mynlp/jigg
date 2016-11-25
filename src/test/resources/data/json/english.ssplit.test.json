@@ -1,0 +1,23 @@
+{
+  ".tag" : "root",
+  ".child" : [ {
+    ".tag" : "document",
+    "id" : "d0",
+    ".child" : [ {
+      ".tag" : "sentences",
+      ".child" : [ {
+        ".tag" : "sentence",
+        "text" : "Alice asked her mother to cook a cake.",
+        "id" : "s0",
+        "characterOffsetBegin" : "0",
+        "characterOffsetEnd" : "38"
+      }, {
+        ".tag" : "sentence",
+        "text" : "Bob saw a girl in the garden with a telescope.",
+        "id" : "s1",
+        "characterOffsetBegin" : "39",
+        "characterOffsetEnd" : "85"
+      } ]
+    } ]
+  } ]
+}

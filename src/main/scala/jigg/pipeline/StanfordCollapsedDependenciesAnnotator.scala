@@ -38,14 +38,15 @@ class StanfordCollapsedDependenciesAnnotator(
 
   override def description = s"""${super.description}
 
-  This parser complements the gaps in the outputs between the Stanford dependency parsers,
-  which outputs three kinds of dependency representations including basic as well as
-  collapsed dependencies, and other third party parsers, which commonly supports only
-  the basic type of dependencies.
+  This annotator complements the gaps in the outputs by the Stanford families (e.g.,
+  depparse of CoreNLP), which output three kinds of dependency representations including
+  basic (tree-structured) as well as collapsed (non tree-structured) dependencies, and
+  other third party parsers, which commonly support only the basic, tree-structured
+  dependencies.
 
-  Specifically, this annotator supplies Stanford collapsed dependencies (which is not
-  usually a rooted tree) and CC-processed collapsed dependencies based on the basic
-  (tree-structured) dependencies, which is the common output by dependency parsers.
+  Specifically, this annotator supplies Stanford collapsed dependencies, which are not
+  usually a rooted tree, and CC-processed collapsed dependencies, based on the basic
+  dependencies outputted by other dependency parsers.
 
   To correctly use this annotator, a user must take care with the dependency annotation
   style of the given basic dependencies, and set the appropriate value in `style`, which
@@ -58,16 +59,16 @@ class StanfordCollapsedDependenciesAnnotator(
     jigg.pipeline.Pipeline -annotators "corenlp[tokenize,ssplit],syntaxnet,collapseddep"
 
   since the default value of `style` is SD. But if the parser outputs the dependencies
-  in Universal dependencies (UD) format, rather than SD, then, `style` must be changed
+  in Universal dependencies (UD) format rather than SD, then, `style` must be changed
   as follows:
 
     jigg.pipeline.Pipeline -annotators "corenlp[tokenize,ssplit],udparser,collapseddep" -collapseddep.style UD
 
-  where "udparser" is some dependency parser outputting UD style dependencies, including
-  the re-trained SyntaxNet parser with the UD-style treebanks.
+  where "udparser" is some dependency parser outputting UD style dependencies, e.g.,
+  a re-trained SyntaxNet parser with the UD-style treebanks.
 
-  Note that there is no way to recover the collapsed dependencies other than SD and UD,
-  e.g., the ordinary CoNLL-style dependencies.
+  Note that there is no way to recover the collapsed dependencies from trees other than
+  SD and UD, such as the ordinary CoNLL-style dependencies.
 """
 
   // This is fixed now, but may be modifiable in future?

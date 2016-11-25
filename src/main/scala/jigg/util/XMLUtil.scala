@@ -118,15 +118,9 @@ object XMLUtil {
   def findSub(node: Node, that: String): Node = (node \\ that)(0)
   def findAllSub(node: Node, that: String): java.util.List[Node] = node \\ that
 
-  def hasChild(nodes: NodeSeq): Boolean = nodes match {
-    case x: Elem => x.child.length > 0
-    case _ => nodes forall hasChild
-  }
+  def hasChild(nodes: NodeSeq): Boolean = getNonEmptyChild(nodes).length > 0
 
-  def getChildNode(nodes: NodeSeq): NodeSeq = nodes match {
-    case x: Elem => x.child filter (_.label != "#PCDATA")
-    case x => (x.map(getChildNode(_))).flatten
-  }
+  def getNonEmptyChild(nodes: NodeSeq): NodeSeq = nodes.map(_.child filterNot (_.isAtom)).flatten
 
   def getAttributionList(node: Node): Seq[(String, String)] = (
     for{
@@ -134,4 +128,27 @@ object XMLUtil {
       n = elem.key -> elem.value.toString
     } yield n
     ).toSeq
+
+  /** If a string formatted by PrettyPrinter is inputted, the XML.Node.child method
+    * which is used in a subsequent step, e.g. SentenceAnnotator, returns an array
+    * containing empty elements.
+    * To avoid this issue, we create a new XML object using by the XMLUtil.getChildNode method.
+    */
+  def unFormattedXML(node: Node): Node = {
+    val childNode = getNonEmptyChild(node)
+    def recurse(nodes: NodeSeq): NodeSeq = nodes map { n =>
+      // To maintain the original text, we define an new node.
+      val tmpNode = XMLUtil.text(n) match{
+        case "" => <xml/>
+        case t => <xml>{t}</xml>
+      }
+      val newNode = tmpNode.copy(label = n.label, attributes = n.attributes)
+      if(hasChild(n)){
+        addChild(newNode, recurse(getNonEmptyChild(n)))
+      }else{
+        newNode
+      }
+    }
+    replaceChild(node, recurse(childNode))
+  }
 }

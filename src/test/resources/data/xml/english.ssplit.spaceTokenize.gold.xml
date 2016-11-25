@@ -1,0 +1,35 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<root>
+  <document id="d0">
+    <sentences>
+      <sentence characterOffsetEnd="38" characterOffsetBegin="0" id="s0">
+        Alice asked her mother to cook a cake.
+        <tokens annotators="spaceTokenize">
+          <token characterOffsetEnd="5" characterOffsetBegin="0" form="Alice" id="s0_tok0"/>
+          <token characterOffsetEnd="11" characterOffsetBegin="6" form="asked" id="s0_tok1"/>
+          <token characterOffsetEnd="15" characterOffsetBegin="12" form="her" id="s0_tok2"/>
+          <token characterOffsetEnd="22" characterOffsetBegin="16" form="mother" id="s0_tok3"/>
+          <token characterOffsetEnd="25" characterOffsetBegin="23" form="to" id="s0_tok4"/>
+          <token characterOffsetEnd="30" characterOffsetBegin="26" form="cook" id="s0_tok5"/>
+          <token characterOffsetEnd="32" characterOffsetBegin="31" form="a" id="s0_tok6"/>
+          <token characterOffsetEnd="38" characterOffsetBegin="33" form="cake." id="s0_tok7"/>
+        </tokens>
+      </sentence>
+      <sentence characterOffsetEnd="85" characterOffsetBegin="39" id="s1">
+        Bob saw a girl in the garden with a telescope.
+        <tokens annotators="spaceTokenize">
+          <token characterOffsetEnd="3" characterOffsetBegin="0" form="Bob" id="s1_tok0"/>
+          <token characterOffsetEnd="7" characterOffsetBegin="4" form="saw" id="s1_tok1"/>
+          <token characterOffsetEnd="9" characterOffsetBegin="8" form="a" id="s1_tok2"/>
+          <token characterOffsetEnd="14" characterOffsetBegin="10" form="girl" id="s1_tok3"/>
+          <token characterOffsetEnd="17" characterOffsetBegin="15" form="in" id="s1_tok4"/>
+          <token characterOffsetEnd="21" characterOffsetBegin="18" form="the" id="s1_tok5"/>
+          <token characterOffsetEnd="28" characterOffsetBegin="22" form="garden" id="s1_tok6"/>
+          <token characterOffsetEnd="33" characterOffsetBegin="29" form="with" id="s1_tok7"/>
+          <token characterOffsetEnd="35" characterOffsetBegin="34" form="a" id="s1_tok8"/>
+          <token characterOffsetEnd="46" characterOffsetBegin="36" form="telescope." id="s1_tok9"/>
+        </tokens>
+      </sentence>
+    </sentences>
+  </document>
+</root>
