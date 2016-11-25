@@ -111,6 +111,7 @@ class MaxEntMultiTaggerTrainer(
 
     (0 until numIters).foreach { j =>
       val shuffledInstances = Random.shuffle(cachedInstances)
+      // val shuffledInstances = cachedInstances
       var correct = 0
       shuffledInstances.foreach {
         _ foreach { e => if (trainInstance(e)) correct += 1 }
