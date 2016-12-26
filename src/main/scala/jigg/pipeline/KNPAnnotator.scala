@@ -55,7 +55,7 @@ trait KNPAnnotator extends Annotator with ParallelIO with IOCreator {
     val basicPhrases = analyzer.extractBasicPhrases()
 
     val tokenAdded = replaceJumanTokens match {
-      case true => XMLUtil.addOrOverrideChild(sentence, knpTokens)
+      case true => XMLUtil.addOrOverwriteChild(sentence, knpTokens)
       case false => XMLUtil.addChild(sentence, knpTokens)
     }
 

@@ -202,7 +202,7 @@ class BerkeleyParserAnnotatorFromToken(
     val parseNode = treeToNode(tree, taggedSeq, sentence \@ "id")
 
     // TODO: this may be customized with props?
-    XMLUtil.addOrOverrideChild(sentence, Seq(newTokens, parseNode))
+    XMLUtil.addOrOverwriteChild(sentence, Seq(newTokens, parseNode))
   }
 
   override def requires = Set(Requirement.Tokenize)
@@ -223,7 +223,7 @@ class BerkeleyParserAnnotatorFromPOS(
     val parseNode = treeToNode(tree, tokenSeq, sentence \@ "id")
 
     // TODO: is it ok to override in default?
-    XMLUtil.addOrOverrideChild(sentence, Seq(parseNode))
+    XMLUtil.addOrOverwriteChild(sentence, Seq(parseNode))
   }
 
   override def requires = Set(Requirement.POS)

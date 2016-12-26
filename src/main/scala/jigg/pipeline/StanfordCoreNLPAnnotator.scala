@@ -364,7 +364,7 @@ class StanfordCoreNLPAnnotator(
           <tokens annotators={ name }>{ tokens }</tokens>
         </sentence>
       }
-      XMLUtil.addOrOverrideChild(document, sentencesNode.copy(child=sentenceNodes))
+      XMLUtil.addOrOverwriteChild(document, sentencesNode.copy(child=sentenceNodes))
     }
   }
 
@@ -426,7 +426,7 @@ class StanfordCoreNLPAnnotator(
         val namedTokensNode = XMLUtil.addAnnotatorName(tokensNode, name)
         XMLUtil.replaceChild(namedTokensNode, modifiedTokens)
       }
-      XMLUtil.addOrOverrideChild(sentence, newTokensNode)
+      XMLUtil.addOrOverwriteChild(sentence, newTokensNode)
     }
 
     protected def updateCoreLabel(coreToken: CoreLabel, token: Node): Unit
@@ -525,7 +525,7 @@ class StanfordCoreNLPAnnotator(
           label={ label } normalizedLabel={ normalizedLabel } tokens={ neTokens }/>
       }
       val nesNode = <NEs annotators={ name }>{ neSeq }</NEs>
-      XMLUtil.addOrOverrideChild(sentence, nesNode)
+      XMLUtil.addOrOverwriteChild(sentence, nesNode)
     }
   }
 
@@ -589,7 +589,7 @@ class StanfordCoreNLPAnnotator(
         .asInstanceOf[Elem].copy(child=updatedTokenSeq)
       val parseNode = <parse root={ root } annotators={ name }>{ spans }</parse>
 
-      XMLUtil.addOrOverrideChild(sentence, Seq(namedTokensNode, parseNode))
+      XMLUtil.addOrOverwriteChild(sentence, Seq(namedTokensNode, parseNode))
     }
   }
 
@@ -745,7 +745,7 @@ class StanfordCoreNLPAnnotator(
           { corefChainSeq }
         </coreferences>
 
-      XMLUtil.addOrOverrideChild(document, Seq(mentionsNode, coreferencesNode))
+      XMLUtil.addOrOverwriteChild(document, Seq(mentionsNode, coreferencesNode))
     }
   }
 

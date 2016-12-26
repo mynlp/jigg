@@ -121,7 +121,7 @@ trait SyntaxNetAnnotator extends Annotator {
       val newSentenceSeqInDoc = (begin until end) map (annotatedSentences)
       val newSentences = XMLUtil.replaceChild(sentences(docidx), newSentenceSeqInDoc)
 
-      XMLUtil.addOrOverrideChild(documentSeq(docidx), newSentences)
+      XMLUtil.addOrOverwriteChild(documentSeq(docidx), newSentences)
     }
     XMLUtil.replaceChild(annotation, newDocumentSeq)
   }
@@ -199,7 +199,7 @@ class SyntaxNetPOSAnnotator(override val name: String, override val props: Prope
   def annotateSentence(conll: Seq[Seq[String]], sentence: Node): Node = {
     val tokens = (sentence \ "tokens").head
     val newTokens = SyntaxNetAnnotator.POSAnnotatedTokens(conll, tokens, name)
-    XMLUtil.addOrOverrideChild(sentence, newTokens)
+    XMLUtil.addOrOverwriteChild(sentence, newTokens)
   }
 
   def run(input: String) = (Process(s"cat $input") #| posCmd).lineStream_!
@@ -237,7 +237,7 @@ class SyntaxNetFullAnnotator(override val name: String, override val props: Prop
     val newTokens = SyntaxNetAnnotator.POSAnnotatedTokens(conll, tokens, name)
     val parse = SyntaxNetAnnotator.parseAnnotation(conll, tokens, name)
 
-    val tokenUpdated = XMLUtil.addOrOverrideChild(sentence, newTokens)
+    val tokenUpdated = XMLUtil.addOrOverwriteChild(sentence, newTokens)
     XMLUtil.addChild(tokenUpdated, parse)
   }
 
