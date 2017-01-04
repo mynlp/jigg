@@ -74,10 +74,9 @@ ${pipeline.description}"""
 
   def run() = {
 
-    pipeline.annotatorList // initiate the lazy val
+    pipeline.annotatorList // initiate the lazy val (loading all models)
 
     case class OutputType(format: String)
-    // case class GETParams(text: String, format: String)
 
     implicit val system = ActorSystem("jigg-server")
     implicit val materializer = ActorMaterializer()
@@ -103,7 +102,6 @@ ${pipeline.description}"""
                   // XML.write(w, annotation, "UTF-8", true, DocType("root"))
                   // w.toString
               }
-              // val output =
               outputType.format match {
                 case "json" | "xml" => outputBy(outputType.format)
                 case _ => outputBy(pipeline.outputFormat)
