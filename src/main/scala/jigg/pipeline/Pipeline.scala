@@ -17,9 +17,8 @@ package jigg.pipeline
 */
 
 import java.util.Properties
-import java.io.{BufferedReader, BufferedWriter, PrintStream}
+import java.io.{BufferedReader, PrintStream, Writer}
 import scala.annotation.tailrec
-import scala.io.Source
 import scala.xml.{XML, Node}
 import scala.collection.JavaConverters._
 import jigg.util.LogUtil.{ track, multipleTrack }
@@ -243,9 +242,6 @@ Currently the annotators listed below are installed. See the detail of each anno
       case _ => { 
         // The output of basic XML.save method is not formatted, so we instead use PrettyPrinter.
         // However, this method have to convert an entire XML into a String object, which would be problematic for huge dataset.
-        // XML.save(in + ".xml", xml, "UTF-8")
-        val printer = new scala.xml.PrettyPrinter(500, 2)
-
         val outputPath = output match {
           case "" => file + ".xml"
           case _ => output
@@ -260,7 +256,7 @@ Currently the annotators listed below are installed. See the detail of each anno
     }
   }
 
-  def writeTo(os: BufferedWriter, xml: Node) = {
+  def writeTo(os: Writer, xml: Node) = {
     val printer = new scala.xml.PrettyPrinter(500, 2)
     val size = (xml \\ "sentences").map(_.child.size).sum
     val outputXML = if (size > 100) xml else XML.loadString(printer.format(xml))
@@ -311,7 +307,7 @@ Currently the annotators listed below are installed. See the detail of each anno
           case "json" =>
             val jsonString = JSONUtil.toJSON(xml)
             println(jsonString)
-          case _ => 
+          case _ =>
             val printer = new scala.xml.PrettyPrinter(500, 2)
             println(printer.format(xml))
         }
@@ -390,7 +386,7 @@ object Pipeline {
 
     try {
       val pipeline = new Pipeline(props)
-      PU.findProperty("help", props) match{
+      PU.findProperty("help", props) match {
         case Some(help) =>
           pipeline.printHelp(System.out) // do not close with help mode
         case None =>

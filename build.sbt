@@ -4,7 +4,7 @@ organization := "com.github.mynlp"
 
 name := "jigg"
 
-scalaVersion := "2.11.7"
+scalaVersion := "2.11.8"
 
 version := "0.6.2"
 
@@ -28,7 +28,9 @@ libraryDependencies ++= Seq(
   "org.scala-lang" % "scala-reflect" % "2.11.7",
   "com.ibm.icu" % "icu4j" % "56.1",
   "org.scalanlp" % "breeze-config_2.10" % "0.9.1",
-  "org.json4s" %% "json4s-jackson" % "3.3.0"
+  "org.json4s" %% "json4s-jackson" % "3.3.0",
+  "com.typesafe.akka" %% "akka-http" % "10.0.1"
+  // "com.typesafe.akka" %% "akka-http-xml" % "10.0.1"
 )
 
 libraryDependencies ++= (
