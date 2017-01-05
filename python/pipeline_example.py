@@ -4,7 +4,7 @@ from pyjigg import Pipeline
 import xml.etree.ElementTree as ET
 import json
 
-'''This is for repeated annotations of different texts with the same annotation setting.
+'''Example to use Jigg from python.
 
 Before using this, users must start the PipelineServer in a command line, e.g.:
  $ cd jigg-0.6.2/
