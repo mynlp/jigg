@@ -17,23 +17,22 @@ package jigg.pipeline
 */
 
 import java.util.Properties
-import java.io.{BufferedReader, BufferedWriter, PrintStream}
+import java.io.{ByteArrayOutputStream, PrintStream}
 
 import scala.xml.{XML, Node}
 import scala.xml.dtd.DocType
 import scala.collection.JavaConverters._
+import scala.concurrent.duration._
 import scala.io.StdIn
 
 import jigg.util.LogUtil.{ track, multipleTrack }
 import jigg.util.{PropertiesUtil => PU, IOUtil, XMLUtil, JSONUtil}
 
-import akka.actor.{ActorRef, ActorSystem}
+import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import akka.http.scaladsl.coding.Deflate
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshalling.ToResponseMarshaller
-// import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.model._
-// import akka.http.scaladsl.model.MediaTypes.`application/xml`
 import akka.http.scaladsl.model.StatusCodes.MovedPermanently
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.unmarshalling.FromRequestUnmarshaller
@@ -41,6 +40,37 @@ import akka.pattern.ask
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
 
+class PipelineActor extends Actor {
+  import PipelineServer.Params
+
+  var lastParams: Params = null
+  var lastPipeline: Pipeline = null
+
+  def receive = {
+    case params: Params => {
+      val coreParams = removeNonCore(params)
+      if (coreParams != lastParams) reset(coreParams)
+      sender ! lastPipeline
+    }
+  }
+
+  def removeNonCore(params: Params) = {
+    // The server is agnostic to the changes of these properties
+    // (not creating a new pipeline).
+    val noncore = Seq("props", "file", "output", "help", "outputFormat",
+      "checkRequirement", "inputFormat")
+    Params(params.kvs filter { case (k, v) => !(noncore contains k) })
+  }
+
+  def reset(params: Params) = {
+    lastParams = params
+
+    val props = new Properties
+    for ((k, v) <- params.kvs) props.setProperty(k, v)
+
+    lastPipeline = new Pipeline(props)
+  }
+}
 
 class PipelineServer(val properties: Properties = new Properties) extends PropsHolder {
 
@@ -48,65 +78,87 @@ class PipelineServer(val properties: Properties = new Properties) extends PropsH
 
   @Prop(gloss="Port to serve on (default: 8080)") var port = 8080
   @Prop(gloss="Host to serve on (default: localhost. Use 0.0.0.0 to make public)") var host = "localhost"
-  @Prop(gloss="Property file for jigg pipeline") var props = ""
 
   readProps()
 
   override def description: String = s"""Usage:
 ${super.description}
 
-In addition to using "-props" argument, a user can also specify options
-(e.g., -annotators) by directly giving them in the command line. For example,
+JiggServer can be used as an interface of Jigg to other languages such as Python.
+See README in "python/pyjigg" for this usage.
 
- $$ java -cp jigg.jar jigg.pipeline.PipelineServer -annotators "corenlp[ssplit,tokenize]"
+Currently this server only supports POST method and the input text should be a raw text
+(not XML or JSON, which will be supported in future). For each call, users must specify
+the properties as the parameters.
 
-launches the server with the two annotators (ssplit and tokenize). Other commands defined in
-"jigg.pipeline.Pipeline" are also passed directly to Jigg if specified. See below.
+The annotation for the first input may be very slow due to loading all annotator models,
+which may take 30 ~ 60 secs if you use heavy components of Stanford CoreNLP (e.g., coref).
 
-====
-Usage of Jigg pipeline (jigg.pipeline.Pipeline):
+The annotation for the followed inputs should be reasonably fast, but note that if you
+call the server with different parameters than the last call, the internal pipeline will
+be reconstructed, and the loading time will be taken again.
 
-${pipeline.description}"""
-
-  val pipeline = new Pipeline(properties)
-
-  def printHelp(os: PrintStream) = os.println(this.description)
+To see the valid options, call "jigg.pipeline.Pipeline -help", or after starting the
+server, access to e.g.,
+  http://localhost:8080/help
+which displays the help message of the internal pipeline. One can also see the specific
+help for each annotator with:
+  http://localhost:8080/help/<annotator name>
+where <annotator name> may be specific name such as corenlp or kuromoji."""
 
   def run() = {
 
-    pipeline.annotatorList // initiate the lazy val (loading all models)
-
     case class OutputType(format: String)
+
+    implicit val timeout = Timeout(5.seconds)
 
     implicit val system = ActorSystem("jigg-server")
     implicit val materializer = ActorMaterializer()
     // needed for the future flatMap/onComplete in the end
     implicit val executionContext = system.dispatcher
 
+    val actor = system.actorOf(Props[PipelineActor])
+
     val route =
       path("annotate") {
         post {
-          parameters('format ? "default").as(OutputType) { outputType =>
+          parameterSeq { _params =>
             entity(as[String]) { text =>
-              val annotation = pipeline.annotate(text)
-              def outputBy(format: String) = format match {
-                case "json" => complete(JSONUtil.toJSON(annotation).toString)
-                case _ =>
-                  val w = new java.io.StringWriter
-                  pipeline.writeTo(w, annotation)
-                  complete(w.toString)
 
-                  // complete(HttpEntity(`application/xml`, annotation.toString))
-                  // case _ => complete(HttpEntity(ContentType(MediaTypes.`application/json`), annotation))
-                  // val w = new java.io.StringWriter
-                  // XML.write(w, annotation, "UTF-8", true, DocType("root"))
-                  // w.toString
+              val params = _params.toMap
+
+              val maybePipeline = (actor ? PipelineServer.Params(params)).mapTo[Pipeline]
+
+              val maybeResult = maybePipeline map { pipeline =>
+                val annotation = pipeline.annotate(text)
+                def outputBy(format: String): String = format match {
+                  case "json" => JSONUtil.toJSON(annotation).toString
+                  case _ =>
+                    val w = new java.io.StringWriter
+                    pipeline.writeTo(w, annotation)
+                    w.toString
+                }
+                params get "outputFormat" match {
+                  case Some(a) if a == "json" || a == "xml" => outputBy(a)
+                  case _ => outputBy("xml")
+                }
               }
-              outputType.format match {
-                case "json" | "xml" => outputBy(outputType.format)
-                case _ => outputBy(pipeline.outputFormat)
-              }
+              complete(maybeResult)
             }
+          }
+        }
+      } ~ pathPrefix("help") {
+        pathEnd {
+          complete(mkHelp("true"))
+        } ~
+        pathPrefix(".+".r) { annotator =>
+          pathEndOrSingleSlash {
+            def normalize(c: Char) = c match {
+              case '<' => '['
+              case '>' => ']'
+              case _ => c
+            }
+            complete(mkHelp(annotator.map(normalize)))
           }
         }
       }
@@ -119,9 +171,21 @@ ${pipeline.description}"""
       .flatMap(_.unbind()) // trigger unbinding from the port
       .onComplete(_ => system.terminate()) // and shutdown when done
   }
+
+  def mkHelp(annotator: String): String = {
+    val props = new Properties
+    props.setProperty("help", annotator)
+    val pipeline = new Pipeline(props)
+    val s = new ByteArrayOutputStream
+    pipeline.printHelp(new PrintStream(s))
+    s.toString("UTF8")
+  }
+
 }
 
 object PipelineServer {
+
+  case class Params(kvs: Map[String, String])
 
   def main(args: Array[String]): Unit = {
 
