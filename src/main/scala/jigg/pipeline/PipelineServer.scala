@@ -81,6 +81,8 @@ class PipelineServer(val properties: Properties = new Properties) extends PropsH
 
   readProps()
 
+  def printHelp(os: PrintStream) = os.println(this.description)
+
   override def description: String = s"""Usage:
 ${super.description}
 
