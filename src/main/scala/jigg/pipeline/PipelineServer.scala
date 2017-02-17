@@ -92,7 +92,7 @@ See README in "python/pyjigg" for this usage.
 
 Another usage via curl is that:
 
-  $ curl --data-urlencode 'annotators=corenlp[tokenize,ssplit]' \
+  > curl --data-urlencode 'annotators=corenlp[tokenize,ssplit]' \
          --data-urlencode 'q=Please annotate me!' \
          'http://localhost:8080/annotate?outputFormat=json'
 
