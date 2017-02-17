@@ -29,8 +29,10 @@ class Pipeline:
                             '$ java -Xmx4g -cp "*" jigg.pipeline.PipelineServer' % (JIGG))
 
         url = self.server_url + '/annotate'
-        data = text.encode()
-        r = requests.post(url, params=properties, data=data)
+        text = text.encode()
+        data = properties.copy()
+        data['q'] = text
+        r = requests.post(url, data=data)
         output = r.text
         if ('outputFormat' in properties and properties['outputFormat'] == 'json'):
             try:

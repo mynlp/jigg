@@ -90,6 +90,15 @@ ${super.description}
 JiggServer can be used as an interface of Jigg to other languages such as Python.
 See README in "python/pyjigg" for this usage.
 
+Another usage via curl is that:
+
+  $ curl --data-urlencode 'annotators=corenlp[tokenize,ssplit]' \
+         --data-urlencode 'q=Please annotate me!' \
+         'http://localhost:8080/annotate?outputFormat=json'
+
+The data with the key "q" is treated as an input text. Multiple "q"s in a query
+are allowed and are concatenated.
+
 Currently this server only supports POST method and the input text should be a raw text
 (not XML or JSON, which will be supported in future). For each call, users must specify
 the properties as the parameters.
@@ -128,8 +137,11 @@ where <annotator name> may be specific name such as corenlp or kuromoji."""
           parameterSeq { _params =>
             formFieldSeq { _forms =>
 
-              val (textSeq, formParamSeq) = _forms.partition(_._2 == "")
-              val text = textSeq.map(_._1).mkString("\n")
+              val (textSeq, formParamSeq) = _forms.partition(a => a._2 == "" || a._1 == "q")
+              val text = textSeq map {
+                case (a, "") => a
+                case ("q", a) => a
+              } mkString "\n"
 
               val params = _params.toMap ++ formParamSeq.toMap
 
