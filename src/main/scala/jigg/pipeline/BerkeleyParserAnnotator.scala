@@ -18,7 +18,7 @@ package jigg.pipeline
 
 
 import jigg.util.PropertiesUtil
-import jigg.util.XMLUtil
+import jigg.util.XMLUtil.RichNode
 
 import java.util.Properties
 import java.util.{List => JList}
@@ -184,7 +184,7 @@ class BerkeleyParserAnnotatorFromToken(
     def addPOS(tokenSeq: NodeSeq, tree: Tree[String]): NodeSeq = {
       val preterminals = tree.getPreTerminals.asScala
       (0 until tokenSeq.size) map { i =>
-        XMLUtil.addAttribute(tokenSeq(i), "pos", preterminals(i).getLabel)
+        tokenSeq(i) addAttribute ("pos", preterminals(i).getLabel)
       }
     }
 
@@ -196,13 +196,13 @@ class BerkeleyParserAnnotatorFromToken(
     val taggedSeq = addPOS(tokenSeq, tree)
 
     val newTokens = {
-      val nameAdded = XMLUtil.addAnnotatorName(tokens, name)
-      XMLUtil.replaceChild(nameAdded, taggedSeq)
+      val nameAdded = tokens addAnnotatorName name
+      nameAdded replaceChild taggedSeq
     }
     val parseNode = treeToNode(tree, taggedSeq, sentence \@ "id")
 
     // TODO: this may be customized with props?
-    XMLUtil.addOrOverwriteChild(sentence, Seq(newTokens, parseNode))
+    sentence addOrOverwriteChild Seq(newTokens, parseNode)
   }
 
   override def requires = Set(Requirement.Tokenize)
@@ -223,7 +223,7 @@ class BerkeleyParserAnnotatorFromPOS(
     val parseNode = treeToNode(tree, tokenSeq, sentence \@ "id")
 
     // TODO: is it ok to override in default?
-    XMLUtil.addOrOverwriteChild(sentence, Seq(parseNode))
+    sentence addOrOverwriteChild Seq(parseNode)
   }
 
   override def requires = Set(Requirement.POS)

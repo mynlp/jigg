@@ -20,7 +20,34 @@ import scala.xml._
 import scala.xml.transform.{RewriteRule, RuleTransformer}
 import scala.collection.JavaConversions._
 
-object XMLUtil {
+object XMLUtil { self =>
+
+  implicit class RichNode(node: Node) {
+    def addChild(newChild: NodeSeq): Node = self.addChild(node, newChild)
+    def addOrOverwriteChild(newChild: NodeSeq, attr: Option[String] = None): Node =
+      self.addOrOverwriteChild(node, newChild, attr)
+    def addAttribute(k: String, v: String): Node = self.addAttribute(node, k, v)
+    def addAttributes(kvs: Map[String, String]): Node = self.addAttributes(node, kvs)
+    def replaceChild(newChild: NodeSeq) = self.replaceChild(node, newChild)
+    def addAnnotatorName(annotator: String) = self.addAnnotatorName(node, annotator)
+    def replaceAll(label: String)(body: Elem=>Node) = self.replaceAll(node, label)(body)
+    // return the elements of texts as a string
+    def textElem() = self.text(node)
+    def removeText() = self.removeText(node)
+
+    def hasChild() = self.hasChild(node)
+    def nonAtomChild() = self.getNonEmptyChild(node)
+    def attrs() = self.getAttributionList(node)
+
+    def toUnformatted() = self.unFormattedXML(node)
+
+    // These are for Java users but can implicit class be used from Java?
+    def find(that: String) = self.find(node, that)
+    def findAll(that: String) = self.findAll(node, that)
+    def findSub(that: String) = self.findSub(node, that)
+  }
+
+  @deprecated(message="Use implicit method in RichNode instea.", "3.6.2")
   def addChild(n: Node, newChild: NodeSeq): Node = n match {
     case e: Elem => e.copy(child = e.child ++ newChild)
     case _ => sys.error("Can only add children to elements!")
@@ -34,6 +61,7 @@ object XMLUtil {
     * `<dependencies type="collapsed">...</dependencies>` in `newChild` will be added
     * if `attr=Some("type")`.
     */
+  @deprecated(message="Use implicit method in RichNode instea.", "3.6.2")
   def addOrOverwriteChild(n: Node, newChild: NodeSeq, attr: Option[String] = None): Node
   = n match {
     case e: Elem =>
@@ -58,24 +86,24 @@ object XMLUtil {
     case _ => sys.error("Can only add children to elements!")
   }
 
-  @deprecated(message="Use addOrOverwriteChild instead.", "3.6.1")
-  def addOrOverrideChild(n: Node, newChild: NodeSeq, attr: Option[String] = None): Node =
-    addOrOverwriteChild(n, newChild, attr)
-
+  @deprecated(message="Use implicit method in RichNode instea.", "3.6.2")
   def addAttribute(n: Node, k: String, v: String): Node = n match {
     case e: Elem => e % Attribute(None, k, Text(v), Null)
     case _ => n
   }
 
+  @deprecated(message="Use implicit method in RichNode instea.", "3.6.2")
   def addAttributes(n: Node, kvs: Map[String, String]): Node = {
     kvs.foldLeft(n) { case (node, (k, v)) => addAttribute(node, k, v) }
   }
 
+  @deprecated(message="Use implicit method in RichNode instea.", "3.6.2")
   def replaceChild(n: Node, newChild: NodeSeq): Node = n match {
     case e: Elem => e.copy(child=newChild)
     case _ => n
   }
 
+  @deprecated(message="Use implicit method in RichNode instea.", "3.6.2")
   def addAnnotatorName(n: Node, annotator: String): Node = {
     val newAnnotators = (n \@ "annotators") match {
       case "" => annotator
@@ -90,6 +118,7 @@ object XMLUtil {
     * http://stackoverflow.com/questions/21391942/eliminate-duplicates-change-label-with-scala-xml-transform-ruletransformer
     * The previous version used `RuleTransformer` and `RewriteRule` but I found it has some problem.
     */
+  @deprecated(message="Use implicit method in RichNode instea.", "3.6.2")
   def replaceAll(root: Node, label: String)(body: Elem => Node) = {
     def recurse(node: Node): Seq[Node] = node match {
       case e: Elem if (e.label == label) =>
@@ -103,27 +132,35 @@ object XMLUtil {
   /** Return concatenation of all Atom[_] elements in the child.
     * (is there any possibilities that a node has more than one such element in child?)
     */
+  @deprecated(message="Use implicit method in RichNode instea.", "3.6.2")
   def text(node: Node): String = node.child.collect {
     case t: Atom[_] => t.data
   }.mkString.trim
 
-  def removeText(node: Elem) = node.copy(child = (node.child map {
-    // Atom includes Text or other string objects.
-    case t: Atom[_] => Text("")
-    case other => other
-  }))
+  @deprecated(message="Use implicit method in RichNode instea.", "3.6.2")
+  def removeText(node: Node) = node match {
+    case node: Elem => node.copy(child = (node.child map {
+      // Atom includes Text or other string objects.
+      case t: Atom[_] => Text("")
+      case other => other
+    }))
+    case _ => sys.error("removeText is only allowed for Elem.")
+  }
 
   def find(node: Node, that: String): Node = (node \ that)(0)
   def findAll(node: Node, that: String): java.util.List[Node] = node \ that
   def findSub(node: Node, that: String): Node = (node \\ that)(0)
   def findAllSub(node: Node, that: String): java.util.List[Node] = node \\ that
 
+  @deprecated(message="Use implicit method in RichNode instea.", "3.6.2")
   def hasChild(nodes: NodeSeq): Boolean = getNonEmptyChild(nodes).length > 0
 
+  @deprecated(message="Use implicit method in RichNode instea.", "3.6.2")
   def getNonEmptyChild(nodes: NodeSeq): NodeSeq = nodes.map(_.child filterNot (_.isAtom)).flatten
 
+  @deprecated(message="Use implicit method in RichNode instea.", "3.6.2")
   def getAttributionList(node: Node): Seq[(String, String)] = (
-    for{
+    for {
       elem <- node.attributes.seq
       n = elem.key -> elem.value.toString
     } yield n
@@ -134,18 +171,19 @@ object XMLUtil {
     * containing empty elements.
     * To avoid this issue, we create a new XML object using by the XMLUtil.getChildNode method.
     */
+  @deprecated(message="Use implicit method in RichNode instea.", "3.6.2")
   def unFormattedXML(node: Node): Node = {
     val childNode = getNonEmptyChild(node)
     def recurse(nodes: NodeSeq): NodeSeq = nodes map { n =>
       // To maintain the original text, we define an new node.
-      val tmpNode = XMLUtil.text(n) match{
+      val tmpNode = n.textElem match {
         case "" => <xml/>
         case t => <xml>{t}</xml>
       }
       val newNode = tmpNode.copy(label = n.label, attributes = n.attributes)
-      if(hasChild(n)){
+      if (hasChild(n)) {
         addChild(newNode, recurse(getNonEmptyChild(n)))
-      }else{
+      } else {
         newNode
       }
     }

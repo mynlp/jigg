@@ -18,7 +18,7 @@ package jigg.pipeline
 
 import scala.collection.mutable.ArrayBuffer
 import scala.xml._
-import jigg.util.XMLUtil
+import jigg.util.XMLUtil.RichNode
 
 trait KNPAnnotator extends Annotator with ParallelIO with IOCreator {
 
@@ -55,8 +55,8 @@ trait KNPAnnotator extends Annotator with ParallelIO with IOCreator {
     val basicPhrases = analyzer.extractBasicPhrases()
 
     val tokenAdded = replaceJumanTokens match {
-      case true => XMLUtil.addOrOverwriteChild(sentence, knpTokens)
-      case false => XMLUtil.addChild(sentence, knpTokens)
+      case true => sentence addOrOverwriteChild knpTokens
+      case false => sentence addChild knpTokens
     }
 
     val otherChildren = Seq[Node](
@@ -67,7 +67,7 @@ trait KNPAnnotator extends Annotator with ParallelIO with IOCreator {
       analyzer.extractCaseRelations(knpTokens, basicPhrases, nPrevSentenceId),
       analyzer.extractNEs(knpTokens)
     )
-    XMLUtil addChild (tokenAdded, otherChildren)
+    tokenAdded addChild otherChildren
   }
 
   private[this] val jumanFeats = Array("form", "yomi", "lemma", "pos", "posId", "pos1",

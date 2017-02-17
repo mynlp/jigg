@@ -17,7 +17,8 @@ package jigg.pipeline
 */
 
 import jigg.util.PropertiesUtil
-import jigg.util.{IOUtil, XMLUtil}
+import jigg.util.IOUtil
+import jigg.util.XMLUtil.RichNode
 
 import java.util.Properties
 import java.io.File
@@ -119,11 +120,11 @@ trait SyntaxNetAnnotator extends Annotator {
       val begin = offsets(docidx)
       val end = offsets(docidx + 1)
       val newSentenceSeqInDoc = (begin until end) map (annotatedSentences)
-      val newSentences = XMLUtil.replaceChild(sentences(docidx), newSentenceSeqInDoc)
+      val newSentences = sentences(docidx) replaceChild newSentenceSeqInDoc
 
-      XMLUtil.addOrOverwriteChild(documentSeq(docidx), newSentences)
+      documentSeq(docidx) addOrOverwriteChild newSentences
     }
-    XMLUtil.replaceChild(annotation, newDocumentSeq)
+    annotation replaceChild newDocumentSeq
   }
 
   // internal method
@@ -168,10 +169,10 @@ object SyntaxNetAnnotator {
     val newTokenSeq = tokenSeq zip conll map { case (tokenNode, token) =>
       val pos = token(4)
       val cpos = token(3)
-      XMLUtil.addAttributes(tokenNode, Map("pos"-> pos, "cpos"->cpos))
+      tokenNode addAttributes Map("pos"-> pos, "cpos"->cpos)
     }
-    val nameAdded = XMLUtil.addAnnotatorName(tokens, name)
-    XMLUtil.replaceChild(nameAdded, newTokenSeq)
+    val nameAdded = tokens addAnnotatorName name
+    nameAdded replaceChild newTokenSeq
   }
 
   def parseAnnotation(conll: Seq[Seq[String]], tokens: Node, name: String): Node = {
@@ -199,7 +200,7 @@ class SyntaxNetPOSAnnotator(override val name: String, override val props: Prope
   def annotateSentence(conll: Seq[Seq[String]], sentence: Node): Node = {
     val tokens = (sentence \ "tokens").head
     val newTokens = SyntaxNetAnnotator.POSAnnotatedTokens(conll, tokens, name)
-    XMLUtil.addOrOverwriteChild(sentence, newTokens)
+    sentence addOrOverwriteChild newTokens
   }
 
   def run(input: String) = (Process(s"cat $input") #| posCmd).lineStream_!
@@ -218,7 +219,7 @@ class SyntaxNetParseAnnotator(override val name: String, override val props: Pro
   def annotateSentence(conll: Seq[Seq[String]], sentence: Node): Node = {
     val tokens = (sentence \ "tokens").head
     val parse = SyntaxNetAnnotator.parseAnnotation(conll, tokens, name)
-    XMLUtil.addChild(sentence, parse)
+    sentence addChild parse
   }
 
   def run(input: String) = (Process(s"cat $input") #| parserCmd).lineStream_!
@@ -237,8 +238,8 @@ class SyntaxNetFullAnnotator(override val name: String, override val props: Prop
     val newTokens = SyntaxNetAnnotator.POSAnnotatedTokens(conll, tokens, name)
     val parse = SyntaxNetAnnotator.parseAnnotation(conll, tokens, name)
 
-    val tokenUpdated = XMLUtil.addOrOverwriteChild(sentence, newTokens)
-    XMLUtil.addChild(tokenUpdated, parse)
+    val tokenUpdated = sentence addOrOverwriteChild newTokens
+    tokenUpdated addChild parse
   }
 
   def run(input: String) = (Process(s"cat $input") #| posCmd #| parserCmd).lineStream_!

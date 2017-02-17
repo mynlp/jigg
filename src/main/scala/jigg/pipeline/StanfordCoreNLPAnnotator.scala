@@ -22,7 +22,7 @@ import scala.collection.immutable.SortedMap
 import scala.collection.mutable.ArrayBuffer
 import scala.xml._
 import jigg.util.PropertiesUtil
-import jigg.util.XMLUtil
+import jigg.util.XMLUtil.RichNode
 import edu.stanford.nlp.hcoref.data.CorefChain
 import edu.stanford.nlp.hcoref.CorefCoreAnnotations
 import edu.stanford.nlp.pipeline._
@@ -162,8 +162,8 @@ class StanfordCoreNLPAnnotator(
 
   override def annotate(root: Node) = {
 
-    XMLUtil.replaceAll(root, "document") { e =>
-      val coreAnnotation = new core.Annotation(XMLUtil.text(e))
+    root.replaceAll("document") { e =>
+      val coreAnnotation = new core.Annotation(e.text)
       for (r <- sortRequirements(requires))
         requirementMap(r).addToCoreMap(coreAnnotation, e)
 
@@ -249,7 +249,7 @@ class StanfordCoreNLPAnnotator(
            </sentence>
         </sentences>
 
-      XMLUtil.addChild(document, Seq(sentences))
+      document addChild Seq(sentences)
     }
   }
 
@@ -272,7 +272,7 @@ class StanfordCoreNLPAnnotator(
       val coreSentences: java.util.List[CoreMap] = (0 until sentences.size).map { i =>
         val sentence = sentences(i)
 
-        val text = XMLUtil.text(sentence)
+        val text = sentence.text
         val begin = sentence \@ "characterOffsetBegin"
         val end = sentence \@ "characterOffsetEnd"
 
@@ -344,14 +344,11 @@ class StanfordCoreNLPAnnotator(
           val currentOffsetEnd = (currentToken \@ "characterOffsetEnd").toInt
 
           // update offset values
-          XMLUtil.addAttributes(
-            currentToken,
-            Map(
-              "characterOffsetBegin" ->
-                (currentOffsetBegin - characterOffsetBegin).toString,
-              "characterOffsetEnd" ->
-                (currentOffsetEnd - characterOffsetBegin).toString
-            )
+          currentToken addAttributes Map(
+            "characterOffsetBegin" ->
+              (currentOffsetBegin - characterOffsetBegin).toString,
+            "characterOffsetEnd" ->
+              (currentOffsetEnd - characterOffsetBegin).toString
           )
         }
         val text = coreSentence get classOf[CoreAnnotations.TextAnnotation]
@@ -364,7 +361,7 @@ class StanfordCoreNLPAnnotator(
           <tokens annotators={ name }>{ tokens }</tokens>
         </sentence>
       }
-      XMLUtil.addOrOverwriteChild(document, sentencesNode.copy(child=sentenceNodes))
+      document addOrOverwriteChild sentencesNode.copy(child=sentenceNodes)
     }
   }
 
@@ -385,7 +382,7 @@ class StanfordCoreNLPAnnotator(
       val coreSentences =
         (annotation get classOf[CoreAnnotations.SentencesAnnotation]).asScala
 
-      XMLUtil.replaceAll(document, "sentences") { e =>
+      document.replaceAll("sentences") { e =>
         val sentenceSeq = e \ "sentence"
         assert(sentenceSeq.size == coreSentences.size)
         val newChild = sentenceSeq zip coreSentences map {
@@ -423,10 +420,10 @@ class StanfordCoreNLPAnnotator(
         updateToken(token, coreToken)
       }
       val newTokensNode = {
-        val namedTokensNode = XMLUtil.addAnnotatorName(tokensNode, name)
-        XMLUtil.replaceChild(namedTokensNode, modifiedTokens)
+        val namedTokensNode = tokensNode addAnnotatorName name
+        namedTokensNode replaceChild modifiedTokens
       }
-      XMLUtil.addOrOverwriteChild(sentence, newTokensNode)
+      sentence addOrOverwriteChild newTokensNode
     }
 
     protected def updateCoreLabel(coreToken: CoreLabel, token: Node): Unit
@@ -440,8 +437,8 @@ class StanfordCoreNLPAnnotator(
       coreToken set (classOf[CoreAnnotations.PartOfSpeechAnnotation], token \@ "pos")
 
     def updateToken(token: Node, coreToken: CoreLabel) =
-      XMLUtil.addAttribute(
-        token, "pos", coreToken get classOf[CoreAnnotations.PartOfSpeechAnnotation])
+      token addAttribute ("pos",
+        coreToken get classOf[CoreAnnotations.PartOfSpeechAnnotation])
   }
 
   class Lemma extends TokenAttrRequirement {
@@ -450,8 +447,7 @@ class StanfordCoreNLPAnnotator(
       coreToken set (classOf[CoreAnnotations.LemmaAnnotation], token \@ "lemma")
 
     def updateToken(token: Node, coreToken: CoreLabel) =
-      XMLUtil.addAttribute(
-        token, "lemma", coreToken get classOf[CoreAnnotations.LemmaAnnotation])
+      token addAttribute ("lemma", coreToken get classOf[CoreAnnotations.LemmaAnnotation])
   }
 
   // CoreNLP annotates NER information for each token, but but Jigg
@@ -525,7 +521,7 @@ class StanfordCoreNLPAnnotator(
           label={ label } normalizedLabel={ normalizedLabel } tokens={ neTokens }/>
       }
       val nesNode = <NEs annotators={ name }>{ neSeq }</NEs>
-      XMLUtil.addOrOverwriteChild(sentence, nesNode)
+      sentence addOrOverwriteChild nesNode
     }
   }
 
@@ -559,7 +555,7 @@ class StanfordCoreNLPAnnotator(
         val leaves = Trees.preTerminals(tree).asScala
         tokenSeq zip leaves map { case (token, leave) =>
           val pos = leave.label.asInstanceOf[CoreLabel].value
-          XMLUtil.addAttribute(token, "pos", pos)
+          token addAttribute ("pos", pos)
         }
       }
 
@@ -585,11 +581,11 @@ class StanfordCoreNLPAnnotator(
       }
       val root = addSpanAndGetId(tree.skipRoot)
 
-      val namedTokensNode = XMLUtil.addAnnotatorName(tokens, name)
+      val namedTokensNode = tokens.addAnnotatorName(name)
         .asInstanceOf[Elem].copy(child=updatedTokenSeq)
       val parseNode = <parse root={ root } annotators={ name }>{ spans }</parse>
 
-      XMLUtil.addOrOverwriteChild(sentence, Seq(namedTokensNode, parseNode))
+      sentence addOrOverwriteChild Seq(namedTokensNode, parseNode)
     }
   }
 
@@ -624,7 +620,7 @@ class StanfordCoreNLPAnnotator(
         sentence, semgraph, depType, name)
 
       // We override dependencies only when it has a different type.
-      XMLUtil.addOrOverwriteChild(sentence, depsNode, Some("type"))
+      sentence addOrOverwriteChild (depsNode, Some("type"))
     }
 
     protected def setGraph(sentence: CoreMap, graph: SemanticGraph): Unit
@@ -745,7 +741,7 @@ class StanfordCoreNLPAnnotator(
           { corefChainSeq }
         </coreferences>
 
-      XMLUtil.addOrOverwriteChild(document, Seq(mentionsNode, coreferencesNode))
+      document addOrOverwriteChild Seq(mentionsNode, coreferencesNode)
     }
   }
 

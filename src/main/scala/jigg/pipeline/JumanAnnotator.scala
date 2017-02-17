@@ -23,7 +23,7 @@ import java.io.InputStreamReader
 import java.io.BufferedWriter
 import java.io.OutputStreamWriter
 import scala.collection.mutable.ArrayBuffer
-import jigg.util.XMLUtil
+import jigg.util.XMLUtil.RichNode
 
 class JumanAnnotator(override val name: String, override val props: Properties)
     extends SentencesAnnotator with ParallelIO with IOCreator {
@@ -48,7 +48,7 @@ class JumanAnnotator(override val name: String, override val props: Properties)
     (0 until tokenBoundaries.size - 1).map { i =>
       val b = tokenBoundaries(i)
       val e = tokenBoundaries(i + 1)
-      XMLUtil.addChild(nodes(b), (b + 1 until e) map nodes)
+      nodes(b) addChild ((b + 1 until e) map nodes)
     }
   }
 
@@ -120,7 +120,7 @@ class JumanAnnotator(override val name: String, override val props: Properties)
       <tokens annotators={ name } normalized={ normalize + "" } >{
         makeTokenAltChild(tokenNodes)
       }</tokens>
-    XMLUtil.addChild(sentence, tokensAnnotation)
+    sentence addChild tokensAnnotation
   }
 
   private def runJuman(text: String): Seq[String] = ioQueue.using { io =>

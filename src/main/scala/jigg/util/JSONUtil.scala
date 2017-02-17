@@ -7,6 +7,8 @@ import scala.xml._
 import scala.io.Source
 import scala.collection.mutable.{ArrayBuffer, StringBuilder}
 
+import XMLUtil.RichNode
+
 import org.json4s._
 import org.json4s.DefaultFormats
 import org.json4s.JsonDSL._
@@ -21,7 +23,7 @@ object JSONUtil {
     val escapedsb = new StringBuilder
     val returnsb = new StringBuilder
     sb.append('{')
-    sb.append(List("\".tag\":\"",node.label,"\",").mkString)
+    sb.append(List("\".tag\":\"", node.label, "\",").mkString)
     sb.append("\".child\":")
     sb.append("[")
     sb.append(serializing(node))
@@ -35,31 +37,31 @@ object JSONUtil {
 
   private def serializing[T <: Node](x: T): StringBuilder = {
     val subsb = new StringBuilder
-    if(XMLUtil.hasChild(x)){
-      val childNode = XMLUtil.getNonEmptyChild(x)
+    if (x.hasChild) {
+      val childNode = x.nonAtomChild
       var prefix = ""
-      for (i <- childNode){
+      for (i <- childNode) {
         val retsb = serializing(i)
         subsb.append(prefix)
         prefix = ","
         subsb.append(List("{\".tag\":\"", i.label, "\",").mkString)
         var prefix2 = ""
-        if(!XMLUtil.text(i).isEmpty){
+        if (!i.textElem.isEmpty) {
           subsb.append(prefix2)
           val text = new StringBuilder
-          Utility.escape(XMLUtil.text(i), text)
+          Utility.escape(i.textElem, text)
           prefix2 = ","
           subsb.append(List("\"text\":\"", text, '"').mkString)
         }
-        if (!i.attributes.isEmpty){
-          for(elem <- XMLUtil.getAttributionList(i)){
+        if (!i.attributes.isEmpty) {
+          for (elem <- i.attrs) {
             subsb.append(prefix2)
             prefix2 = ","
             subsb.append(List('"', elem._1, "\":\"", elem._2, "\"").mkString)
           }
         }
 
-        if(retsb.length > 0){
+        if (retsb.length > 0) {
           subsb.append(prefix2)
           subsb.append("\".child\":")
           subsb.append("[")
@@ -85,10 +87,10 @@ object JSONUtil {
   // is automatically escaped, the returned nodes is not semantically equal
   // to the original nodes.
   // To avoid this issues, all such strings is unescaped before throw into
-  // the XMLUtil.addAttributes method.
+  // the RichNode.addAttributes method.
   private def replaceAllEscape(x: String): String = {
     val unescapeMap = Utility.Escapes.escMap map { case (c, s) => s -> c.toString}
-    unescapeMap.foldLeft(x) { (text, pair) => text.replaceAll(pair._1,pair._2)}
+    unescapeMap.foldLeft(x) { (text, pair) => text.replaceAll(pair._1, pair._2)}
   }
 
   private def generateXML(x:Map[String, Any]): Node = {
@@ -108,8 +110,8 @@ object JSONUtil {
     }
 
     val tagChanged = node.copy(label = tagString.get.toString)
-    val childAdded = XMLUtil.addChild(tagChanged, children) // do nothing when child is empty
+    val childAdded = tagChanged addChild children // do nothing when child is empty
 
-    XMLUtil.addAttributes(childAdded, attrs) // the same
+    childAdded addAttributes attrs // the same
   }
 }

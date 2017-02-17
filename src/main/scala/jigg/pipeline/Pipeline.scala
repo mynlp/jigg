@@ -22,7 +22,8 @@ import scala.annotation.tailrec
 import scala.xml.{XML, Node}
 import scala.collection.JavaConverters._
 import jigg.util.LogUtil.{ track, multipleTrack }
-import jigg.util.{PropertiesUtil => PU, IOUtil, XMLUtil, JSONUtil}
+import jigg.util.{PropertiesUtil => PU, IOUtil, JSONUtil}
+import jigg.util.XMLUtil.RichNode
 import org.json4s.jackson.JsonMethods
 
 class Pipeline(val properties: Properties = new Properties) extends PropsHolder {
@@ -323,7 +324,7 @@ Currently the annotators listed below are installed. See the detail of each anno
   def annotate(reader: BufferedReader, verbose: Boolean = false): Node = inputFormat match {
     case "text" => annotateText (IOUtil.inputIterator (reader).mkString ("\n"), verbose)
     case "xml" =>
-      process { annotators => annotate(XMLUtil.unFormattedXML(XML.load(reader)), annotators, verbose) }
+      process { annotators => annotate(XML.load(reader).toUnformatted, annotators, verbose) }
     case "json" =>
       process { annotators => annotate(JSONUtil.toXML(JsonMethods.parse(reader)), annotators, verbose) }
     case _ => argumentError("inputFormat")
@@ -348,9 +349,7 @@ Currently the annotators listed below are installed. See the detail of each anno
     }
 
     def removeTextInDoc(node: Node): Node =
-      XMLUtil.replaceAll(node, "document") { e =>
-        XMLUtil.removeText(e)
-      }
+      node.replaceAll ("document") { e => e.removeText() }
 
     removeTextInDoc(annotateRecur(root, annotators))
   }

@@ -20,6 +20,7 @@ import java.util.Properties
 import scala.xml._
 import scala.sys.process.Process
 import jigg.util.PropertiesUtil
+import jigg.util.XMLUtil.RichNode
 
 abstract class CabochaAnnotator(override val name: String, override val props: Properties)
     extends SentencesAnnotator with ParallelIO with IOCreator {
@@ -78,9 +79,7 @@ ${helpMessage}
 
     val tokenIds = tokens map(_ \ "@id" + "")
 
-    jigg.util.XMLUtil.addChild(
-      sentence,
-      Seq(chunksNode(chunks, sid, tokenIds), depsNode(chunks, sid)))
+    sentence addChild Seq(chunksNode(chunks, sid, tokenIds), depsNode(chunks, sid))
   }
 
   private def runCabocha(tokens:NodeSeq): Seq[String] = ioQueue.using { io =>

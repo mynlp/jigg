@@ -26,7 +26,8 @@ import scala.collection.GenSeq
 import scala.collection.JavaConverters._
 import scala.collection.parallel.ForkJoinTaskSupport
 import scala.concurrent.forkjoin.ForkJoinPool
-import jigg.util.{XMLUtil, PropertiesUtil}
+import jigg.util.PropertiesUtil
+import jigg.util.XMLUtil.RichNode
 
 trait Annotator extends PropsHolder {
 
@@ -94,7 +95,7 @@ object Annotator {
   }
 
   def annotateError(n: Node, name: String, e: Exception): Node =
-    XMLUtil.addChild(n, <error annotator={ name }>{ e + "" }</error>)
+    n addChild <error annotator={ name }>{ e + "" }</error>
 }
 
 /** This is the base trait for all companion object of each Annotator
@@ -123,14 +124,14 @@ class AnnotatorCompanion[A<:Annotator](implicit m: ClassTag[A]) {
 trait SentencesAnnotator extends Annotator {
   override def annotate(annotation: Node): Node = {
 
-    XMLUtil.replaceAll(annotation, "sentences") { e =>
+    annotation.replaceAll("sentences") { e =>
       val newChild = Annotator.makePar(e.child, nThreads).map { c =>
         assert(c.label == "sentence") // assuming sentences node has only sentence nodes as children
 
         try newSentenceAnnotation(c) catch {
           case e: AnnotationError =>
             System.err.println(s"Failed to annotate a sentence by $name.")
-            System.err.println(XMLUtil.text(c))
+            System.err.println(c.text)
             Annotator.annotateError(c, name, e)
         }
       }.seq
@@ -147,7 +148,7 @@ trait SentencesAnnotator extends Annotator {
 trait DocumentAnnotator extends Annotator {
   override def annotate(annotation: Node): Node = {
 
-    XMLUtil.replaceAll(annotation, "root") { e =>
+    annotation.replaceAll("root") { e =>
       val newChild = Annotator.makePar(e.child, nThreads).map { c =>
         c match {
           case c if c.label == "document" =>

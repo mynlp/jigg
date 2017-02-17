@@ -19,7 +19,7 @@ package jigg.pipeline
 import java.util.Properties
 
 import scala.xml.{Node, Elem, Text, Atom}
-import jigg.util.XMLUtil
+import jigg.util.XMLUtil.RichNode
 
 /** This simple annotator just segments a sentence by spaces, i.e.,
   * assuming the input sentence is already correctly tokenized.
@@ -52,7 +52,7 @@ class SpaceTokenizerAnnotator(override val name: String, override val props: Pro
         characterOffsetEnd={ e+"" }/>
     }
     val tokens = <tokens annotators={ name }>{ tokenSeq }</tokens>
-    XMLUtil.addChild(sentence, tokens)
+    sentence addChild tokens
   }
 
   override def requires = Set(Requirement.Ssplit)

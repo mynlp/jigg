@@ -21,7 +21,7 @@ import jigg.nlp.ccg.lexicon.{PoSTaggedSentence, Derivation, Point}
 import jigg.nlp.ccg.tagger.{MaxEntMultiTagger}
 import jigg.nlp.ccg.parser.{TransitionBasedParser, KBestDecoder}
 import jigg.util.PropertiesUtil
-import jigg.util.XMLUtil
+import jigg.util.XMLUtil.RichNode
 
 import java.util.Properties
 import scala.xml._
@@ -106,7 +106,7 @@ class CCGParseAnnotator(override val name: String, override val props: Propertie
 
     val ccgs = derivs.zipWithIndex map { case ((deriv, score), i) => ccgAnnotation(i, deriv, score) }
 
-    XMLUtil.addChild(sentence, ccgs)
+    sentence addChild ccgs
   }
 
   object SentenceConverter {

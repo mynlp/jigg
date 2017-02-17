@@ -20,7 +20,7 @@ import java.util.Properties
 import scala.collection.mutable.ArrayBuffer
 import scala.util.matching.Regex
 import scala.xml._
-import jigg.util.XMLUtil
+import jigg.util.XMLUtil.RichNode
 
 class DocumentKNPAnnotator(override val name: String, override val props: Properties)
     extends DocumentAnnotator with KNPAnnotator {
@@ -55,16 +55,16 @@ class DocumentKNPAnnotator(override val name: String, override val props: Proper
 
         val result = runKNP(sentenceNode, Some(docIdInfo), io)
         val s = annotateSentenceNode(sentenceNode, result, sentenceId, nPrevId(idx))
-        XMLUtil.addChild(s, extractPredArgs(s, did))
+        s addChild extractPredArgs(s, did)
       }
     }
     val coreferencesNode = extractCoreferences(annotatedSentences, did)
 
-    val newDoc = XMLUtil.replaceAll (document, "sentences") {
+    val newDoc = document.replaceAll("sentences") {
       _ copy (child = annotatedSentences)
     }
 
-    XMLUtil addChild (newDoc, coreferencesNode)
+    newDoc addChild coreferencesNode
   }
 
   def extractCoreferences(sentences: NodeSeq, did: String): Node = {

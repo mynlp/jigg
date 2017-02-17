@@ -20,7 +20,7 @@ import java.util.Properties
 import scala.collection.JavaConverters._
 import scala.xml._
 
-import jigg.util.XMLUtil
+import jigg.util.XMLUtil.RichNode
 
 import edu.stanford.nlp.trees.{
   EnglishGrammaticalStructure,
@@ -96,7 +96,7 @@ class StanfordCollapsedDependenciesAnnotator(
     val ccNode = SC.semanticGraphToDependenciesNode(
       sentence, ccDeps, SC.ccCollapsedDepType, name)
 
-    XMLUtil.addOrOverwriteChild(sentence, Seq(collapsedNode, ccNode), Some("type"))
+    sentence addOrOverwriteChild (Seq(collapsedNode, ccNode), Some("type"))
   }
 
   private def makeGrammaticalStructure(

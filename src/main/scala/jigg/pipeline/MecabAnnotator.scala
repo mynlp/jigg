@@ -22,6 +22,7 @@ import scala.annotation.tailrec
 import scala.xml._
 import scala.sys.process.Process
 import jigg.util.PropertiesUtil
+import jigg.util.XMLUtil.RichNode
 
 abstract class MecabAnnotator(override val name: String, override val props: Properties)
     extends SentencesAnnotator with ParallelIO with IOCreator {
@@ -91,7 +92,7 @@ ${helpMessage}
     }
 
     val tokensAnnotation = <tokens annotators={ name }>{ tokenNodes }</tokens>
-    jigg.util.XMLUtil.addChild(sentence, tokensAnnotation)
+    sentence addChild tokensAnnotation
   }
 
   protected def tokenToNode(
