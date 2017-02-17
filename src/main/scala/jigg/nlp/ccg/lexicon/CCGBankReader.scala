@@ -18,6 +18,8 @@ package jigg.nlp.ccg.lexicon
 
 import scala.io.Source
 import scala.collection.mutable.ArrayBuffer
+import java.io.BufferedReader
+import jigg.util.IOUtil
 
 class CCGBankReader(dict:Dictionary) {
   type Tree = ParseTree[String]
@@ -25,13 +27,21 @@ class CCGBankReader(dict:Dictionary) {
   var pos = 0
   var currentLine = ""
 
-  def readParseTrees(path: String, n: Int, train: Boolean): Iterator[Tree] =
-    for (line <- takeLines(path, n)) yield readParseTree(line, train)
+  def readParseTrees(input: Iterator[String], n: Int, train: Boolean): Iterator[Tree] =
+    takeLines(input, n) map { l => readParseTree(l, train) }
 
-  def takeLines(path:String, n:Int): Iterator[String] =
-    for (line <- Source.fromFile(path).getLines.filter(_!="") match {
-      case lines if (n == -1) => lines
-      case lines => lines.take(n) }) yield line
+  def readParseTrees(path: String, n: Int, train: Boolean): Iterator[Tree] =
+    readParseTrees(IOUtil.openIterator(path), n, train)
+    // for (line <- takeLines(path, n)) yield readParseTree(line, train)
+
+  def takeLines(input: Iterator[String], n: Int): Iterator[String] = n match {
+    case -1 => input.filter(_ != "")
+    case _ => input.filter(_ != "").take(n)
+  }
+  // def takeLines(path:String, n:Int): Iterator[String] =
+  //   for (line <- Source.fromFile(path).getLines.filter(_!="") match {
+  //     case lines if (n == -1) => lines
+  //     case lines => lines.take(n) }) yield line
 
   def readParseTree(line: String, train: Boolean): Tree = {
     val parser = new TreeParser
@@ -79,19 +89,24 @@ class CCGBankReader(dict:Dictionary) {
     def readChar = if (nextc == -1) doRead else { val c = nextc; nextc = -1; c }
     def skipSpaces = {
       var c = peekChar
-      while (c != -1 && Character.isWhitespace(c)) {
+      while (c != -1 && isSpace(c)) {
         readChar
         c = peekChar
       }
     }
     def readTree: Option[Tree]
+
+    def isSpace(c: Int) = c.toChar match {
+      case ' ' | '\n' | '\r' => true
+      case _ => false
+    }
   }
 
   class ATreeReader(override val in: java.io.Reader) extends TreeReader {
     def readWhile(hit: Int=>Boolean): String = {
       val sb = new StringBuilder
       var c = peekChar
-      // while (c != -1 && !Character.isWhitespace(c) && c != '{' && c != '}') {
+      // while (c != -1 && !isSpace(c) && c != '{' && c != '}') {
       while (!hit(c)) {
         sb.append(c.toChar)
         readChar
@@ -101,11 +116,11 @@ class CCGBankReader(dict:Dictionary) {
     }
 
     def readString: String = readWhile { c =>
-      c == -1 | Character.isWhitespace(c) | c == '{' | c == '}'
+      c == -1 | isSpace(c) | c == '{' | c == '}'
     }
 
     def readNonterminal: String = readWhile { c =>
-      c == -1 | Character.isWhitespace(c)
+      c == -1 | isSpace(c)
     }
 
     def readTerminal: String = readString

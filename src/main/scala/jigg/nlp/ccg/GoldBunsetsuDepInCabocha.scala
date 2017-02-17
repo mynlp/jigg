@@ -21,18 +21,15 @@ import jigg.util.IOUtil
 
 import breeze.config.{CommandLineParser, Help}
 
-import scala.collection.mutable.ArrayBuffer
-import scala.sys.process.Process
-
 import java.io.{File, FileWriter}
 
-
-object CCGBank2EnjuXML {
+/** Input: CCGBank file (e.g., train.ccgbank) from stdin.
+  * Output: Gold bunsetsu dependencies according to the CCGBank in CoNLL format.
+  */
+object GoldBunsetsuDepInCoNLL {
 
   case class Opts(
-    @Help(text="Path to CCGBank file") ccgBank: File = new File(""),
-    @Help(text="Path to output (xml)") output: File = new File(""),
-    @Help(text="Number of sentences") numSentences: Int = 50
+    @Help(text="Path to Cabocha file (same sentences with the CCGBank file)") cabocha: File = new File("")
   )
 
   def main(args:Array[String]) = {
@@ -41,20 +38,21 @@ object CCGBank2EnjuXML {
     val dict = new JapaneseDictionary(new Word2CategoryDictionary)
 
     val conv = new JapaneseParseTreeConverter(dict)
+    val parseTrees = new CCGBankReader(dict)
+      .readParseTrees(IOUtil.openStandardIterator, -1, true)
+      .map(conv.toLabelTree _).toSeq
+    val goldDerivs = parseTrees.map(conv.toDerivation)
+    val sentences = parseTrees.map(conv.toSentenceFromLabelTree)
 
-    val reader = new CCGBankReader(dict)
+    val bunsetsuSentencesWithPredHead =
+      new CabochaReader(sentences).readSentences(opts.cabocha.getPath)
 
-    val instances: Seq[(TaggedSentence, Derivation)] =
-      reader.takeLines(IOUtil.openIterator(opts.ccgBank.getPath), opts.numSentences).toSeq.map { line =>
-        val trees = reader.readParseFragments(line).map { conv.toLabelTree(_) }
-        (conv.toSentenceFromLabelTrees(trees), conv.toFragmentalDerivation(trees))
+    val bunsetsuSentencesWithGoldHead =
+      bunsetsuSentencesWithPredHead zip goldDerivs map { case (sentence, deriv) =>
+        BunsetsuSentence(sentence.bunsetsuSeq).parseWithCCGDerivation(deriv)
       }
-
-    val fw = new FileWriter(opts.output.getPath)
-
-    instances.zipWithIndex foreach { case ((s, d), i) => fw.write(d.renderEnjuXML(s, i) + "\n") }
-
-    fw.flush
-    fw.close
+    for (sentence <- bunsetsuSentencesWithGoldHead) {
+      println(sentence.renderInCoNLL)
+    }
   }
 }
