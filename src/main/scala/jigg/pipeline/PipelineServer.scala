@@ -125,9 +125,12 @@ where <annotator name> may be specific name such as corenlp or kuromoji."""
       path("annotate") {
         post {
           parameterSeq { _params =>
-            entity(as[String]) { text =>
+            formFieldSeq { _forms =>
 
-              val params = _params.toMap
+              val (textSeq, formParamSeq) = _forms.partition(_._2 == "")
+              val text = textSeq.map(_._1).mkString("\n")
+
+              val params = _params.toMap ++ formParamSeq.toMap
 
               val maybePipeline = (actor ? PipelineServer.Params(params)).mapTo[Pipeline]
 
