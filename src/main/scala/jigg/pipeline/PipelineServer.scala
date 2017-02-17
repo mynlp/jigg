@@ -49,7 +49,8 @@ class PipelineActor extends Actor {
   def receive = {
     case params: Params => {
       val coreParams = removeNonCore(params)
-      if (coreParams != lastParams) reset(coreParams)
+      // If params are empty, use the same params as before.
+      if (coreParams != lastParams && !coreParams.isEmpty) reset(coreParams)
       sender ! lastPipeline
     }
   }
@@ -190,7 +191,9 @@ where <annotator name> may be specific name such as corenlp or kuromoji."""
 
 object PipelineServer {
 
-  case class Params(kvs: Map[String, String])
+  case class Params(kvs: Map[String, String]) {
+    def isEmpty() = kvs.isEmpty
+  }
 
   def main(args: Array[String]): Unit = {
 
