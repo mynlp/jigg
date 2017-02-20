@@ -29,6 +29,7 @@ import jigg.util.LogUtil.{ track, multipleTrack }
 import jigg.util.{PropertiesUtil => PU, IOUtil, XMLUtil, JSONUtil}
 
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
+import akka.event.Logging
 import akka.http.scaladsl.coding.Deflate
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshalling.ToResponseMarshaller
@@ -42,6 +43,8 @@ import akka.util.Timeout
 
 class PipelineActor extends Actor {
   import PipelineServer.Params
+
+  val log = Logging(context.system, this)
 
   var lastParams: Params = null
   var lastPipeline: Pipeline = null
@@ -68,6 +71,8 @@ class PipelineActor extends Actor {
 
     val props = new Properties
     for ((k, v) <- params.kvs) props.setProperty(k, v)
+
+    log.info("Pipeline is updated. New property: " + props)
 
     lastPipeline = new Pipeline(props)
   }
