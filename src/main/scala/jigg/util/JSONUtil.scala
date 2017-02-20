@@ -1,27 +1,19 @@
 package jigg.util
 
-import java.io._
-
-import scala.xml._
-
-import scala.io.Source
-import scala.collection.mutable.{ArrayBuffer, StringBuilder}
-
 import XMLUtil.RichNode
-
-import org.json4s._
-import org.json4s.DefaultFormats
-import org.json4s.JsonDSL._
+import org.json4s.{DefaultFormats, _}
 import org.json4s.jackson.JsonMethods._
+
+import scala.collection.mutable.StringBuilder
+import scala.xml._
 
 object JSONUtil {
 
   def toJSON(x: Node): String = toJSONFromNode(x)
 
   private def toJSONFromNode(node: Node): String = {
+    val unescapeMap = Utility.Escapes.escMap map { case (c, s) => s -> {"\\\\" + c.toString}}
     val sb = new StringBuilder
-    val escapedsb = new StringBuilder
-    val returnsb = new StringBuilder
     sb.append('{')
     sb.append(List("\".tag\":\"", node.label, "\",").mkString)
     sb.append("\".child\":")
@@ -32,7 +24,8 @@ object JSONUtil {
     // The "parse" method can't handle the string with a single backslash,
     // because the "JString" class can't accept such kind of string.
     // To escape this issue, we replace "\\" -> "\\\\" before throwing it to the "parse" method.
-    pretty(render(parse(sb.toString.replace("\\","\\\\"))))
+    val escapedStr = unescapeMap.foldLeft(sb.toString.replace("\\","\\\\")) { (text, pair) => text.replaceAll(pair._1, pair._2)}
+    pretty(render(parse(escapedStr)))
   }
 
   private def serializing[T <: Node](x: T): StringBuilder = {
@@ -83,11 +76,14 @@ object JSONUtil {
     generateXML(jsonList)
   }
 
+
   // Since the `&` character contained in an escaped string, e.g. `&gt;`,
   // is automatically escaped, the returned nodes is not semantically equal
   // to the original nodes.
   // To avoid this issues, all such strings is unescaped before throw into
   // the RichNode.addAttributes method.
+  
+
   private def replaceAllEscape(x: String): String = {
     val unescapeMap = Utility.Escapes.escMap map { case (c, s) => s -> c.toString}
     unescapeMap.foldLeft(x) { (text, pair) => text.replaceAll(pair._1, pair._2)}
