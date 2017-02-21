@@ -12,7 +12,12 @@ object JSONUtil {
   def toJSON(x: Node): String = toJSONFromNode(x)
 
   private def toJSONFromNode(node: Node): String = {
-    val unescapeMap = Utility.Escapes.escMap map { case (c, s) => s -> {"\\\\" + c.toString}}
+    val unescapeMap = Map(
+      "&lt;" -> "<",
+      "&gt;" -> ">",
+      "&amp;" -> "&",
+      "&quot;" -> "\\\\\""
+    )
     val sb = new StringBuilder
     sb.append('{')
     sb.append(List("\".tag\":\"", node.label, "\",").mkString)

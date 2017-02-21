@@ -52,12 +52,12 @@ class JSONUtilSpec extends FunSuite{
     */
   val testNodeForEscaping =
     <root>
-      <document id={"d0"}>
-        "Test Node"
+      <document id={"<d0>"}>
+        {"\"Test&Node\""}
       </document>
     </root>
 
-  val testJsonForEscaping =
+  val testJSONForEscaping =
   parse(
   """{".tag":"root",".child":
       [{".tag":"document","id":"&lt;d0&gt;","text":"&amp;Test Node&quot;amp;"}
@@ -68,7 +68,7 @@ class JSONUtilSpec extends FunSuite{
   val goldJSONForEscaping =
   parse(
   """{".tag":"root",".child":
-      [{".tag":"document","id":"d0","text":"\"Test Node\""}
+      [{".tag":"document","id":"<d0>","text":"\"Test&Node\""}
       ]
     }"""
   )
@@ -87,7 +87,7 @@ class JSONUtilSpec extends FunSuite{
   test("toXML should generate xml.Node"){
     val xmlFromJSON = JSONUtil.toXML(goldJSON)
     val xmlFromJSONWithBackslash = JSONUtil.toXML(goldJSONForBackSlash)
-    val xmlFromJSONWithEscapeChar = JSONUtil.toXML(testJsonForEscaping)
+    val xmlFromJSONWithEscapeChar = JSONUtil.toXML(testJSONForEscaping)
     xmlFromJSON should be (<root><document id={"d0"}>{"Test Node"}</document></root>)
     xmlFromJSONWithBackslash should be (<root><document id={"d0\\N"}>{"Test Node"}</document></root>)
     xmlFromJSONWithEscapeChar should be (<root><document id={"<d0>"}>{"&Test Node\"amp;"}</document></root>)
