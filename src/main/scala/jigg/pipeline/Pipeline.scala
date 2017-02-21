@@ -298,7 +298,11 @@ Currently the annotators listed below are installed. See the detail of each anno
       }
     }
 
-    toSerialMode() // shell mode cannot perform prallel annotaiton
+    // Shell mode does not perform prallel annotaiton.
+    // The intention for this is that we want to avoid longer loading time by
+    // making many instances of annotators, considering the main usage of shell mode
+    // is for small annotations or debugging.
+    toSerialMode()
 
     process { annotators =>
       var in = readLine
