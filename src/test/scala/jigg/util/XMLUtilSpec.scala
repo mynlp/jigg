@@ -34,8 +34,8 @@ class XMLUtilSpec extends FlatSpec with Matchers {
         </document>
       </root>
 
-    val newXml = replaceAll(xml, "sentence") { sentence =>
-      addChild(sentence, <child>{ "child" }</child>)
+    val newXml = xml.replaceAll("sentence") { sentence =>
+      sentence addChild (<child>{ "child" }</child>)
     }
     val sentence = newXml \ "document" \ "sentence"
 
@@ -48,7 +48,7 @@ class XMLUtilSpec extends FlatSpec with Matchers {
     val xml = <sentence><dependencies type="basic"/></sentence>
     val newChild = <dependencies type="collapsed"/>
 
-    val newXml = XMLUtil.addOrOverwriteChild(xml, newChild)
+    val newXml = xml addOrOverwriteChild newChild
 
     newXml should be (<sentence><dependencies type="collapsed"/></sentence>)
   }
@@ -57,24 +57,24 @@ class XMLUtilSpec extends FlatSpec with Matchers {
     val xml = <sentence><dependencies type="basic"/></sentence>
     val newChild = <dependencies type="collapsed"/>
 
-    val newXml = XMLUtil.addOrOverwriteChild(xml, newChild, Some("type"))
+    val newXml = xml addOrOverwriteChild (newChild, Some("type"))
 
     newXml should be (
       <sentence><dependencies type="basic"/><dependencies type="collapsed"/></sentence>)
   }
 
-  "getChildNode" should "eliminate an empty element from formatted node" in {
+  "nonAtomChild" should "eliminate an empty element from formatted node" in {
     val printer = new scala.xml.PrettyPrinter(500, 2)
     val xml = <sentences><sentence>First sentence</sentence><sentence>Second sentence</sentence></sentences>
     val formattedNodeString = printer.format(xml)
-    val childNode = getNonEmptyChild(scala.xml.XML.loadString(formattedNodeString))
+    val childNode = scala.xml.XML.loadString(formattedNodeString).nonAtomChild
 
     childNode should be (
       scala.xml.NodeSeq.fromSeq(Seq(<sentence>First sentence</sentence>, <sentence>Second sentence</sentence>))
     )
   }
 
-  "unFormattedXML" should "create a new XML object not containing empty elements" in {
+  "toUnformatted" should "create a new XML object not containing empty elements" in {
     import scala.xml.{XML, PrettyPrinter}
     val printer = new PrettyPrinter(500, 2)
     val xml =
@@ -101,7 +101,7 @@ class XMLUtilSpec extends FlatSpec with Matchers {
     val formattedNodeString = printer.format(xml)
     val formattedNode = XML.loadString(formattedNodeString)
 
-    val unFormattedNode = unFormattedXML(formattedNode)
+    val unFormattedNode = formattedNode.toUnformatted
 
     formattedNode should not be (<root><document><sentences><sentence>First sentence<tokens><token form="First"/><token form="sentence"/></tokens><NEs/></sentence><sentence>Second sentence<tokens><token form="Second"/><token form="sentence"/></tokens><NEs/></sentence></sentences></document></root>)
     unFormattedNode should be (<root><document><sentences><sentence>First sentence<tokens><token form="First"/><token form="sentence"/></tokens><NEs/></sentence><sentence>Second sentence<tokens><token form="Second"/><token form="sentence"/></tokens><NEs/></sentence></sentences></document></root>)
