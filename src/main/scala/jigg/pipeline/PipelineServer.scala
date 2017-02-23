@@ -72,9 +72,12 @@ class PipelineActor extends Actor {
     val props = new Properties
     for ((k, v) <- params.kvs) props.setProperty(k, v)
 
-    log.info("Pipeline is updated. New property: " + props)
-
     lastPipeline = new Pipeline(props)
+
+    log.info("Pipeline is updated. New property: " + props)
+    log.info("Number of threads: " + lastPipeline.nThreads)
+
+    lastPipeline
   }
 }
 
@@ -141,7 +144,6 @@ where <annotator name> may be specific name such as corenlp or kuromoji."""
         post {
           parameterSeq { _params =>
             formFieldSeq { _forms =>
-
               val (textSeq, formParamSeq) = _forms.partition(a => a._2 == "" || a._1 == "q")
               val text = textSeq map {
                 case (a, "") => a
@@ -153,17 +155,24 @@ where <annotator name> may be specific name such as corenlp or kuromoji."""
               val maybePipeline = (actor ? PipelineServer.Params(params)).mapTo[Pipeline]
 
               val maybeResult = maybePipeline map { pipeline =>
-                val annotation = pipeline.annotate(text)
-                def outputBy(format: String): String = format match {
-                  case "json" => JSONUtil.toJSON(annotation).toString
-                  case _ =>
-                    val w = new java.io.StringWriter
-                    pipeline.writeTo(w, annotation)
-                    w.toString
-                }
-                params get "outputFormat" match {
-                  case Some(a) if a == "json" || a == "xml" => outputBy(a)
-                  case _ => outputBy("xml")
+                try {
+                  val annotation = pipeline.annotate(text)
+
+                  def outputBy(format: String): String = format match {
+                    case "json" => JSONUtil.toJSON(annotation).toString
+                    case _ =>
+                      val w = new java.io.StringWriter
+                      pipeline.writeTo(w, annotation)
+                      w.toString
+                  }
+                  params get "outputFormat" match {
+                    case Some(a) if a == "json" || a == "xml" => outputBy(a)
+                    case _ => outputBy("xml")
+                  }
+                } catch { case e: Throwable =>
+                    val sw = new java.io.StringWriter
+                    e.printStackTrace(new java.io.PrintWriter(sw))
+                    sys.error(sw.toString)
                 }
               }
               complete(maybeResult)
