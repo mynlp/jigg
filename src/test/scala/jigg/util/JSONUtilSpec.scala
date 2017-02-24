@@ -53,22 +53,26 @@ class JSONUtilSpec extends FunSuite{
   val testNodeForEscaping =
     <root>
       <document id={"<d0>"}>
-        {"\"Test&Node\""}
+        {"quot\" amp&"}
+      </document>
+      <document id={"d1"}>
+        {"new line\n \n tab\t \t carriage return\r \r backslash\\ \\"}
       </document>
     </root>
+
+  val goldJSONForEscaping =
+  parse(
+  """{".tag":"root",".child":
+      [{".tag":"document","id":"<d0>","text":"quot\" amp&"},
+      {".tag":"document", "id":"d1", "text": "new line\n \n tab\t \t carriage return\r \r backslash\\ \\"}
+      ]
+    }"""
+  )
 
   val testJSONForEscaping =
   parse(
   """{".tag":"root",".child":
       [{".tag":"document","id":"&lt;d0&gt;","text":"&amp;Test Node&quot;amp;"}
-      ]
-    }"""
-  )
-
-  val goldJSONForEscaping =
-  parse(
-  """{".tag":"root",".child":
-      [{".tag":"document","id":"<d0>","text":"\"Test&Node\""}
       ]
     }"""
   )
