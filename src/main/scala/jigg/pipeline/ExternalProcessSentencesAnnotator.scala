@@ -22,16 +22,19 @@ import scala.concurrent.duration.Duration
 import scala.util.{Success, Failure}
 import jigg.util.XMLUtil.RichNode
 
-trait ExternalProcessSentencesAnnotator extends Annotator {
+trait ExternalProcessSentencesAnnotator extends Annotator { self=>
 
   // each local annotator runs in serial
   trait LocalAnnotator extends SentencesAnnotator {
+    override def name = self.name
     override final def nThreads = 1
   }
 
   def mkLocalAnnotator(): LocalAnnotator
 
-  val localAnnotators = (0 until nThreads).map(_=>mkLocalAnnotator())
+  // We don't create local annotator here, since each local annotator may depend on
+  // some variables that are not yet instantitated; e.g., `command` in `LocalMecabAnnotator`.
+  lazy val localAnnotators = (0 until nThreads).map(_=>mkLocalAnnotator())
 
   override def annotate(annotation: Node): Node = {
     val documentSeq = annotation \\ "document"
@@ -69,13 +72,6 @@ trait ExternalProcessSentencesAnnotator extends Annotator {
       }
     for (a <- maybeAnnotatedSentences) Await.ready(a, Duration.Inf)
     maybeAnnotatedSentences.map(_.value.get.get).flatten
-
-    // (dividedSentences zip maybeAnnotatedSentences).map { case (d, m) =>
-    //   m onComplete {
-    //     case Success(batchResult) => batchResult
-    //     case Failure(error) => annotateErrorToBatch(d, error)
-    //   }
-    // }.flatten
   }
 
   def divideBy(sentences: Seq[Node], n: Int): Seq[Seq[Node]] = {
