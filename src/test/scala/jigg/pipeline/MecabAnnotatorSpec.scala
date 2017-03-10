@@ -47,11 +47,11 @@ EOS"""
 
   "Annotator with nThreads=2" should "annotate in parallel" in {
     val responces = Map(
-      "a" -> """a	名詞,固有名詞,組織,*,*,*,*
+      "a" -> """a	名詞,固有名詞,*,*,*,*,*
 EOS""",
-      "b" -> """b	名詞,固有名詞,組織,*,*,*,*
+      "b" -> """b	動詞,*,*,*,*,*,*
 EOS""",
-      "c" -> """c	名詞,固有名詞,組織,*,*,*,*
+      "c" -> """c	形容詞,*,*,*,*,*,*
 EOS"""
     )
     val in = <root>
