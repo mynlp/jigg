@@ -27,14 +27,6 @@ class CabochaAnnotatorSpec extends BaseAnnotatorSpec {
       override def mkCommunicator = new StubExternalCommunicator(output)
     }
 
-  // def newJuman(output: String, p: Properties = new Properties) = new JumanDicCabochaAnnotator("", p) {
-  //   override def mkCommunicator = new StubExternalCommunicator(output)
-  // }
-
-  // def newUnidic(output: String, p: Properties = new Properties) = new UnidicCabochaAnnotator("", p) {
-  //   override def mkCommunicator = new StubExternalCommunicator(output)
-  // }
-
   "Annotator" should "add root dependency to one word sentence" in {
 
     val s = "a"
@@ -54,27 +46,6 @@ class CabochaAnnotatorSpec extends BaseAnnotatorSpec {
     result.size should be (1)
     (result \ "_" \ "_").size should be (3)
   }
-
-  // it should "replace the old annotation with new one" in {
-
-  //   val s = "annotated"
-  //   val annotator = newIPA(Sentences.cabocha(s))
-  //   val result = annotator.newSentenceAnnotation(Sentences.xml(s))
-
-  //   val chunks = result \\ "chunks"
-
-  //   chunks.size should be (1)
-  //   chunks.head should equal (
-  //     <chunks><chunk id="s0_chu0" tokens="s0_tok0" head="s0_tok0" func="s0_tok0"/></chunks>)
-
-  //   val deps = result \\ "dependencies"
-  //   deps.size should be (1)
-  //   deps.head should equal (
-  //     <dependencies><dependency unit="chunk" id="s0_dep0" head="root" dependent="s0_chu0" deprel="D"/></dependencies>)
-
-  //   result.size should be (1)
-  //   (result \ "_" \ "_").size should be (3)
-  // }
 
   it should "add all chunks and dependencies for a sentence" in {
 
