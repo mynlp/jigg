@@ -219,7 +219,6 @@ class MapStubExternalCommunicator(responces: Map[String, String]) extends IOComm
   def flush() = {}
 
   def readingIter = {
-    println(currentIn)
     val o = responces(currentIn)
     o.split("\n").toIterator
   }
