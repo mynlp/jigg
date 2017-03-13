@@ -32,6 +32,8 @@ trait ExternalProcessSentencesAnnotator extends Annotator { self=>
 
   def mkLocalAnnotator(): LocalAnnotator
 
+  override def close() = for (a <- localAnnotators) a.close()
+
   // We don't create local annotator here, since each local annotator may depend on
   // some variables that are not yet instantitated; e.g., `command` in `LocalMecabAnnotator`.
   lazy val localAnnotators = (0 until nThreads).map(_=>mkLocalAnnotator())

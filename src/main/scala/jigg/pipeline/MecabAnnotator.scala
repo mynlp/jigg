@@ -57,6 +57,7 @@ ${helpMessage}
     def softwareUrl = "https://taku910.github.io/mecab/"
 
     val mecab = mkIO()
+    override def close() = mecab.close()
 
     override def newSentenceAnnotation(sentence: Node): Node = {
 
