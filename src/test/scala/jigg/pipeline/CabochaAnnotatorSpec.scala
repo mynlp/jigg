@@ -24,14 +24,17 @@ class CabochaAnnotatorSpec extends BaseAnnotatorSpec {
 
   def newIPA(output: String, p: Properties = new Properties) =
     new IPACabochaAnnotator("cabocha", p) {
-      override def mkCommunicator = new StubExternalCommunicator(output)
+      override def nThreads = 1 // prallelism is already tested for mecab.
+      override def mkLocalAnnotator = new IPALocalCabochaAnnotator {
+        override def mkCommunicator = new StubExternalCommunicator(output)
+      }
     }
 
   "Annotator" should "add root dependency to one word sentence" in {
 
     val s = "a"
     val annotator = newIPA(Sentences.cabocha(s))
-    val result = annotator.newSentenceAnnotation(Sentences.xml(s))
+    val result = annotator.annotate(Sentences.xml(s))
 
     val chunks = result \\ "chunks"
     chunks.size should be (1)
@@ -51,7 +54,7 @@ class CabochaAnnotatorSpec extends BaseAnnotatorSpec {
 
     val s = "ipa3words"
     val annotator = newIPA(Sentences.cabocha(s))
-    val result = annotator.newSentenceAnnotation(Sentences.xml(s))
+    val result = annotator.annotate(Sentences.xml(s))
 
     val chunks = result \\ "chunks"
 
@@ -78,22 +81,22 @@ class CabochaAnnotatorSpec extends BaseAnnotatorSpec {
   object Sentences {
 
     val xml = Map(
-      "a" -> <sentence id="s0">あ
+      "a" -> <root><document><sentences><sentence id="s0">あ
         <tokens>
         <token id="s0_tok0" surf="あ" pos="フィラー" pos1="*" pos2="*" pos3="*" inflectionType="*" inflectionForm="*" base="あ" reading="ア" pronounce="ア"/>
         </tokens>
-        </sentence>,
+        </sentence></sentences></document></root>,
 
-      "annotated" -> <sentence id="s0">あ
+      "annotated" -> <root><document><sentences><sentence id="s0">あ
         <tokens>
         <token id="s0_tok0" surf="あ" pos="フィラー" pos1="*" pos2="*" pos3="*" inflectionType="*" inflectionForm="*" base="あ" reading="ア" pronounce="ア"/>
         </tokens>
         <chunks><chunk id="s0_chu0" tokens="s0_tok0" head="" func="s0_tok0"/></chunks>
         <dependencies><dependency unit="chunk" id="s0_dep0" head="" dependent="s0_chu0" deprel="D"/></dependencies>
-        </sentence>,
+        </sentence></sentences></document></root>,
 
       "ipa3words" ->
-        <sentence id="s0">
+        <root><document><sentences><sentence id="s0">
           太郎は京都に行った
           <tokens>
             <token id="s0_tok0" surf="太郎" pos="名詞" pos1="固有名詞" pos2="人名" pos3="名" inflectionType="*" inflectionForm="*" base="太郎" reading="タロウ" pronounce="タロー"/>
@@ -103,7 +106,7 @@ class CabochaAnnotatorSpec extends BaseAnnotatorSpec {
             <token id="s0_tok4" surf="行っ" pos="動詞" pos1="自立" pos2="*" pos3="*" inflectionType="五段・カ行促音便" inflectionForm="連用タ接続" base="行く" reading="イッ" pronounce="イッ"/>
             <token id="s0_tok5" surf="た" pos="助動詞" pos1="*" pos2="*" pos3="*" inflectionType="特殊・タ" inflectionForm="基本形" base="た" reading="タ" pronounce="タ"/>
           </tokens>
-        </sentence>
+        </sentence></sentences></document></root>
     )
 
     val cabocha = Map(
