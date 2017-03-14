@@ -46,8 +46,10 @@ class CabochaAnnotatorSpec extends BaseAnnotatorSpec {
     deps.head should equal (
       <dependencies annotators="cabocha"><dependency unit="chunk" id="s0_dep0" head="root" dependent="s0_chu0" deprel="D"/></dependencies>)
 
-    result.size should be (1)
-    (result \ "_" \ "_").size should be (3)
+    val sentences = result \\ "sentence"
+
+    sentences.size should be (1)
+    (sentences \ "_" \ "_").size should be (3)
   }
 
   it should "add all chunks and dependencies for a sentence" in {
