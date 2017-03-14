@@ -25,10 +25,10 @@ class MecabAnnotatorSpec extends BaseAnnotatorSpec {
   def stubCom(output: String) = new StubExternalCommunicator(output)
   def mapCom(responces: Map[String, String]) = new MapStubExternalCommunicator(responces)
 
-  def newIPA(com: IOCommunicator, threads: Int = 1, p: Properties = new Properties) =
+  def newIPA(mkCom: ()=>IOCommunicator, threads: Int = 1, p: Properties = new Properties) =
     new IPAMecabAnnotator("mecab", p) {
       override def mkLocalAnnotator = new IPALocalMecabAnnotator {
-        override def mkCommunicator = com
+        override def mkCommunicator = mkCom()
       }
       override def nThreads = threads
     }
@@ -38,7 +38,7 @@ class MecabAnnotatorSpec extends BaseAnnotatorSpec {
     val in = <root><document><sentences><sentence id="s0">a</sentence></sentences></document></root>
     val out = """a	名詞,固有名詞,組織,*,*,*,*
 EOS"""
-    val annotator = newIPA(stubCom(out), threads=1)
+    val annotator = newIPA(()=>stubCom(out), threads=1)
     val result = annotator.annotate(in)
     val tokens = result \\ "token"
     tokens.size should be(1)
@@ -59,12 +59,12 @@ EOS"""
     <sentences>
     <sentence id="s0">a</sentence>
     <sentence id="s1">b</sentence>
-    <sentence id="s1">c</sentence>
+    <sentence id="s2">c</sentence>
     </sentences>
     </document>
     </root>
 
-    val annotator = newIPA(mapCom(responces), threads=2)
+    val annotator = newIPA(()=>mapCom(responces), threads=2)
     val result = annotator.annotate(in)
 
     val sentences = result \\ "sentence"
