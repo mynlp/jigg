@@ -62,7 +62,6 @@ trait ExternalProcessSentencesAnnotator extends Annotator { self=>
   def annotateInParallel(sentences: Seq[Node]): Seq[Node] = {
     val dividedSentences = divideBy(sentences, nThreads)
     assert(dividedSentences.size == nThreads)
-    assert(localAnnotators.size == nThreads)
 
     implicit val context = scala.concurrent.ExecutionContext.global
 

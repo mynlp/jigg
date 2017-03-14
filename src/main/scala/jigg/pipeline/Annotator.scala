@@ -323,6 +323,7 @@ $msg
   *
   * The subclass must implement `mkIO()`; easy way is to mix-in IOCreator
   */
+@deprecated(message="This class is unstable in some environment. Use ExternalProcessSentencesAnnotator for achieving similar parallelism.", "3.6.2")
 trait ParallelIO extends EasyIO with ParallelAnnotator {
 
   def mkIO(): IO

@@ -30,6 +30,8 @@ abstract class CabochaAnnotator(override val name: String, override val props: P
   @Prop(gloss = "Use this command to launch cabocha. Do not touch -f and -I options. -f1 -I1 are always automatically added.") var command = CabochaAnnotator.defaultCommand
   readProps()
 
+  localAnnotators // instantiate lazy val here
+
   override def description = {
 
     def keyName = makeFullName("command")

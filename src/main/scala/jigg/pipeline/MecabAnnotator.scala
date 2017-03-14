@@ -32,6 +32,8 @@ abstract class MecabAnnotator(override val name: String, override val props: Pro
   @Prop(gloss = "Use this command to launch mecab. System dictionary is selected according to the current configuration accessible with '-P' option.") var command = MecabAnnotator.defaultCommand
   readProps()
 
+  localAnnotators // instantiate lazy val here
+
   override def description = {
 
     def keyName = makeFullName("command")
