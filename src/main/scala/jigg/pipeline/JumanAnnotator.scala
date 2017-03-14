@@ -26,106 +26,112 @@ import scala.collection.mutable.ArrayBuffer
 import jigg.util.XMLUtil.RichNode
 
 class JumanAnnotator(override val name: String, override val props: Properties)
-    extends SentencesAnnotator with ParallelIO with IOCreator {
+    extends ExternalProcessSentencesAnnotator { self=>
 
   @Prop(gloss = "Use this command to launch JUMAN") var command = "juman"
   @Prop(gloss = "If true, run JUMAN and KNP for a normalized input that replaces hankaku chars (ascii only; not kana) with zenkaku chars. If false use the original input.") var normalize = true
   readProps()
 
-  val ioQueue = new IOQueue(nThreads)
+  localAnnotators
 
-  override def launchTesters = Seq(
-    LaunchTester("EOS", _ == "EOS", _ == "EOS"))
+  def mkLocalAnnotator = new LocalJumanAnnotator
 
-  def softwareUrl = "http://nlp.ist.i.kyoto-u.ac.jp/index.php?JUMAN"
+  class LocalJumanAnnotator extends LocalAnnotator with IOCreator {
+    def command = self.command
 
-  override def close() = ioQueue.close()
+    override def launchTesters = Seq(
+      LaunchTester("EOS", _ == "EOS", _ == "EOS"))
+    def softwareUrl = "http://nlp.ist.i.kyoto-u.ac.jp/index.php?JUMAN"
 
-  def makeTokenAltChild(nodes: NodeSeq): NodeSeq = {
-    val tokenBoundaries =
-      (0 until nodes.size).filter(nodes(_).label == "token") :+ nodes.size
+    val juman = mkIO()
+    override def close = juman.close()
 
-    (0 until tokenBoundaries.size - 1).map { i =>
-      val b = tokenBoundaries(i)
-      val e = tokenBoundaries(i + 1)
-      nodes(b) addChild ((b + 1 until e) map nodes)
-    }
-  }
+    override def newSentenceAnnotation(sentence: Node): Node = {
+      val sindex = (sentence \ "@id").toString
+      def tid(tindex: Int) = sindex + "_tok" + tindex
+      def tidAlt(tindex: Int, aindex: Int) = tid(tindex) + "_alt" + aindex
 
-  override def newSentenceAnnotation(sentence: Node): Node = {
-    val sindex = (sentence \ "@id").toString
-    def tid(tindex: Int) = sindex + "_tok" + tindex
-    def tidAlt(tindex: Int, aindex: Int) = tid(tindex) + "_alt" + aindex
+      val text = sentence.text
 
-    val text = sentence.text
+      val normalized = if (normalize) jigg.util.Normalizer.hanZenAscii(text) else text
 
-    val normalized = if (normalize) jigg.util.Normalizer.hanZenAscii(text) else text
+      //Before tokenIndex is substituted, it will be added 1. So, the first tokenIndex is 0.
+      var tokenIndex = -1
+      var tokenAltIndex = -1
 
-    //Before tokenIndex is substituted, it will be added 1. So, the first tokenIndex is 0.
-    var tokenIndex = -1
-    var tokenAltIndex = -1
+      val jumanOutput = runJuman(normalized)
+      val tokenSizes = jumanOutput collect {
+        case line if line(0) != '@' =>
+          (1 until line.size - 1) find { line(_) == ' ' } getOrElse 0
+      }
+      val tokenOffsets = tokenSizes.scanLeft(0) { _ + _ }
 
-    val jumanOutput = runJuman(normalized)
-    val tokenSizes = jumanOutput collect {
-      case line if line(0) != '@' =>
-        (1 until line.size - 1) find { line(_) == ' ' } getOrElse 0
-    }
-    val tokenOffsets = tokenSizes.scanLeft(0) { _ + _ }
+      // output form of Juman
+      // surf reading base pos n pos1 n inflectionType n inflectionForm semantic
+      // 表層形 読み 原形 品詞 n 品詞細分類1 n 活用型 n 活用形 n 意味情報
+      def tokenToNode(tokenized: String): Node = {
+        val isAmbig = (tokenized.head == '@')
+        val id = if (isAmbig) {
+          tokenAltIndex += 1
+          tidAlt(tokenIndex, tokenAltIndex)
+        } else {
+          tokenIndex += 1
+          tokenAltIndex = -1
+          tid(tokenIndex)
+        }
 
-    // output form of Juman
-    // surf reading base pos n pos1 n inflectionType n inflectionForm semantic
-    // 表層形 読み 原形 品詞 n 品詞細分類1 n 活用型 n 活用形 n 意味情報
-    def tokenToNode(tokenized: String): Node = {
-      val isAmbig = (tokenized.head == '@')
-      val id = if (isAmbig) {
-        tokenAltIndex += 1
-        tidAlt(tokenIndex, tokenAltIndex)
-      } else {
-        tokenIndex += 1
-        tokenAltIndex = -1
-        tid(tokenIndex)
+        val offsetBegin = tokenOffsets(tokenIndex)
+        val offsetEnd = tokenOffsets(tokenIndex + 1)
+
+        val spaceIdx = -1 +: (0 until tokenized.size - 1).filter {
+          // The reason why we check the next token is to process half space tokens
+          // correctly.
+          // See https://github.com/mynlp/jigg/issues/28 for detail.
+          i => tokenized(i) == ' ' && tokenized(i + 1) != ' '
+        }
+
+        val feat: Int => String =
+          if (isAmbig)
+            i => tokenized substring (spaceIdx(i + 1) + 1, spaceIdx(i + 2)) // skip @
+          else i => tokenized substring (spaceIdx(i) + 1, spaceIdx(i + 1))
+
+        val normalizedForm = if (normalize) Some(Text(feat(0))) else None
+
+        val semantic =
+          if (isAmbig) tokenized substring (spaceIdx(12) + 1)
+          else tokenized substring (spaceIdx(11) + 1)
+
+        val token = JumanAnnotator.tokenNode(id, feat, semantic, offsetBegin, offsetEnd)
+
+        if (isAmbig) token copy (label="tokenAlt") else token
       }
 
-      val offsetBegin = tokenOffsets(tokenIndex)
-      val offsetEnd = tokenOffsets(tokenIndex + 1)
-
-      val spaceIdx = -1 +: (0 until tokenized.size - 1).filter {
-        // The reason why we check the next token is to process half space tokens
-        // correctly.
-        // See https://github.com/mynlp/jigg/issues/28 for detail.
-        i => tokenized(i) == ' ' && tokenized(i + 1) != ' '
+      val tokenNodes = (0 until jumanOutput.size) map { i =>
+        tokenToNode(jumanOutput(i))
       }
 
-      val feat: Int => String =
-        if (isAmbig)
-          i => tokenized substring (spaceIdx(i + 1) + 1, spaceIdx(i + 2)) // skip @
-        else i => tokenized substring (spaceIdx(i) + 1, spaceIdx(i + 1))
-
-      val normalizedForm = if (normalize) Some(Text(feat(0))) else None
-
-      val semantic =
-        if (isAmbig) tokenized substring (spaceIdx(12) + 1)
-        else tokenized substring (spaceIdx(11) + 1)
-
-      val token = JumanAnnotator.tokenNode(id, feat, semantic, offsetBegin, offsetEnd)
-
-      if (isAmbig) token copy (label="tokenAlt") else token
+      val tokensAnnotation =
+        <tokens annotators={ name } normalized={ normalize + "" } >{
+          makeTokenAltChild(tokenNodes)
+        }</tokens>
+      sentence addChild tokensAnnotation
     }
 
-    val tokenNodes = (0 until jumanOutput.size) map { i =>
-      tokenToNode(jumanOutput(i))
+    def makeTokenAltChild(nodes: NodeSeq): NodeSeq = {
+      val tokenBoundaries =
+        (0 until nodes.size).filter(nodes(_).label == "token") :+ nodes.size
+
+      (0 until tokenBoundaries.size - 1).map { i =>
+        val b = tokenBoundaries(i)
+        val e = tokenBoundaries(i + 1)
+        nodes(b) addChild ((b + 1 until e) map nodes)
+      }
     }
 
-    val tokensAnnotation =
-      <tokens annotators={ name } normalized={ normalize + "" } >{
-        makeTokenAltChild(tokenNodes)
-      }</tokens>
-    sentence addChild tokensAnnotation
-  }
-
-  private def runJuman(text: String): Seq[String] = ioQueue.using { io =>
-    io.safeWriteWithFlush(text)
-    io.readUntil(_ == "EOS").dropRight(1)
+    private def runJuman(text: String): Seq[String] = {
+      juman.safeWriteWithFlush(text)
+      juman.readUntil(_ == "EOS").dropRight(1)
+    }
   }
 
   override def requires = Set(Requirement.Ssplit)
