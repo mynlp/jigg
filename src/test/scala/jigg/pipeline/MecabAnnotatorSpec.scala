@@ -43,6 +43,8 @@ EOS"""
     val tokens = result \\ "token"
     tokens.size should be(1)
     (tokens(0) \@ "pos") should be("名詞")
+
+    result \\ "tokens" \@ "annotators" should be("mecab")
   }
 
   "Annotator with nThreads=2" should "annotate in parallel" in {
