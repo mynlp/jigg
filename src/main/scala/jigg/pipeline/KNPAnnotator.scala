@@ -20,74 +20,82 @@ import scala.collection.mutable.ArrayBuffer
 import scala.xml._
 import jigg.util.XMLUtil.RichNode
 
-trait KNPAnnotator extends Annotator with ParallelIO with IOCreator {
+trait KNPAnnotator extends Annotator { self=>
 
   @Prop(gloss = "If true (default), replace tokens node with the KNP outputs. If false, remain the juman outputs.") var replaceJumanTokens = true
 
-  def softwareUrl = "http://nlp.ist.i.kyoto-u.ac.jp/index.php?KNP"
+  def command: String
 
-  override def launchTesters = Seq(
-    LaunchTester("EOS", _ == "EOS", _ startsWith "# S-ID"))
+  trait BaseKNPLocalAnnotator extends IOCreator {
+    def softwareUrl = "http://nlp.ist.i.kyoto-u.ac.jp/index.php?KNP"
+    def command = self.command
 
-  def runKNP(sentence: Node, beginInput: Option[String], io: IO): Seq[String] = {
-    val jumanTokens = (sentence \ "tokens").head
+    def knp: IO
+    override def close() = knp.close()
 
-    val _output = recoverJumanOutput(jumanTokens)
-    val jumanOutput = beginInput map (Iterator(_) ++ _output) getOrElse _output
+    override def launchTesters = Seq(
+      LaunchTester("EOS", _ == "EOS", _ startsWith "# S-ID"))
 
-    io safeWriteWithFlush jumanOutput
+    def runKNP(sentence: Node, beginInput: Option[String]): Seq[String] = {
+      val jumanTokens = (sentence \ "tokens").head
 
-    val result = io readUntil (_ == "EOS")
-    if (result(0).startsWith(";;") || result(0).contains("ERROR"))
-      throw new ProcessError(result mkString "\n")
-    else result
-  }
+      val _output = recoverJumanOutput(jumanTokens)
+      val jumanOutput = beginInput map (Iterator(_) ++ _output) getOrElse _output
 
-  def annotateSentenceNode(
-    sentence: Node,
-    knpOutput: Seq[String],
-    sentenceId: String,
-    nPrevSentenceId: Int=>String): Node = {
+      knp safeWriteWithFlush jumanOutput
 
-    val analyzer = new SentenceAnalyzer(knpOutput, sentenceId)
-
-    val knpTokens = analyzer.extractTokens()
-    val basicPhrases = analyzer.extractBasicPhrases()
-
-    val tokenAdded = replaceJumanTokens match {
-      case true => sentence addOrOverwriteChild knpTokens
-      case false => sentence addChild knpTokens
+      val result = knp readUntil (_ == "EOS")
+      if (result(0).startsWith(";;") || result(0).contains("ERROR"))
+        throw new ProcessError(result mkString "\n")
+      else result
     }
 
-    val otherChildren = Seq[Node](
-      basicPhrases,
-      analyzer.extractChunks(),
-      analyzer.extractBasicPhraseDependencies(),
-      analyzer.extractChunkDependencies(),
-      analyzer.extractCaseRelations(knpTokens, basicPhrases, nPrevSentenceId),
-      analyzer.extractNEs(knpTokens)
-    )
-    tokenAdded addChild otherChildren
-  }
+    def annotateSentenceNode(
+      sentence: Node,
+      knpOutput: Seq[String],
+      sentenceId: String,
+      nPrevSentenceId: Int=>String): Node = {
 
-  private[this] val jumanFeats = Array("form", "yomi", "lemma", "pos", "posId", "pos1",
-    "pos1Id", "cType", "cTypeId", "cForm", "cFormId", "misc").map("@" + _)
+      val analyzer = new SentenceAnalyzer(knpOutput, sentenceId)
 
-  private[this] def recoverTokenStr(tokenNode: Node, alt: Boolean): String = {
-    def head = if (alt) "@ " else ""
-    head + jumanFeats.map { a => (tokenNode \ a).text }.mkString(" ")
-  }
+      val knpTokens = analyzer.extractTokens()
+      val basicPhrases = analyzer.extractBasicPhrases()
 
-  def recoverJumanOutput(jumanTokens: Node): Iterator[String] = {
-    val output = ArrayBuffer.empty[String]
+      val tokenAdded = replaceJumanTokens match {
+        case true => sentence addOrOverwriteChild knpTokens
+        case false => sentence addChild knpTokens
+      }
 
-    for (tok <- jumanTokens \\ "token") {
-      output += recoverTokenStr(tok, false)
-
-      for (alt <- tok \ "tokenAlt") output += recoverTokenStr(alt, true)
+      val otherChildren = Seq[Node](
+        basicPhrases,
+        analyzer.extractChunks(),
+        analyzer.extractBasicPhraseDependencies(),
+        analyzer.extractChunkDependencies(),
+        analyzer.extractCaseRelations(knpTokens, basicPhrases, nPrevSentenceId),
+        analyzer.extractNEs(knpTokens)
+      )
+      tokenAdded addChild otherChildren
     }
-    output += "EOS"
-    output.toIterator
+
+    private[this] val jumanFeats = Array("form", "yomi", "lemma", "pos", "posId", "pos1",
+      "pos1Id", "cType", "cTypeId", "cForm", "cFormId", "misc").map("@" + _)
+
+    private[this] def recoverTokenStr(tokenNode: Node, alt: Boolean): String = {
+      def head = if (alt) "@ " else ""
+      head + jumanFeats.map { a => (tokenNode \ a).text }.mkString(" ")
+    }
+
+    def recoverJumanOutput(jumanTokens: Node): Iterator[String] = {
+      val output = ArrayBuffer.empty[String]
+
+      for (tok <- jumanTokens \\ "token") {
+        output += recoverTokenStr(tok, false)
+
+        for (alt <- tok \ "tokenAlt") output += recoverTokenStr(alt, true)
+      }
+      output += "EOS"
+      output.toIterator
+    }
   }
 
   class SentenceAnalyzer(output: Seq[String], sentenceId: String) {

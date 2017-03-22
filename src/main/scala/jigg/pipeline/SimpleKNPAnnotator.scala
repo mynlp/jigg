@@ -20,21 +20,25 @@ import java.util.Properties
 import scala.xml._
 
 class SimpleKNPAnnotator(override val name: String, override val props: Properties)
-    extends SentencesAnnotator with KNPAnnotator {
+    extends KNPAnnotator with ExternalProcessSentencesAnnotator { self=>
 
   @Prop(gloss = "Use this command to launch KNP (-tab is automatically added. -anaphora is not compatible with this annotator. In that case, use knpDoc instead). Version >= 4.12 is assumed.") var command = "knp"
   readProps()
 
-  val ioQueue = new IOQueue(nThreads)
+  localAnnotators // instantiate lazy val here
 
-  override def close() = ioQueue.close()
+  def mkLocalAnnotator = new SimpleKNPLocalAnnotator
 
-  override def defaultArgs = Seq("-tab")
+  class SimpleKNPLocalAnnotator extends LocalAnnotator with BaseKNPLocalAnnotator {
+    override def defaultArgs = Seq("-tab")
 
-  override def newSentenceAnnotation(sentence: Node): Node = {
-    val sentenceId = (sentence \ "@id").toString
+    val knp = mkIO()
 
-    val knpResult = ioQueue.using { io => runKNP(sentence, None, io) }
-    annotateSentenceNode(sentence, knpResult, sentenceId,  _ => sentenceId)
+    override def newSentenceAnnotation(sentence: Node): Node = {
+      val sentenceId = (sentence \ "@id").toString
+
+      val knpResult = runKNP(sentence, None)
+      annotateSentenceNode(sentence, knpResult, sentenceId,  _ => sentenceId)
+    }
   }
 }
