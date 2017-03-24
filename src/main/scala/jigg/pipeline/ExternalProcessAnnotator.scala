@@ -22,7 +22,11 @@ import scala.concurrent.duration.Duration
 import scala.util.{Success, Failure}
 import jigg.util.XMLUtil.RichNode
 
-trait ExternalProcessParallelAnnotator[A<:Annotator] extends Annotator { self=>
+/** `A` is class of localAnnotator (maybe SentencesAnnotator or DocumentAnnotator), which manages
+  * annotators communicating with an external software.
+  */
+trait ExternalProcessParallelAnnotator[A<:Annotator]
+    extends AnnotatingInParallel[A] { self=>
 
   // each local annotator runs in serial
   trait BaseLocalAnnotator extends Annotator {
@@ -38,69 +42,21 @@ trait ExternalProcessParallelAnnotator[A<:Annotator] extends Annotator { self=>
   // `LocalMecabAnnotator`.
   lazy val localAnnotators: Seq[A] =
     (0 until nThreads).map(_=>mkLocalAnnotator())
-
-  def annotateInParallel(elems: Seq[Node]): Seq[Node] = {
-    val dividedElems = divideBy(elems, nThreads)
-    assert(dividedElems.size == nThreads)
-
-    implicit val context = scala.concurrent.ExecutionContext.global
-
-    val maybeAnnotatedElems: Seq[Future[Seq[Node]]] =
-      dividedElems zip localAnnotators map {
-        case (localElems, ann) => Future(annotateSeq(localElems, ann)) recover {
-          case e => annotateErrorToBatch(localElems, e)
-        }
-      }
-    for (a <- maybeAnnotatedElems) Await.ready(a, Duration.Inf)
-    maybeAnnotatedElems.map(_.value.get.get).flatten
-  }
-
-  def divideBy(elems: Seq[Node], n: Int): Seq[Seq[Node]] = {
-    val divided: Seq[Seq[Node]] =
-      if (elems.size < n) elems +: Array.fill(n-1)(Seq[Node]())
-      else elems.grouped(elems.size / n).toIndexedSeq
-    assert(divided.size == n || divided.size == n + 1)
-    if (divided.size == n + 1) divided.take(n - 1) :+ (divided(n - 1) ++ divided(n))
-    else divided
-  }
-
-  def annotateSeq(annotations: Seq[Node], annotator: A): Seq[Node]
-
-  // TODO
-  private def annotateErrorToBatch(original: Seq[Node], error: Throwable): Seq[Node] = {
-    original
-  }
 }
 
 trait ExternalProcessSentencesAnnotator
-    extends ExternalProcessParallelAnnotator[SentencesAnnotator] { self=>
+    extends ExternalProcessParallelAnnotator[SentencesAnnotator] with SentenceLevelParallelism { self=>
 
   trait LocalAnnotator extends SentencesAnnotator with BaseLocalAnnotator
-
-  override def annotate(annotation: Node): Node = {
-    annotation.replaceAll("sentences") { e =>
-      val sentences = e \\ "sentence"
-      val annotatedSentences = annotateInParallel(sentences)
-      e.copy(child = annotatedSentences)
-    }
-  }
 
   def annotateSeq(annotations: Seq[Node], ann: SentencesAnnotator) =
     annotations map ann.newSentenceAnnotation
 }
 
 trait ExternalProcessDocumentAnnotator
-    extends ExternalProcessParallelAnnotator[DocumentAnnotator] { self=>
+    extends ExternalProcessParallelAnnotator[DocumentAnnotator] with DocumentLevelParallelism { self=>
 
   trait LocalAnnotator extends DocumentAnnotator with BaseLocalAnnotator
-
-  override def annotate(annotation: Node): Node = {
-    annotation.replaceAll("root") { e =>
-      val documents = e \\ "document"
-      val annotatedDocuments = annotateInParallel(documents)
-      e.copy(child = annotatedDocuments)
-    }
-  }
 
   def annotateSeq(annotations: Seq[Node], ann: DocumentAnnotator) =
     annotations map ann.newDocumentAnnotation
