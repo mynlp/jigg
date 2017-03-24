@@ -34,7 +34,10 @@ import edu.berkeley.nlp.PCFGLA.{
 import edu.berkeley.nlp.syntax.Tree
 import edu.berkeley.nlp.util.{MyMethod, Numberer}
 
-trait BerkeleyParserAnnotator extends SentencesAnnotator with ParallelAnnotator {
+trait BerkeleyParserAnnotator
+    extends AnnotatingInParallel[BerkeleyParserAnnotator.Parser] with SentenceLevelParallelism {
+
+  type BParser = BerkeleyParserAnnotator.Parser
 
   def threshold = 1.0 // this value is used without explanation in original BerkeleyParser.java
 
@@ -51,8 +54,6 @@ trait BerkeleyParserAnnotator extends SentencesAnnotator with ParallelAnnotator 
 
   readProps()
 
-  lazy val parser: Parser = new QueueParser
-
   override def description = s"""${super.description}
 
   A wrapper for Berkeley parser. The feature is that this wrapper is implemented to be
@@ -67,10 +68,57 @@ trait BerkeleyParserAnnotator extends SentencesAnnotator with ParallelAnnotator 
   is the default behavior.
 """
 
-  // lazy val parser = mkParser()
-
   override def init() = {
-    parser // init here, to output help message without loading
+    localAnnotators // init here, to output help message without loading
+  }
+
+  lazy val localAnnotators: Seq[BerkeleyParserAnnotator.Parser] = (0 until nThreads).map { i =>
+    val internalParser = mkInternalParser()
+    new BParser {
+      def parse(sentence: JList[String], pos: JList[String]): Tree[String] = {
+        val deriv = internalParser.getBestConstrainedParse(sentence, pos, null)
+        TreeAnnotations.unAnnotateTree(deriv, keepFunctionLabels)
+      }
+    }
+  }
+
+  def annotateSeq(sentences: Seq[Node], parser: BParser): Seq[Node] =
+    sentences.map(newSentenceAnnotation(_, parser))
+
+  def newSentenceAnnotation(sentence: Node, parser: BParser): Node
+
+  private def mkInternalParser(): CoarseToFineMaxRuleParser = {
+    val gr = grFileName match {
+      case "" =>
+        System.err.println(s"No grammar file is given. Try to search from default path: ${defaultGrFileName}.")
+        defaultGrFileName
+      case _ => grFileName
+    }
+
+    val parserData = ParserData Load gr
+    if (parserData == null) {
+      argumentError("grFileName", s"""Failed to load grammar from $gr.
+You can download the English model file from:
+  https://github.com/slavpetrov/berkeleyparser/raw/master/eng_sm6.gr
+""")
+    }
+
+    val grammar = parserData.getGrammar
+    val lexicon = parserData.getLexicon
+    Numberer.setNumberers(parserData.getNumbs())
+
+    new CoarseToFineMaxRuleParser(
+      grammar,
+      lexicon,
+      threshold,
+      -1,
+      viterbi,
+      false, // substates are not supported
+      false, // scores are not supported
+      accurate,
+      variational,
+      true, // copied from BerkeleyParser.java
+      true) // copied from BerkeleyParser.java
   }
 
   def treeToNode(tree: Tree[String], tokenSeq: Seq[Node], sentenceId: String): Node = {
@@ -113,65 +161,10 @@ trait BerkeleyParserAnnotator extends SentencesAnnotator with ParallelAnnotator 
     <parse annotators={ name } root={ root }>{ spans }</parse>
   }
 
-  def safeParse(sentence: JList[String], pos: JList[String]): Tree[String] = {
+  def safeParse(sentence: JList[String], pos: JList[String], parser: BParser): Tree[String] = {
     val tree = parser.parse(sentence, pos)
     if (tree.size == 1 && !sentence.isEmpty) throw new AnnotationError("Failed to parse.")
     else tree
-  }
-
-  trait Parser {
-    def parse(sentence: JList[String], pos: JList[String]): Tree[String]
-  }
-
-  class QueueParser extends Parser {
-    val parserQueue = new ResourceQueue(nThreads, mkParser _) {
-      def postProcess(parser: CoarseToFineMaxRuleParser, e: ProcessError) = {
-        queue.put(parser)
-        throw e
-      }
-    }
-
-    def mkParser(): CoarseToFineMaxRuleParser = {
-      val gr = grFileName match {
-        case "" =>
-          System.err.println(s"No grammar file is given. Try to search from default path: ${defaultGrFileName}.")
-          defaultGrFileName
-        case _ => grFileName
-      }
-
-      val parserData = ParserData Load gr
-      if (parserData == null) {
-        argumentError("grFileName", s"""Failed to load grammar from $gr.
-You can download the English model file from:
-  https://github.com/slavpetrov/berkeleyparser/raw/master/eng_sm6.gr
-""")
-      }
-
-      val grammar = parserData.getGrammar
-      val lexicon = parserData.getLexicon
-      Numberer.setNumberers(parserData.getNumbs())
-
-      new CoarseToFineMaxRuleParser(
-        grammar,
-        lexicon,
-        threshold,
-        -1,
-        viterbi,
-        false, // substates are not supported
-        false, // scores are not supported
-        accurate,
-        variational,
-        true, // copied from BerkeleyParser.java
-        true) // copied from BerkeleyParser.java
-    }
-
-    def parse(sentence: JList[String], pos: JList[String]): Tree[String] = {
-      parserQueue using { parser =>
-        val deriv = parser.getBestConstrainedParse(sentence, pos, null)
-
-        TreeAnnotations.unAnnotateTree(deriv, keepFunctionLabels)
-      }
-    }
   }
 }
 
@@ -179,7 +172,7 @@ class BerkeleyParserAnnotatorFromToken(
   override val name: String,
   override val props: Properties) extends BerkeleyParserAnnotator {
 
-  override def newSentenceAnnotation(sentence: Node) = {
+  def newSentenceAnnotation(sentence: Node, parser: BParser) = {
 
     def addPOS(tokenSeq: NodeSeq, tree: Tree[String]): NodeSeq = {
       val preterminals = tree.getPreTerminals.asScala
@@ -191,7 +184,7 @@ class BerkeleyParserAnnotatorFromToken(
     val tokens = (sentence \ "tokens").head
     val tokenSeq = tokens \ "token"
 
-    val tree = safeParse(tokenSeq.map(_ \@ "form").asJava, null)
+    val tree = safeParse(tokenSeq.map(_ \@ "form").asJava, null, parser)
 
     val taggedSeq = addPOS(tokenSeq, tree)
 
@@ -213,12 +206,12 @@ class BerkeleyParserAnnotatorFromPOS(
   override val name: String,
   override val props: Properties) extends BerkeleyParserAnnotator {
 
-  override def newSentenceAnnotation(sentence: Node) = {
+  def newSentenceAnnotation(sentence: Node, parser: BParser) = {
     val tokens = sentence \ "tokens"
     val tokenSeq = tokens \ "token"
     val posSeq = tokenSeq.map(_ \@ "pos").asJava
 
-    val tree = safeParse(tokenSeq.map(_+"").asJava, posSeq)
+    val tree = safeParse(tokenSeq.map(_+"").asJava, posSeq, parser)
 
     val parseNode = treeToNode(tree, tokenSeq, sentence \@ "id")
 
@@ -240,5 +233,9 @@ object BerkeleyParserAnnotator extends AnnotatorCompanion[BerkeleyParserAnnotato
       case "true" => new BerkeleyParserAnnotatorFromPOS(name, props)
       case "false" => new BerkeleyParserAnnotatorFromToken(name, props)
     }
+  }
+
+  trait Parser {
+    def parse(sentence: JList[String], pos: JList[String]): Tree[String]
   }
 }
