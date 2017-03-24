@@ -22,9 +22,13 @@ import scala.xml._
 
 class JumanAnnotatorSpec extends BaseAnnotatorSpec {
 
-  def newJuman(output: String, p: Properties = new Properties) = new JumanAnnotator("juman", p) {
-    override def mkCommunicator = new StubExternalCommunicator(output)
-  }
+  def newJuman(output: String, p: Properties = new Properties) =
+    new JumanAnnotator("juman", p) {
+      override def nThreads = 1
+      override def mkLocalAnnotator = new LocalJumanAnnotator {
+        override def mkCommunicator = new StubExternalCommunicator(output)
+      }
+    }
 
   "Annotator" should "add token elements" in {
 
@@ -33,11 +37,15 @@ class JumanAnnotatorSpec extends BaseAnnotatorSpec {
 走った はしった 走る 動詞 2 * 0 子音動詞ラ行 10 タ形 10 "代表表記:走る/はしる"
 EOS"""
 
-    val input = <sentence id="s0">太郎は走った</sentence>
+    val input =
+      <root><document><sentences>
+        <sentence id="s0">太郎は走った</sentence>
+      </sentences></document></root>
 
-    val result = newJuman(sample).newSentenceAnnotation(input)
+    val result = newJuman(sample).annotate(input)
 
     result should equal (
+      <root><document><sentences>
       <sentence id="s0">太郎は走った
         <tokens annotators="juman" normalized="true">
           <token id="s0_tok0" form="太郎" characterOffsetBegin="0" characterOffsetEnd="2" pos="名詞" pos1="人名" cType="*" cForm="*" lemma="太郎" yomi="たろう" posId="6" pos1Id="5" cTypeId="0" cFormId="0" misc="&quot;人名:日本:名:45:0.00106&quot;"/>
@@ -45,6 +53,7 @@ EOS"""
           <token id="s0_tok2" form="走った" characterOffsetBegin="3" characterOffsetEnd="6" pos="動詞" pos1="*" cType="子音動詞ラ行" cForm="タ形" lemma="走る" yomi="はしった" posId="2" pos1Id="0" cTypeId="10" cFormId="10" misc="&quot;代表表記:走る/はしる&quot;"/>
         </tokens>
       </sentence>
+      </sentences></document></root>
     ) (decided by sameElem)
   }
 
@@ -59,11 +68,15 @@ EOS"""
 @ 行った おこなった 行う 動詞 2 * 0 子音動詞ワ行 12 タ形 10 "代表表記:行う/おこなう"
 EOS"""
 
-    val input = <sentence id="s0">太郎は京都に行った</sentence>
+    val input =
+      <root><document><sentences>
+        <sentence id="s0">太郎は京都に行った</sentence>
+      </sentences></document></root>
 
-    val result = newJuman(sample).newSentenceAnnotation(input)
+    val result = newJuman(sample).annotate(input)
 
     result should equal (
+      <root><document><sentences>
       <sentence id="s0">太郎は京都に行った
         <tokens annotators="juman" normalized="true">
           <token id="s0_tok0" form="太郎" characterOffsetBegin="0" characterOffsetEnd="2" pos="名詞" pos1="人名" cType="*" cForm="*" lemma="太郎" yomi="たろう" posId="6" pos1Id="5" cTypeId="0" cFormId="0" misc="&quot;人名:日本:名:45:0.00106&quot;"/>
@@ -77,6 +90,7 @@ EOS"""
           </token>
         </tokens>
       </sentence>
+      </sentences></document></root>
     ) (decided by sameElem)
   }
 
@@ -91,14 +105,18 @@ EOS"""
 // 　 　 　 特殊 1 空白 6 * 0 * 0 NIL
 // い い いい 形容詞 3 * 0 イ形容詞イ段 19 文語基本形 18 "代表表記:良い/よい 反義:形容詞:悪い/わるい"
 // EOS"""
-    val input = <sentence id="s0">あ い</sentence>
+    val input =
+      <root><document><sentences>
+        <sentence id="s0">あ い</sentence>
+      </sentences></document></root>
 
     val juman = newJuman(sample)
     juman.normalize = false
 
-    val result = juman.newSentenceAnnotation(input)
+    val result = juman.annotate(input)
 
     result should equal(
+      <root><document><sentences>
       <sentence id="s0">あ い
         <tokens annotators="juman" normalized="false">
           <token id="s0_tok0" form="あ" characterOffsetBegin="0" characterOffsetEnd="1" pos="感動詞" pos1="*" cType="*" cForm="*" lemma="あ" yomi="あ" posId="12" pos1Id="0" cTypeId="0" cFormId="0" misc="&quot;代表表記:あ/あ&quot;"/>
@@ -106,6 +124,7 @@ EOS"""
           <token id="s0_tok2" form="い" characterOffsetBegin="2" characterOffsetEnd="3" pos="形容詞" pos1="*" cType="イ形容詞イ段" cForm="文語基本形" lemma="いい" yomi="い" posId="3" pos1Id="0" cTypeId="19" cFormId="18" misc="&quot;代表表記:良い/よい 反義:形容詞:悪い/わるい&quot;"/>
         </tokens>
       </sentence>
+      </sentences></document></root>
     ) (decided by sameElem)
   }
 }

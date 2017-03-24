@@ -21,14 +21,18 @@ import org.scalatest._
 
 class DocumentKNPAnnotatorTest extends BaseAnnotatorSpec {
 
-  def newKNP(output: Seq[String], p: Properties = new Properties) = new DocumentKNPAnnotator("knpDoc", p) {
-    override def mkCommunicator = new StubExternalCommunicator(output)
+  def newKNP(output: Seq[String], p: Properties = new Properties) =
+    new DocumentKNPAnnotator("knpDoc", p) {
+      override def nThreads = 1
+      override def mkLocalAnnotator = new DocumentKNPLocalAnnotator {
+        override def mkCommunicator = new StubExternalCommunicator(output)
+      }
   }
 
   "Annotator" should "add modifed tokens, basicPhrases, chunks, basicPhraseDependencies, dependencies, caseRelations, namedEntities" in {
 
     val jumanOutputNode =
-      <document id="d0">
+      <root><document id="d0">
         <sentences>
           <sentence id="s0">
           太郎が走る。
@@ -49,7 +53,7 @@ class DocumentKNPAnnotatorTest extends BaseAnnotatorSpec {
           </tokens>
         </sentence>
       </sentences>
-    </document>
+    </document></root>
 
     val knpOutputs = Seq("""# S-ID:d0-s0 JUMAN:7.01 KNP:4.12-CF1.1 DATE:2016/02/18 SCORE:-7.16850
 * 1D <文頭><人名><ガ><助詞><体言><係:ガ格><区切:0-0><格要素><連用要素><正規化代表表記:太郎/たろう><主辞代表表記:太郎/たろう>
@@ -72,7 +76,8 @@ EOS""",
 。 。 。 特殊 1 句点 1 * 0 * 0 NIL <文末><英記号><記号><付属>
 EOS""")
 
-    val result = newKNP(knpOutputs).newDocumentAnnotation(jumanOutputNode)
+    val result =
+      (newKNP(knpOutputs).annotate(jumanOutputNode) \\ "document")(0)
 
     val coreferences = result \ "coreferences"
 

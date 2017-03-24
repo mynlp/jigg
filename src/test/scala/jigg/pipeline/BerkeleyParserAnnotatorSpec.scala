@@ -26,19 +26,19 @@ import edu.berkeley.nlp.syntax.Tree
 
 class BerkeleyParserAnnotatorSpec extends BaseAnnotatorSpec {
 
-  class ConstantParser(output: Tree[String]) {
-    def parse(sentence: JList[String], pos: JList[String]) = output
-  }
+  def constParsers(output: Tree[String]): Seq[BerkeleyParserAnnotator.Parser] =
+    Array(new BerkeleyParserAnnotator.Parser {
+      def parse(sentence: JList[String], pos: JList[String]) = output
+    })
 
   class FromTokenAnnotatorStub(output: Tree[String]) extends
       BerkeleyParserAnnotatorFromToken("berkeleyparser", new Properties) {
-    override lazy val parser = new ConstantParser(output) with Parser
+    override lazy val localAnnotators = constParsers(output)
   }
 
   class FromPOSAnnotatorStub(output: Tree[String]) extends
-      BerkeleyParserAnnotatorFromPOS(
-    "berkeleyparser", new Properties) {
-    override lazy val parser = new ConstantParser(output) with Parser
+      BerkeleyParserAnnotatorFromPOS("berkeleyparser", new Properties) {
+    override lazy val localAnnotators = constParsers(output)
   }
 
   def emptyFromTokenAnn = new FromTokenAnnotatorStub(new Tree[String]("(ROOT)"))
@@ -49,28 +49,28 @@ class BerkeleyParserAnnotatorSpec extends BaseAnnotatorSpec {
     val fromPOS = emptyFromPOSAnn
 
     val sentence =
-      <sentence id="s0">
+      <sentences><sentence id="s0">
         <tokens>
         </tokens>
-      </sentence>
+      </sentence></sentences>
 
-    val fromTokenResult = fromToken.newSentenceAnnotation(sentence)
-    val fromPOSResult = fromPOS.newSentenceAnnotation(sentence)
+    val fromTokenResult = fromToken.annotate(sentence)
+    val fromPOSResult = fromPOS.annotate(sentence)
 
     fromTokenResult should equal (
-      <sentence id="s0">
+      <sentences><sentence id="s0">
         <tokens annotators="berkeleyparser">
         </tokens>
         <parse annotators="berkeleyparser" root=""/>
-      </sentence>
+      </sentence></sentences>
     ) (decided by sameElem)
 
     fromPOSResult should equal (
-      <sentence id="s0">
+      <sentences><sentence id="s0">
         <tokens>
         </tokens>
         <parse annotators="berkeleyparser" root=""/>
-      </sentence>
+      </sentence></sentences>
     ) (decided by sameElem)
   }
 
@@ -85,7 +85,7 @@ class BerkeleyParserAnnotatorSpec extends BaseAnnotatorSpec {
       </sentence>
 
     a [AnnotationError] should be thrownBy {
-      ann.newSentenceAnnotation(sentence)
+      ann.newSentenceAnnotation(sentence, ann.localAnnotators(0))
     }
   }
 
@@ -100,7 +100,7 @@ class BerkeleyParserAnnotatorSpec extends BaseAnnotatorSpec {
       </sentence>
 
     a [AnnotationError] should be thrownBy {
-      ann.newSentenceAnnotation(sentence)
+      ann.newSentenceAnnotation(sentence, ann.localAnnotators(0))
     }
   }
 }

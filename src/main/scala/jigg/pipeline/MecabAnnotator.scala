@@ -25,16 +25,14 @@ import jigg.util.PropertiesUtil
 import jigg.util.XMLUtil.RichNode
 
 abstract class MecabAnnotator(override val name: String, override val props: Properties)
-    extends SentencesAnnotator with ParallelIO with IOCreator {
+    extends ExternalProcessSentencesAnnotator { self=>
+
   def dic: SystemDic
 
   @Prop(gloss = "Use this command to launch mecab. System dictionary is selected according to the current configuration accessible with '-P' option.") var command = MecabAnnotator.defaultCommand
   readProps()
 
-  val ioQueue = new IOQueue(nThreads)
-
-  override def launchTesters = Seq(
-    LaunchTester("EOS", _ == "EOS", _ == "EOS"))
+  localAnnotators // instantiate lazy val here
 
   override def description = {
 
@@ -52,55 +50,62 @@ ${helpMessage}
 """
   }
 
-  override def defaultArgs = Seq("-O", "")
-  def softwareUrl = "https://taku910.github.io/mecab/"
+  trait LocalMecabAnnotator extends LocalAnnotator with IOCreator {
+    def command = self.command
 
-  override def close() = ioQueue.close()
+    override def launchTesters = Seq(
+      LaunchTester("EOS", _ == "EOS", _ == "EOS"))
+    override def defaultArgs = Seq("-O", "")
+    def softwareUrl = "https://taku910.github.io/mecab/"
 
-  override def newSentenceAnnotation(sentence: Node): Node = {
+    val mecab = mkIO()
+    override def close() = mecab.close()
 
-    def tid(sindex: String, tindex: Int) = sindex + "_tok" + tindex
+    override def newSentenceAnnotation(sentence: Node): Node = {
 
-    val sindex = (sentence \ "@id").toString
-    val text = sentence.text
+      def tid(sindex: String, tindex: Int) = sindex + "_tok" + tindex
 
-    def nextNonspaceIdx(offset: Int) = {
-      def isSpace(c: Char) = c == ' ' || c == '\t'
-      @tailrec
-      def proceed(i: Int): Int =
-        if (i < text.size && isSpace(text(i))) proceed(i + 1)
-        else i
-      proceed(offset)
+      val sindex = (sentence \ "@id").toString
+      val text = sentence.textElem
+
+      def nextNonspaceIdx(offset: Int) = {
+        def isSpace(c: Char) = c == ' ' || c == '\t'
+        @tailrec
+        def proceed(i: Int): Int =
+          if (i < text.size && isSpace(text(i))) proceed(i + 1)
+          else i
+        proceed(offset)
+      }
+
+      var tokenIndex = 0
+      var offset = 0
+
+      val tokenNodes = runMecab(text).map { t =>
+        val analysis = t.split('\t')
+        val form = analysis(0)
+        val feats = analysis(1).split(',')
+
+        val span = (offset + "", offset + form.size + "")
+
+        val node = tokenToNode(form, span, feats, tid(sindex, tokenIndex))
+        tokenIndex += 1
+
+        offset = nextNonspaceIdx(offset + form.size)
+
+        node
+      }
+
+      val tokensAnnotation = <tokens annotators={ name }>{ tokenNodes }</tokens>
+      sentence addChild tokensAnnotation
     }
 
-    var tokenIndex = 0
-    var offset = 0
+    protected def tokenToNode(
+      form: String, span: (String, String), feats: Array[String], id: String): Node
 
-    val tokenNodes = runMecab(text).map { t =>
-      val analysis = t.split('\t')
-      val form = analysis(0)
-      val feats = analysis(1).split(',')
-
-      val span = (offset + "", offset + form.size + "")
-
-      val node = tokenToNode(form, span, feats, tid(sindex, tokenIndex))
-      tokenIndex += 1
-
-      offset = nextNonspaceIdx(offset + form.size)
-
-      node
+    private def runMecab(text: String): Seq[String] = {
+      mecab.safeWriteWithFlush(text)
+      mecab.readUntil(_ == "EOS").dropRight(1)
     }
-
-    val tokensAnnotation = <tokens annotators={ name }>{ tokenNodes }</tokens>
-    sentence addChild tokensAnnotation
-  }
-
-  protected def tokenToNode(
-    form: String, span: (String, String), feats: Array[String], id: String): Node
-
-  private def runMecab(text: String): Seq[String] = ioQueue.using { io =>
-    io.safeWriteWithFlush(text)
-    io.readUntil(_ == "EOS").dropRight(1)
   }
 
   override def requires = Set(Requirement.Ssplit)
@@ -109,25 +114,29 @@ ${helpMessage}
 class IPAMecabAnnotator(name: String, props: Properties) extends MecabAnnotator(name, props) {
   def dic = SystemDic.ipadic
 
-  //output form of mecab ipadic
-  //表層形\t品詞,品詞細分類1,品詞細分類2,品詞細分類3,活用型,活用形,原形,読み,発音
-  //form\tpos,pos1,pos2,pos3,cType,cForm,lemma,yomi,pron
-  def tokenToNode(
-    form: String, span: (String, String), feats: Array[String], id: String) =
-    <token
-      id={ id }
-      form={ form }
-      offsetBegin={ span._1 }
-      offsetEnd={ span._2 }
-      pos={ feats(0) }
-      pos1={ feats(1) }
-      pos2={ feats(2) }
-      pos3={ feats(3) }
-      cType={ feats(4) }
-      cForm={ feats(5) }
-      lemma={ feats(6) }
-      yomi={ if (feats.size > 7) feats(7) else "*" }
-      pron={ if (feats.size > 8) Text(feats(8)) else Text("*") }/>
+  def mkLocalAnnotator = new IPALocalMecabAnnotator
+
+  class IPALocalMecabAnnotator extends LocalMecabAnnotator {
+    //output form of mecab ipadic
+    //表層形\t品詞,品詞細分類1,品詞細分類2,品詞細分類3,活用型,活用形,原形,読み,発音
+    //form\tpos,pos1,pos2,pos3,cType,cForm,lemma,yomi,pron
+    def tokenToNode(
+      form: String, span: (String, String), feats: Array[String], id: String) =
+      <token
+        id={ id }
+        form={ form }
+        offsetBegin={ span._1 }
+        offsetEnd={ span._2 }
+        pos={ feats(0) }
+        pos1={ feats(1) }
+        pos2={ feats(2) }
+        pos3={ feats(3) }
+        cType={ feats(4) }
+        cForm={ feats(5) }
+        lemma={ feats(6) }
+        yomi={ if (feats.size > 7) feats(7) else "*" }
+        pron={ if (feats.size > 8) Text(feats(8)) else Text("*") }/>
+  }
 
   override def requirementsSatisfied = Set(JaRequirement.TokenizeWithIPA)
 }
@@ -135,20 +144,24 @@ class IPAMecabAnnotator(name: String, props: Properties) extends MecabAnnotator(
 class JumanDicMecabAnnotator(name: String, props: Properties) extends MecabAnnotator(name, props) {
   def dic = SystemDic.jumandic
 
-  def tokenToNode(
-    form: String, span: (String, String), feats: Array[String], id: String) =
-    <token
-      id={ id }
-      form={ form }
-      offsetBegin={ span._1 }
-      offsetEnd={ span._2 }
-      pos={ feats(0) }
-      pos1={ feats(1) }
-      cType={ feats(2) }
-      cForm={ feats(3) }
-      lemma={ feats(4) }
-      yomi={ feats(5) }
-      misc={ feats(6) }/>
+  def mkLocalAnnotator = new JumanLocalMecabAnnotator
+
+  class JumanLocalMecabAnnotator extends LocalMecabAnnotator {
+    def tokenToNode(
+      form: String, span: (String, String), feats: Array[String], id: String) =
+      <token
+        id={ id }
+        form={ form }
+        offsetBegin={ span._1 }
+        offsetEnd={ span._2 }
+        pos={ feats(0) }
+        pos1={ feats(1) }
+        cType={ feats(2) }
+        cForm={ feats(3) }
+        lemma={ feats(4) }
+        yomi={ feats(5) }
+    misc={ feats(6) }/>
+  }
 
   override def requirementsSatisfied = Set(JaRequirement.TokenizeWithJumandic)
 }
@@ -156,35 +169,39 @@ class JumanDicMecabAnnotator(name: String, props: Properties) extends MecabAnnot
 class UnidicMecabAnnotator(name: String, props: Properties) extends MecabAnnotator(name, props) {
   def dic = SystemDic.unidic
 
-  def tokenToNode(
-    form: String, span: (String, String), feats: Array[String], id: String) = {
+  def mkLocalAnnotator = new UnidicLocalMecabAnnotator
 
-    val feat:Int=>String =
-      if (feats.size <= 18) idx => if (idx < feats.size) feats(idx) else "*" // unk token
-      else feats(_)
+  class UnidicLocalMecabAnnotator extends LocalMecabAnnotator {
+    def tokenToNode(
+      form: String, span: (String, String), feats: Array[String], id: String) = {
 
-    <token
-      id={ id }
-      form={ form }
-      offsetBegin={ span._1 }
-      offsetEnd={ span._2 }
-      pos={ feat(0) }
-      pos1={ feat(1) }
-      pos2={ feat(2) }
-      pos3={ feat(3) }
-      cType={ feat(4) }
-      cForm={ feat(5) }
-      lForm={ feat(6) }
-      lemma={ feat(7) }
-      orth={ feat(8) }
-      pron={ feat(9) }
-      orthBase={ feat(10) }
-      pronBase={ feat(11) }
-      goshu={ feat(12) }
-      iType={ feat(13) }
-      iForm={ feat(14) }
-      fType={ feat(15) }
-      fForm={ feat(16) }/>
+      val feat:Int=>String =
+        if (feats.size <= 18) idx => if (idx < feats.size) feats(idx) else "*" // unk token
+        else feats(_)
+
+      <token
+        id={ id }
+        form={ form }
+        offsetBegin={ span._1 }
+        offsetEnd={ span._2 }
+        pos={ feat(0) }
+        pos1={ feat(1) }
+        pos2={ feat(2) }
+        pos3={ feat(3) }
+        cType={ feat(4) }
+        cForm={ feat(5) }
+        lForm={ feat(6) }
+        lemma={ feat(7) }
+        orth={ feat(8) }
+        pron={ feat(9) }
+        orthBase={ feat(10) }
+        pronBase={ feat(11) }
+        goshu={ feat(12) }
+        iType={ feat(13) }
+        iForm={ feat(14) }
+        fType={ feat(15) }
+        fForm={ feat(16) }/>
+    }
   }
 
   override def requirementsSatisfied = Set(JaRequirement.TokenizeWithUnidic)

@@ -23,17 +23,14 @@ import jigg.util.PropertiesUtil
 import jigg.util.XMLUtil.RichNode
 
 abstract class CabochaAnnotator(override val name: String, override val props: Properties)
-    extends SentencesAnnotator with ParallelIO with IOCreator {
+    extends ExternalProcessSentencesAnnotator { self=>
 
   def dic: SystemDic
 
   @Prop(gloss = "Use this command to launch cabocha. Do not touch -f and -I options. -f1 -I1 are always automatically added.") var command = CabochaAnnotator.defaultCommand
   readProps()
 
-  val ioQueue = new IOQueue(nThreads)
-
-  override def launchTesters = Seq(
-    LaunchTester("EOS", _ == "EOS", _ == "EOS"))
+  localAnnotators // instantiate lazy val here
 
   override def description = {
 
@@ -65,99 +62,106 @@ ${helpMessage}
 """
   }
 
-  override def defaultArgs = Seq("-f1", "-I1")
-  def softwareUrl = "http://taku910.github.io/cabocha/"
+  trait LocalCabochaAnnotator extends LocalAnnotator with IOCreator {
+    def command = self.command
 
-  override def close() = ioQueue.close()
+    override def launchTesters = Seq(
+      LaunchTester("EOS", _ == "EOS", _ == "EOS"))
+    override def defaultArgs = Seq("-f1", "-I1")
+    def softwareUrl = "http://taku910.github.io/cabocha/"
 
-  override def newSentenceAnnotation(sentence: Node): Node = {
-    val tokens: NodeSeq = (sentence \ "tokens").head \ ("token")
-    val result = runCabocha(tokens).toArray
+    val cabocha = mkIO()
+    override def close() = cabocha.close()
 
-    val sid = (sentence \ "@id").toString
-    val chunks = resultToChunks(result)
+    override def newSentenceAnnotation(sentence: Node): Node = {
+      val tokens: NodeSeq = (sentence \ "tokens").head \ ("token")
+      val result = runCabocha(tokens).toArray
 
-    val tokenIds = tokens map(_ \ "@id" + "")
+      val sid = (sentence \ "@id").toString
+      val chunks = resultToChunks(result)
 
-    sentence addChild Seq(chunksNode(chunks, sid, tokenIds), depsNode(chunks, sid))
-  }
+      val tokenIds = tokens map(_ \ "@id" + "")
 
-  private def runCabocha(tokens:NodeSeq): Seq[String] = ioQueue.using { io =>
-    io.safeWriteWithFlush({
-      for (token <- tokens) yield tokenToMecabFormat(token)
-    } ++ Iterator("EOS"))
-    io.readUntil(_ == "EOS").dropRight(1)
-  }
-
-  protected def tokenToMecabFormat(token: Node): String =
-    (token \ "@form") + "\t" + featAttributes.map(token \ _).mkString(",")
-
-  protected def featAttributes: Array[String] // depends on dictionary
-
-  private def resultToChunks(result: Array[String]): Seq[Chunk] = {
-    val chunkIdxs = (0 until result.size).filter { i => result(i).startsWith("* ") }
-
-    (0 until chunkIdxs.size).map { i =>
-      val idx = chunkIdxs(i)
-      val offset = idx - i
-
-      val endIdx = if (i == chunkIdxs.size - 1) result.size else chunkIdxs(i+1)
-      val numTokens = endIdx - idx - 1
-      Chunk.fromResult(result(idx), offset, numTokens)
+      sentence addChild Seq(chunksNode(chunks, sid, tokenIds), depsNode(chunks, sid))
     }
-  }
 
-  case class Chunk(id: Int, headChunk: Int, rel: String,
-    head: Int, func: Int, offset: Int, numTokens: Int) {
-
-    def range = (offset until offset + numTokens)
-    def headIdx = offset + head
-    def funcIdx = offset + func
-  }
-
-  object Chunk {
-    def fromResult(line: String, offset: Int, numTokens: Int): Chunk = {
-      val items = line.split(' ')
-      val id = items(1).toInt
-      val rel = items(2).last.toString
-      val headChunk = items(2).dropRight(1).toInt
-
-      val hd = items(3).split('/')
-      val head = hd(0).toInt
-      val func = hd(1).toInt
-
-      Chunk(id, headChunk, rel, head, func, offset, numTokens)
+    private def runCabocha(tokens:NodeSeq): Seq[String] = {
+      cabocha.safeWriteWithFlush({
+        for (token <- tokens) yield tokenToMecabFormat(token)
+      } ++ Iterator("EOS"))
+      cabocha.readUntil(_ == "EOS").dropRight(1)
     }
-  }
 
-  def chunksNode(chunks: Seq[Chunk], sid:String, tokenIds: Seq[String]): Node = {
-    val nodeSeq = (0 until chunks.size) map { i =>
-      val chunk = chunks(i)
-      val id = chunkId(sid, chunk.id)
-      val tokens = chunk.range.map(tokenIds).mkString(" ")
+    protected def tokenToMecabFormat(token: Node): String =
+      (token \ "@form") + "\t" + featAttributes.map(token \ _).mkString(",")
 
-      val head = tokenIds(chunk.headIdx)
-      val func = tokenIds(chunk.funcIdx)
-      <chunk id={ id } tokens={ tokens } head={ head } func={ func } />
-    }
-    <chunks annotators={ name }>{ nodeSeq }</chunks>
-  }
+    protected def featAttributes: Array[String] // depends on dictionary
 
-  def depsNode(chunks: Seq[Chunk], sid:String): Node = {
-    val nodeSeq = chunks.map { chunk =>
-      val id = depId(sid, chunk.id)
-      val head = chunk.headChunk match {
-        case -1 => "root"
-        case id => chunkId(sid, id)
+    private def resultToChunks(result: Array[String]): Seq[Chunk] = {
+      val chunkIdxs = (0 until result.size).filter { i => result(i).startsWith("* ") }
+
+      (0 until chunkIdxs.size).map { i =>
+        val idx = chunkIdxs(i)
+        val offset = idx - i
+
+        val endIdx = if (i == chunkIdxs.size - 1) result.size else chunkIdxs(i+1)
+        val numTokens = endIdx - idx - 1
+        Chunk.fromResult(result(idx), offset, numTokens)
       }
-      val dep = chunkId(sid, chunk.id)
-      <dependency unit="chunk" id={ id } head={ head } dependent={ dep } deprel={ chunk.rel } />
     }
-    <dependencies annotators={ name }>{ nodeSeq }</dependencies>
-  }
 
-  def chunkId(sid: String, idx: Int) = sid + "_chu" + idx
-  def depId(sid: String, idx: Int) = sid + "_dep" + idx
+    case class Chunk(id: Int, headChunk: Int, rel: String,
+      head: Int, func: Int, offset: Int, numTokens: Int) {
+
+      def range = (offset until offset + numTokens)
+      def headIdx = offset + head
+      def funcIdx = offset + func
+    }
+
+    object Chunk {
+      def fromResult(line: String, offset: Int, numTokens: Int): Chunk = {
+        val items = line.split(' ')
+        val id = items(1).toInt
+        val rel = items(2).last.toString
+        val headChunk = items(2).dropRight(1).toInt
+
+        val hd = items(3).split('/')
+        val head = hd(0).toInt
+        val func = hd(1).toInt
+
+        Chunk(id, headChunk, rel, head, func, offset, numTokens)
+      }
+    }
+
+    def chunksNode(chunks: Seq[Chunk], sid:String, tokenIds: Seq[String]): Node = {
+      val nodeSeq = (0 until chunks.size) map { i =>
+        val chunk = chunks(i)
+        val id = chunkId(sid, chunk.id)
+        val tokens = chunk.range.map(tokenIds).mkString(" ")
+
+        val head = tokenIds(chunk.headIdx)
+        val func = tokenIds(chunk.funcIdx)
+        <chunk id={ id } tokens={ tokens } head={ head } func={ func } />
+      }
+      <chunks annotators={ name }>{ nodeSeq }</chunks>
+    }
+
+    def depsNode(chunks: Seq[Chunk], sid:String): Node = {
+      val nodeSeq = chunks.map { chunk =>
+        val id = depId(sid, chunk.id)
+        val head = chunk.headChunk match {
+          case -1 => "root"
+          case id => chunkId(sid, id)
+        }
+        val dep = chunkId(sid, chunk.id)
+        <dependency unit="chunk" id={ id } head={ head } dependent={ dep } deprel={ chunk.rel } />
+      }
+      <dependencies annotators={ name }>{ nodeSeq }</dependencies>
+    }
+
+    def chunkId(sid: String, idx: Int) = sid + "_chu" + idx
+    def depId(sid: String, idx: Int) = sid + "_dep" + idx
+  }
 
   override def requirementsSatisfied =
     Set(JaRequirement.CabochaChunk, JaRequirement.ChunkDependencies)
@@ -166,9 +170,13 @@ ${helpMessage}
 class IPACabochaAnnotator(name: String, props: Properties) extends CabochaAnnotator(name, props) {
   def dic = SystemDic.ipadic
 
-  val featAttributes = Array(
-    "pos", "pos1", "pos2", "pos3", "cType", "cForm",
-    "lemma", "yomi", "pron").map("@"+_)
+  def mkLocalAnnotator = new IPALocalCabochaAnnotator
+
+  class IPALocalCabochaAnnotator extends LocalCabochaAnnotator {
+    val featAttributes = Array(
+      "pos", "pos1", "pos2", "pos3", "cType", "cForm",
+      "lemma", "yomi", "pron").map("@"+_)
+  }
 
   override def requires = Set(JaRequirement.TokenizeWithIPA)
 }
@@ -176,8 +184,12 @@ class IPACabochaAnnotator(name: String, props: Properties) extends CabochaAnnota
 class JumanDicCabochaAnnotator(name: String, props: Properties) extends CabochaAnnotator(name, props) {
   def dic = SystemDic.jumandic
 
-  val featAttributes = Array(
-    "pos", "pos1", "cType", "cForm", "lemma", "yomi", "misc").map("@"+_)
+  def mkLocalAnnotator = new JumanLocalCabochaAnnotator
+
+  class JumanLocalCabochaAnnotator extends LocalCabochaAnnotator {
+    val featAttributes = Array(
+      "pos", "pos1", "cType", "cForm", "lemma", "yomi", "misc").map("@"+_)
+  }
 
   override def requires = Set(JaRequirement.TokenizeWithJumandic)
 }
@@ -185,9 +197,13 @@ class JumanDicCabochaAnnotator(name: String, props: Properties) extends CabochaA
 class UnidicCabochaAnnotator(name: String, props: Properties) extends CabochaAnnotator(name, props) {
   def dic = SystemDic.jumandic
 
-  val featAttributes = Array(
-    "pos", "pos1", "pos2", "pos3", "cType", "cForm", "lForm", "lemma", "orth", "pron",
-    "orthBase", "pronBase", "goshu", "iType", "iForm", "fType", "fForm").map("@"+_)
+  def mkLocalAnnotator = new UnidicLocalCabochaAnnotator
+
+  class UnidicLocalCabochaAnnotator extends LocalCabochaAnnotator {
+    val featAttributes = Array(
+      "pos", "pos1", "pos2", "pos3", "cType", "cForm", "lForm", "lemma", "orth", "pron",
+      "orthBase", "pronBase", "goshu", "iType", "iForm", "fType", "fForm").map("@"+_)
+  }
 
   override def requires = Set(JaRequirement.TokenizeWithUnidic)
 }
