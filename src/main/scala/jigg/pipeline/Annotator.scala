@@ -96,6 +96,40 @@ object Annotator {
 
   def annotateError(n: Node, name: String, e: Exception): Node =
     n addChild <error annotator={ name }>{ e + "" }</error>
+
+  // /** Provides `annotateSeq`, which may annotate an error during annotating a block (seq)
+  //   * of nodes.
+  //   */
+  // trait ReportingAnnotationError[A] {
+  //   def annotateSeq[A](annotations: GenSeq[Node], annotator: A) =
+  //     annotations map { n =>
+  //       try annotateOneBy(n, annotator)
+  //       catch { e: AnnotationError =>
+  //         reportError(n, annotator, e)
+  //       }
+  //     }
+
+  //   /** How to annotate one example by an annotator?
+  //     */
+  //   protected def annotateOneBy[A](n: Node, ann: A)
+  //   protected def reportError(n: Node, ann: Annotator, e: Exception): Node
+  // }
+
+  // trait ReportingSentenceError {
+  //   def reportError(n: Node, ann: Annotator, e: Exception) = {
+  //     val name = ann.name
+  //     System.err.println(s"Failed to annotate a sentence by $name.")
+  //     System.err.println(n.text)
+  //     Annotator.annotateError(n, name, e)
+  //   }
+  // }
+  // trait ReportingDocumentError {
+  //   def reportError(n: Node, ann: Annotator, e: Exception) = {
+  //     val name = ann.name
+  //     System.err.println(s"Failed to annotate a document by $name.")
+  //     Annotator.annotateError(n, name, e)
+  //   }
+  // }
 }
 
 /** This is the base trait for all companion object of each Annotator
@@ -114,57 +148,6 @@ class AnnotatorCompanion[A<:Annotator](implicit m: ClassTag[A]) {
     */
   def fromProps(name: String, props: Properties): A =
     m.runtimeClass.getConstructor(classOf[String], classOf[Properties]).newInstance(name, props).asInstanceOf[A]
-}
-
-/** A trait for an annotator which modifies a sentence node. If an annotator is sentence-level
-  * annotator such as a parser or pos tagger, it should extend this trait and usually what you
-  * should do is only to implement newSentenceAnnotation method, which rewrites a sentence
-  * node and returns new one.
-  */
-trait SentencesAnnotator extends Annotator {
-  override def annotate(annotation: Node): Node = {
-
-    annotation.replaceAll("sentences") { e =>
-      val newChild = Annotator.makePar(e.child, nThreads).map { c =>
-        assert(c.label == "sentence") // assuming sentences node has only sentence nodes as children
-
-        try newSentenceAnnotation(c) catch {
-          case e: AnnotationError =>
-            System.err.println(s"Failed to annotate a sentence by $name.")
-            System.err.println(c.text)
-            Annotator.annotateError(c, name, e)
-        }
-      }.seq
-      e.copy(child = newChild)
-    }
-  }
-
-  def newSentenceAnnotation(sentence: Node): Node
-}
-
-/** A trait for an annotator which modifies a document node. Use this trait if an annotator
-  * is a document-level annotator.
-  */
-trait DocumentAnnotator extends Annotator {
-  override def annotate(annotation: Node): Node = {
-
-    annotation.replaceAll("root") { e =>
-      val newChild = Annotator.makePar(e.child, nThreads).map { c =>
-        c match {
-          case c if c.label == "document" =>
-            try newDocumentAnnotation(c) catch {
-              case e: AnnotationError =>
-                System.err.println(s"Failed to annotate a document by $name.")
-                Annotator.annotateError(c, name, e)
-            }
-          case c => c
-        }
-      }.seq
-      e.copy(child = newChild)
-    }
-  }
-
-  def newDocumentAnnotation(sentence: Node): Node
 }
 
 /** Provides IO class, which wraps IOCommunicator, and handles errors during communication.

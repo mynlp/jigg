@@ -23,7 +23,7 @@ import jigg.util.PropertiesUtil
 import jigg.util.XMLUtil.RichNode
 
 abstract class CabochaAnnotator(override val name: String, override val props: Properties)
-    extends ExternalProcessSentencesAnnotator { self=>
+    extends AnnotatingSentencesInParallel { self=>
 
   def dic: SystemDic
 

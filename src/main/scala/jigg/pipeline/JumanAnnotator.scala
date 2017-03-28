@@ -26,7 +26,7 @@ import scala.collection.mutable.ArrayBuffer
 import jigg.util.XMLUtil.RichNode
 
 class JumanAnnotator(override val name: String, override val props: Properties)
-    extends ExternalProcessSentencesAnnotator { self=>
+    extends AnnotatingSentencesInParallel { self=>
 
   @Prop(gloss = "Use this command to launch JUMAN") var command = "juman"
   @Prop(gloss = "If true, run JUMAN and KNP for a normalized input that replaces hankaku chars (ascii only; not kana) with zenkaku chars. If false use the original input.") var normalize = true

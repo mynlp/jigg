@@ -23,21 +23,36 @@ import scala.util.{Success, Failure}
 import jigg.util.XMLUtil.RichNode
 
 /** `A` is a class that will do an actual annotation job;
-  * maybe a Java parser object that receives one sentence (e.g., in BerkeleyParserAnnotator) or
-  * a IO resource in case of external softwares (e.g., MecabAnnotator; see ExternalProcessAnnotator for such cases).
+  * maybe a Java parser object that receives one sentence
+  * (e.g., in BerkeleyParserAnnotator) or an IO resource in case of external softwares
+  * (e.g., MecabAnnotator; see ExternalProcessAnnotator for such cases).
   *
   * How to do the actual job is defined in `annotateSeq`.
   *
-  * This trait is assumed to be mix-ed in with [[SentenceLevelParallelism]] or [[DocumentLevelParallelism]],
-  * which supplies `annotate` method that internally call `a`.
+  * This trait is assumed to be mix-ed in with [[jigg.pipeline.SentenceLevelParallelism]]
+  * or [[jigg.pipeline.DocumentLevelParallelism]], which supplies `annotate` method that
+  * internally call `a`.
   */
-trait AnnotatingInParallel[A] extends Annotator {
+trait AnnotatingInParallel extends Annotator { self=>
 
-  def localAnnotators: Seq[A]
+  type A <: BaseLocalAnnotator
+
+  trait BaseLocalAnnotator extends Annotator {
+    override final def name = self.name
+    override final def nThreads = 1
+  }
+
+  // We don't create local annotator here, since each local annotator may depend on
+  // some variables that are not yet instantitated; e.g., `command` in
+  // `LocalMecabAnnotator`.
+  lazy protected val localAnnotators: Seq[A] =
+    (0 until nThreads).map(_=>mkLocalAnnotator())
+
+  protected def mkLocalAnnotator(): A
 
   def annotateInParallel(elems: Seq[Node]): Seq[Node] = {
     val dividedElems = divideBy(elems, nThreads)
-    assert(dividedElems.size == nThreads)
+    assert(dividedElems.size <= nThreads)
 
     implicit val context = scala.concurrent.ExecutionContext.global
 
@@ -51,16 +66,17 @@ trait AnnotatingInParallel[A] extends Annotator {
     maybeAnnotatedElems.map(_.value.get.get).flatten
   }
 
-  def divideBy(elems: Seq[Node], n: Int): Seq[Seq[Node]] = {
+  private def divideBy(elems: Seq[Node], n: Int): Seq[Seq[Node]] = {
     val divided: Seq[Seq[Node]] =
-      if (elems.size < n) elems +: Array.fill(n-1)(Seq[Node]())
+      if (elems.size < n) Array(elems) //+: Array.fill(n-1)(Seq[Node]())
       else elems.grouped(elems.size / n).toIndexedSeq
-    assert(divided.size == n || divided.size == n + 1)
+    // assert(divided.size == n || divided.size == n + 1)
+    assert(divided.size <= n + 1)
     if (divided.size == n + 1) divided.take(n - 1) :+ (divided(n - 1) ++ divided(n))
     else divided
   }
 
-  def annotateSeq(annotations: Seq[Node], annotator: A): Seq[Node]
+  protected def annotateSeq(annotations: Seq[Node], annotator: A): Seq[Node]
 
   // TODO
   private def annotateErrorToBatch(original: Seq[Node], error: Throwable): Seq[Node] = {
@@ -68,9 +84,10 @@ trait AnnotatingInParallel[A] extends Annotator {
   }
 }
 
-trait SentenceLevelParallelism extends Annotator {
+trait AnnotatingSentencesInParallel extends AnnotatingInParallel {
 
-  def annotateInParallel(elems: Seq[Node]): Seq[Node]
+  type A = LocalAnnotator
+  trait LocalAnnotator extends SentencesAnnotator with BaseLocalAnnotator
 
   override def annotate(annotation: Node): Node = {
     annotation.replaceAll("sentences") { e =>
@@ -79,11 +96,15 @@ trait SentenceLevelParallelism extends Annotator {
       e.copy(child = annotatedSentences)
     }
   }
+
+  def annotateSeq(annotations: Seq[Node], annotator: A): Seq[Node] =
+    (annotator annotate <sentences>{ annotations }</sentences>).child
 }
 
-trait DocumentLevelParallelism extends Annotator {
+trait AnnotatingDocumentsInParallel extends AnnotatingInParallel {
 
-  def annotateInParallel(elems: Seq[Node]): Seq[Node]
+  type A = LocalAnnotator
+  trait LocalAnnotator extends DocumentAnnotator with BaseLocalAnnotator
 
   override def annotate(annotation: Node): Node = {
     annotation.replaceAll("root") { e =>
@@ -92,4 +113,7 @@ trait DocumentLevelParallelism extends Annotator {
       e.copy(child = annotatedDocuments)
     }
   }
+
+  def annotateSeq(annotations: Seq[Node], annotator: A): Seq[Node] =
+    (annotator annotate <root>{ annotations }</root>).child
 }

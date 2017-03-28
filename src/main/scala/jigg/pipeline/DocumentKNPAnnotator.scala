@@ -23,7 +23,7 @@ import scala.xml._
 import jigg.util.XMLUtil.RichNode
 
 class DocumentKNPAnnotator(override val name: String, override val props: Properties)
-    extends KNPAnnotator with ExternalProcessDocumentAnnotator { self=>
+    extends KNPAnnotator with AnnotatingDocumentsInParallel { self=>
 
   @Prop(gloss = "Use this command to launch KNP (-tab and -anaphora are mandatory and automatically added). Version >= 4.12 is assumed.") var command = "knp"
   readProps()

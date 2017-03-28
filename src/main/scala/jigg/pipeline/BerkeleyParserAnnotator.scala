@@ -34,11 +34,7 @@ import edu.berkeley.nlp.PCFGLA.{
 import edu.berkeley.nlp.syntax.Tree
 import edu.berkeley.nlp.util.{MyMethod, Numberer}
 
-trait BerkeleyParserAnnotator
-    extends AnnotatingInParallel[BerkeleyParserAnnotator.Parser] with SentenceLevelParallelism {
-
-  type BParser = BerkeleyParserAnnotator.Parser
-
+trait BerkeleyParserAnnotator extends AnnotatingSentencesInParallel {
   def threshold = 1.0 // this value is used without explanation in original BerkeleyParser.java
 
   def keepFunctionLabels = true // but probably the model does not output function labels.
@@ -72,20 +68,26 @@ trait BerkeleyParserAnnotator
     localAnnotators // init here, to output help message without loading
   }
 
-  lazy val localAnnotators: Seq[BerkeleyParserAnnotator.Parser] = (0 until nThreads).map { i =>
-    val internalParser = mkInternalParser()
-    new BParser {
+  trait LocalBerkeleyAnnotator extends LocalAnnotator {
+
+    type Parser = BerkeleyParserAnnotator.Parser
+
+    val parser: Parser = mkParser()
+
+    protected def mkParser(): Parser = new Parser {
+      val internalParser = mkInternalParser()
       def parse(sentence: JList[String], pos: JList[String]): Tree[String] = {
         val deriv = internalParser.getBestConstrainedParse(sentence, pos, null)
         TreeAnnotations.unAnnotateTree(deriv, keepFunctionLabels)
       }
     }
+
+    protected def safeParse(sentence: JList[String], pos: JList[String]): Tree[String] = {
+      val tree = parser.parse(sentence, pos)
+      if (tree.size == 1 && !sentence.isEmpty) throw new AnnotationError("Failed to parse.")
+      else tree
+    }
   }
-
-  def annotateSeq(sentences: Seq[Node], parser: BParser): Seq[Node] =
-    sentences.map(newSentenceAnnotation(_, parser))
-
-  def newSentenceAnnotation(sentence: Node, parser: BParser): Node
 
   private def mkInternalParser(): CoarseToFineMaxRuleParser = {
     val gr = grFileName match {
@@ -160,42 +162,40 @@ You can download the English model file from:
     }
     <parse annotators={ name } root={ root }>{ spans }</parse>
   }
-
-  def safeParse(sentence: JList[String], pos: JList[String], parser: BParser): Tree[String] = {
-    val tree = parser.parse(sentence, pos)
-    if (tree.size == 1 && !sentence.isEmpty) throw new AnnotationError("Failed to parse.")
-    else tree
-  }
 }
 
 class BerkeleyParserAnnotatorFromToken(
   override val name: String,
   override val props: Properties) extends BerkeleyParserAnnotator {
 
-  def newSentenceAnnotation(sentence: Node, parser: BParser) = {
+  def mkLocalAnnotator = new LocalTokenBerkeleyAnnotator
 
-    def addPOS(tokenSeq: NodeSeq, tree: Tree[String]): NodeSeq = {
-      val preterminals = tree.getPreTerminals.asScala
-      (0 until tokenSeq.size) map { i =>
-        tokenSeq(i) addAttribute ("pos", preterminals(i).getLabel)
+  class LocalTokenBerkeleyAnnotator extends LocalBerkeleyAnnotator {
+    def newSentenceAnnotation(sentence: Node) = {
+
+      def addPOS(tokenSeq: NodeSeq, tree: Tree[String]): NodeSeq = {
+        val preterminals = tree.getPreTerminals.asScala
+        (0 until tokenSeq.size) map { i =>
+          tokenSeq(i) addAttribute ("pos", preterminals(i).getLabel)
+        }
       }
+
+      val tokens = (sentence \ "tokens").head
+      val tokenSeq = tokens \ "token"
+
+      val tree = safeParse(tokenSeq.map(_ \@ "form").asJava, null)
+
+      val taggedSeq = addPOS(tokenSeq, tree)
+
+      val newTokens = {
+        val nameAdded = tokens addAnnotatorName name
+        nameAdded replaceChild taggedSeq
+      }
+      val parseNode = treeToNode(tree, taggedSeq, sentence \@ "id")
+
+      // TODO: this may be customized with props?
+      sentence addOrOverwriteChild Seq(newTokens, parseNode)
     }
-
-    val tokens = (sentence \ "tokens").head
-    val tokenSeq = tokens \ "token"
-
-    val tree = safeParse(tokenSeq.map(_ \@ "form").asJava, null, parser)
-
-    val taggedSeq = addPOS(tokenSeq, tree)
-
-    val newTokens = {
-      val nameAdded = tokens addAnnotatorName name
-      nameAdded replaceChild taggedSeq
-    }
-    val parseNode = treeToNode(tree, taggedSeq, sentence \@ "id")
-
-    // TODO: this may be customized with props?
-    sentence addOrOverwriteChild Seq(newTokens, parseNode)
   }
 
   override def requires = Set(Requirement.Tokenize)
@@ -206,17 +206,21 @@ class BerkeleyParserAnnotatorFromPOS(
   override val name: String,
   override val props: Properties) extends BerkeleyParserAnnotator {
 
-  def newSentenceAnnotation(sentence: Node, parser: BParser) = {
-    val tokens = sentence \ "tokens"
-    val tokenSeq = tokens \ "token"
-    val posSeq = tokenSeq.map(_ \@ "pos").asJava
+  def mkLocalAnnotator = new LocalPOSBerkeleyAnnotator
 
-    val tree = safeParse(tokenSeq.map(_+"").asJava, posSeq, parser)
+  class LocalPOSBerkeleyAnnotator extends LocalBerkeleyAnnotator {
+    def newSentenceAnnotation(sentence: Node) = {
+      val tokens = sentence \ "tokens"
+      val tokenSeq = tokens \ "token"
+      val posSeq = tokenSeq.map(_ \@ "pos").asJava
 
-    val parseNode = treeToNode(tree, tokenSeq, sentence \@ "id")
+      val tree = safeParse(tokenSeq.map(_+"").asJava, posSeq)
 
-    // TODO: is it ok to override in default?
-    sentence addOrOverwriteChild Seq(parseNode)
+      val parseNode = treeToNode(tree, tokenSeq, sentence \@ "id")
+
+      // TODO: is it ok to override in default?
+      sentence addOrOverwriteChild Seq(parseNode)
+    }
   }
 
   override def requires = Set(Requirement.POS)
@@ -235,6 +239,9 @@ object BerkeleyParserAnnotator extends AnnotatorCompanion[BerkeleyParserAnnotato
     }
   }
 
+  /** Parser abstracts how a sentence is parsed with a Berkely parser object.
+    *
+    * Can be stubed for unit-testing. */
   trait Parser {
     def parse(sentence: JList[String], pos: JList[String]): Tree[String]
   }
