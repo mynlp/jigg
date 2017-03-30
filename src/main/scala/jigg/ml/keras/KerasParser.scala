@@ -21,8 +21,7 @@ import jigg.ml.keras._
 import jigg.util.LookupTable
 
 import scala.xml.Node
-
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 class KerasParser(modelPath: String, tablePath: String) {
 
@@ -37,7 +36,7 @@ class KerasParser(modelPath: String, tablePath: String) {
  */
   private val tagset:Map[Int, String] = Map(0 -> "B", 1 -> "I", 2 -> "O")
 
-  def parsing(str: String): List[(Int, Int)] = {
+  def parsing(str: String): Array[(Int, Int)] = {
     // For dummy input to indicate boundaries of sentence.
     val s = "\n" + str + "\n\n"
     val inputData = table.encodeCharacter(s)
@@ -48,13 +47,14 @@ class KerasParser(modelPath: String, tablePath: String) {
       maxID = argmax(outputData(i, ::))
     } yield maxID
 
-    getOffsets(tags.toList)
+    getOffsets(tags.toArray)
   }
 
-  def parsing(tokens: Node): List[List[String]] = {
+  def parsing(tokens: Node): Array[Array[String]] = {
     // For dummy input to indicate boundaries of sentence.
-    val words = List("\n") ::: (tokens \\ "tokens").flatMap(x => x \\ "@lemma").toList.map(x => x.toString) ::: List("\n","\n")
-    val ids = (tokens \\ "tokens").flatMap(x => x \\ "@id").toList.map(x => x.toString)
+    val words = Array("\n").union(
+      (tokens \\ "tokens").flatMap(x => x \\ "@lemma").toArray.map(x => x.toString)).union(Array("\n\n"))
+    val ids = (tokens \\ "tokens").flatMap(x => x \\ "@id").toArray.map(x => x.toString)
 
     val inputData = table.encodeWords(words)
     val outputData = model.convert(inputData)
@@ -64,13 +64,13 @@ class KerasParser(modelPath: String, tablePath: String) {
       maxID = argmax(outputData(i, ::))
     } yield maxID
 
-    val ranges = getOffsets(tags.toList)
+    val ranges = getOffsets(tags.toArray)
 
     ranges.map(x => ids.slice(x._1, x._2))
   }
 
-  def getOffsets(data: List[Int]): List[(Int, Int)]= {
-    val ranges = ListBuffer[(Int, Int)]()
+  def getOffsets(data: Array[Int]): Array[(Int, Int)]= {
+    val ranges = ArrayBuffer[(Int, Int)]()
     var bpos = -1
 
     for(i <- data.indices){
@@ -90,7 +90,7 @@ class KerasParser(modelPath: String, tablePath: String) {
         case _ =>
       }
     }
-    ranges.toList
+    ranges.toArray
   }
 }
 

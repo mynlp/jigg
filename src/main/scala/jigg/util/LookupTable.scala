@@ -40,15 +40,15 @@ class LookupTable(path: String) {
   }
 
   // For list of words
-  def encodeWords(words: List[String]): DenseMatrix[Float] = {
+  def encodeWords(words: Array[String]): DenseMatrix[Float] = {
     val wordsArray = words.map{x =>
       // Note: For skipping unknown words, this encoder returns dummy id.
       key2id.getOrElse(x.toString, "3").toFloat
-    }.toArray
+    }
     new DenseMatrix[Float](1, words.length, wordsArray)
   }
 
-  def decode(data: DenseMatrix[Float]): List[String] = data.map{x => id2key.getOrElse(x.toInt.toString, "NONE")}.toArray.toList
+  def decode(data: DenseMatrix[Float]): Array[String] = data.map{x => id2key.getOrElse(x.toInt.toString, "NONE")}.toArray
 
   def getId(key: String): Int = key2id.getOrElse(key, "0").toInt
   def getId(key: Char): Int = getId(key.toString)

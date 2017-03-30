@@ -30,18 +30,18 @@ class KerasModel(path: String) {
 
   private val weightGroups = model.checkAndGetGroup("model_weights")
 
-  def parseConfigToList(config: String): List[Map[String, Any]] = {
+  def parseConfigToSeq(config: String): Seq[Map[String, Any]] = {
     val jsonValue = parse(config)
     implicit val formats = DefaultFormats
     val jsonList = jsonValue.extract[Map[String, Any]]
-    jsonList("config").asInstanceOf[List[Map[String, Any]]]
+    jsonList("config").asInstanceOf[Seq[Map[String, Any]]]
   }
 
-  private val modelValues = parseConfigToList(modelAttribute.getValue(0).toString)
+  private val modelValues = parseConfigToSeq(modelAttribute.getValue(0).toString)
 
   def getConfigs(x: Map[String, Any]): Map[String, Any] = x("config").asInstanceOf[Map[String,Any]]
 
-  def constructNetwork(values: List[Map[String, Any]]): List[Functor] = values.map{
+  def constructNetwork(values: Seq[Map[String, Any]]): Seq[Functor] = values.map{
     x => {
       val configs = getConfigs(x)
       val functor = x("class_name").toString match {
@@ -65,11 +65,11 @@ class KerasModel(path: String) {
     }
   }
 
-  private val graph:List[Functor] = constructNetwork(modelValues)
+  private val graph:Seq[Functor] = constructNetwork(modelValues)
 
   def convert(input: DenseMatrix[Float]): DenseMatrix[Float] = callFunctors(input, graph)
 
-  private def callFunctors(input: DenseMatrix[Float], unprocessed:List[Functor]): DenseMatrix[Float] = unprocessed match {
+  private def callFunctors(input: DenseMatrix[Float], unprocessed:Seq[Functor]): DenseMatrix[Float] = unprocessed match {
     case functor :: tail =>
       val interOutput = functor.convert(input)
       callFunctors(interOutput, tail)
