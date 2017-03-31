@@ -23,6 +23,7 @@ import scala.xml._
 import jigg.util.XMLUtil.RichNode
 
 import edu.stanford.nlp.trees.{
+  GrammaticalStructure,
   EnglishGrammaticalStructure,
   UniversalEnglishGrammaticalStructure,
   TypedDependency,
@@ -72,10 +73,10 @@ class StanfordCollapsedDependenciesAnnotator(
 """
 
   // This is fixed now, but may be modifiable in future?
-  val extraDependencies = false
+  val includeExtra = GrammaticalStructure.Extras.NONE
+  val SC = StanfordCoreNLPAnnotator
 
   def newSentenceAnnotation(sentence: Node) = {
-    val SC = StanfordCoreNLPAnnotator
 
     val typeddeps = SC.extractTypedDependencies(sentence, SC.basicDepType)
 
@@ -85,18 +86,28 @@ class StanfordCollapsedDependenciesAnnotator(
 
     val gs = makeGrammaticalStructure(typeddeps, rootNode)
 
-    val collapsedDeps = SemanticGraphFactory.makeFromTree(
-      gs, SemanticGraphFactory.Mode.COLLAPSED, extraDependencies, true, null)
+    val collapsedNode = gsToNode(
+      sentence, gs, SemanticGraphFactory.Mode.COLLAPSED, SC.collapsedDepType)
+    val ccNode = gsToNode(
+      sentence, gs, SemanticGraphFactory.Mode.CCPROCESSED, SC.ccCollapsedDepType)
+    val enhancedNode = gsToNode(
+      sentence, gs, SemanticGraphFactory.Mode.ENHANCED, SC.enhancedDepType)
+    val enhancedPPNode = gsToNode(
+      sentence, gs, SemanticGraphFactory.Mode.ENHANCED_PLUS_PLUS,
+      SC.enhancedPlusPlusDepType)
 
-    val ccDeps = SemanticGraphFactory.makeFromTree(
-      gs, SemanticGraphFactory.Mode.CCPROCESSED, extraDependencies, true, null)
+    sentence addOrOverwriteChild (
+      Seq(collapsedNode, ccNode, enhancedNode, enhancedPPNode), Some("type"))
+  }
 
-    val collapsedNode = SC.semanticGraphToDependenciesNode(
-      sentence, collapsedDeps, SC.collapsedDepType, name)
-    val ccNode = SC.semanticGraphToDependenciesNode(
-      sentence, ccDeps, SC.ccCollapsedDepType, name)
-
-    sentence addOrOverwriteChild (Seq(collapsedNode, ccNode), Some("type"))
+  private def gsToNode(
+    sentence: Node,
+    gs: GrammaticalStructure,
+    mode: SemanticGraphFactory.Mode,
+    depType: String) = {
+    val deps = SemanticGraphFactory.makeFromTree(
+      gs, mode, includeExtra, null)
+    SC.semanticGraphToDependenciesNode(sentence, deps, depType, name)
   }
 
   private def makeGrammaticalStructure(
@@ -112,6 +123,10 @@ class StanfordCollapsedDependenciesAnnotator(
 
   override def requires = Set(Requirement.BasicDependencies)
   override def requirementsSatisfied =
-    Set(Requirement.CollapsedDependencies, Requirement.CollapsedCCProcessedDependencies)
+    Set(
+      Requirement.CollapsedDependencies,
+      Requirement.CollapsedCCProcessedDependencies,
+      Requirement.EnhancedDependencies,
+      Requirement.EnhancedPlusPlusDependencies)
 }
 
