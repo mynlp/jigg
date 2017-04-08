@@ -72,6 +72,8 @@ class StanfordCoreNLPAnnotator(
     Requirement.BasicDependencies -> new BasicDependencies,
     Requirement.CollapsedDependencies -> new CollapsedDependencies,
     Requirement.CollapsedCCProcessedDependencies -> new CollapsedCCProcessedDependencies,
+    Requirement.EnhancedDependencies -> new EnhancedDependencies,
+    Requirement.EnhancedPlusPlusDependencies -> new EnhancedPlusPlusDependencies,
     Requirement.Mention -> new MentionCandidates,
     Requirement.Coreference -> new Coreference
   )
@@ -86,6 +88,8 @@ class StanfordCoreNLPAnnotator(
     Requirement.BasicDependencies,
     Requirement.CollapsedDependencies,
     Requirement.CollapsedCCProcessedDependencies,
+    Requirement.EnhancedDependencies,
+    Requirement.EnhancedPlusPlusDependencies,
     Requirement.Mention,
     Requirement.Coreference
   )
@@ -107,9 +111,12 @@ class StanfordCoreNLPAnnotator(
   private def convRequirements(seq: Seq[Set[Class[_<:CoreAnnotation[_]]]]):
       Seq[Set[Requirement]] = {
 
-    def conv(set: Set[Class[_<:CoreAnnotation[_]]], name: String): Set[Requirement] =
-      set flatMap (StanfordCoreNLPAnnotator.requirementMap.getOrElse(_,
-        throw new ArgumentError("$name in Stanford CoreNLP is yet unsupported in jigg.")))
+    def conv(set: Set[Class[_<:CoreAnnotation[_]]], name: String): Set[Requirement] = {
+      val s = set flatMap (StanfordCoreNLPAnnotator.requirementMap)
+        // .getOrElse(_,
+        // throw new ArgumentError(s"$name in Stanford CoreNLP is yet unsupported in jigg.")))
+      s - Requirement.Null
+    }
 
     assert(seq.size == annotatorNames.size)
     (0 until seq.size) map { i => conv(seq(i), annotatorNames(i)) }
@@ -663,6 +670,30 @@ class StanfordCoreNLPAnnotator(
     def depType: String = StanfordCoreNLPAnnotator.ccCollapsedDepType
   }
 
+  class EnhancedDependencies extends StanfordDependencies {
+    def setGraph(sentence: CoreMap, graph: SemanticGraph) =
+      sentence set (
+        classOf[SemanticGraphCoreAnnotations.EnhancedDependenciesAnnotation],
+        graph)
+
+    def semanticGraph(sentence: CoreMap): SemanticGraph =
+      sentence get classOf[SemanticGraphCoreAnnotations.EnhancedDependenciesAnnotation]
+
+    def depType: String = StanfordCoreNLPAnnotator.enhancedDepType
+  }
+
+  class EnhancedPlusPlusDependencies extends StanfordDependencies {
+    def setGraph(sentence: CoreMap, graph: SemanticGraph) =
+      sentence set (
+        classOf[SemanticGraphCoreAnnotations.EnhancedPlusPlusDependenciesAnnotation],
+        graph)
+
+    def semanticGraph(sentence: CoreMap): SemanticGraph =
+      sentence get classOf[SemanticGraphCoreAnnotations.EnhancedPlusPlusDependenciesAnnotation]
+
+    def depType: String = StanfordCoreNLPAnnotator.enhancedPlusPlusDepType
+  }
+
   class MentionCandidates extends CoreNLPRequirement {
 
     def addToCoreMap(annotation: core.Annotation, node: Node) =
@@ -780,9 +811,6 @@ object StanfordCoreNLPAnnotator extends AnnotatorCompanion[StanfordCoreNLPAnnota
       classOf[NamedEntityTagAnnotation] -> Seq(R.StanfordNER),
       classOf[RegexAnnotation] -> Seq(R.StanfordNER),
       classOf[TreeCoreAnnotations.TreeAnnotation] -> Seq(R.Parse),
-      // TODO: dependency parse mechanism should largely be changed so that
-      // only basic dependencies are given by a parser, and other ones are
-      // supplied internally!
       classOf[SemanticGraphCoreAnnotations.BasicDependenciesAnnotation] -> Seq(R.BasicDependencies),
       classOf[SemanticGraphCoreAnnotations.CollapsedDependenciesAnnotation] -> Seq(R.CollapsedDependencies),
       classOf[SemanticGraphCoreAnnotations.CollapsedCCProcessedDependenciesAnnotation] -> Seq(R.CollapsedCCProcessedDependencies),
