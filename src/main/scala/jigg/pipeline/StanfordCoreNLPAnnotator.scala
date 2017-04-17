@@ -103,13 +103,9 @@ class StanfordCoreNLPAnnotator(
     def reqSet(a: core.Annotator): Set[Class[_<:CoreAnnotation[_]]] = a match {
       case a: core.TokensRegexNERAnnotator =>
         Set(classOf[StanfordCoreNLPAnnotator.RegexAnnotation])
-      case _ =>
-        println(a.requirementsSatisfied)
-        a.requirementsSatisfied.asScala.toSet
+      case _ => a.requirementsSatisfied.asScala.toSet
     }
-    val a = convRequirements(annotators map reqSet)
-    println(a)
-    a
+    convRequirements(annotators map reqSet)
   }
 
   private def convRequirements(seq: Seq[Set[Class[_<:CoreAnnotation[_]]]]):
