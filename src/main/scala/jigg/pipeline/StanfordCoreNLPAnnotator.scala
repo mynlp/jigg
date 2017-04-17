@@ -23,8 +23,8 @@ import scala.collection.mutable.ArrayBuffer
 import scala.xml._
 import jigg.util.PropertiesUtil
 import jigg.util.XMLUtil.RichNode
-import edu.stanford.nlp.coref.data.CorefChain
-import edu.stanford.nlp.coref.CorefCoreAnnotations
+import edu.stanford.nlp.coref
+import edu.stanford.nlp.dcoref
 import edu.stanford.nlp.pipeline._
 import edu.stanford.nlp.ling.{CoreAnnotation, CoreLabel}
 import edu.stanford.nlp.trees.{GrammaticalRelation, Tree, Trees, TreeCoreAnnotations,
@@ -103,9 +103,13 @@ class StanfordCoreNLPAnnotator(
     def reqSet(a: core.Annotator): Set[Class[_<:CoreAnnotation[_]]] = a match {
       case a: core.TokensRegexNERAnnotator =>
         Set(classOf[StanfordCoreNLPAnnotator.RegexAnnotation])
-      case _ => a.requirementsSatisfied.asScala.toSet
+      case _ =>
+        println(a.requirementsSatisfied)
+        a.requirementsSatisfied.asScala.toSet
     }
-    convRequirements(annotators map reqSet)
+    val a = convRequirements(annotators map reqSet)
+    println(a)
+    a
   }
 
   private def convRequirements(seq: Seq[Set[Class[_<:CoreAnnotation[_]]]]):
@@ -706,12 +710,19 @@ class StanfordCoreNLPAnnotator(
     def addToNode(document: Node, annotation: core.Annotation): Node = document
   }
 
+  /** This class is used for satisfying both `Coreference` (by CorefAnnotator) and
+    * `DeterministicCoreference` (by DeterministicCorefAnnotator). CoreNLP distinguishes
+    * two classes and give different types of `requirementsSatisfied`. However,
+    * both two annotators internally assign the same, `coref.CorefCoreAnnotations` and
+    * we can thus share the code for extracting the reuslts from both annotators.
+    */
   class Coreference extends CoreNLPRequirement {
+    import coref.CorefCoreAnnotations
+    import coref.data.CorefChain
 
     def addToCoreMap(annotation: core.Annotation, node: Node) =
       throw new ArgumentError(
         "Annotators which rely on coref should not exist in corenlp?")
-
     def addToNode(document: Node, annotation: core.Annotation): Node = {
 
       val sentences = document \\ "sentence"
@@ -775,7 +786,6 @@ class StanfordCoreNLPAnnotator(
       document addOrOverwriteChild Seq(mentionsNode, coreferencesNode)
     }
   }
-
 }
 
 object StanfordCoreNLPAnnotator extends AnnotatorCompanion[StanfordCoreNLPAnnotator] {
@@ -816,9 +826,10 @@ object StanfordCoreNLPAnnotator extends AnnotatorCompanion[StanfordCoreNLPAnnota
       classOf[SemanticGraphCoreAnnotations.CollapsedCCProcessedDependenciesAnnotation] -> Seq(R.CollapsedCCProcessedDependencies),
       classOf[SemanticGraphCoreAnnotations.EnhancedDependenciesAnnotation] -> Seq(R.EnhancedDependencies),
       classOf[SemanticGraphCoreAnnotations.EnhancedPlusPlusDependenciesAnnotation] -> Seq(R.EnhancedPlusPlusDependencies),
-      classOf[CorefCoreAnnotations.CorefMentionsAnnotation] -> Seq(R.Mention),
+      classOf[coref.CorefCoreAnnotations.CorefMentionsAnnotation] -> Seq(R.Mention),
       // classOf[CoreAnnotations.MentionsAnnotation] -> TODO: should we change R.Mention to R.CorefMention for supporing EntityMentionAnnotator? What's the difference between CorefMentions and EntityMentions?
-      classOf[CorefCoreAnnotations.CorefChainAnnotation] -> Seq(R.Coreference)
+      classOf[coref.CorefCoreAnnotations.CorefChainAnnotation] -> Seq(R.Coreference),
+      classOf[dcoref.CorefCoreAnnotations.CorefChainAnnotation] -> Seq(R.Coreference)
     ).withDefaultValue(Seq(R.Null))
   }
 
