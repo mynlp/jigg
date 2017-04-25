@@ -2,13 +2,13 @@ package jigg.ml.keras
 
 /*
  Copyright 2013-2015 Hiroshi Noji
- 
+
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
- 
+
      http://www.apache.org/licencses/LICENSE-2.0
-     
+
  Unless required by applicable law or agreed to in writing, software
  distributed under the License is distributed on an "AS IS" BASIS,
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,17 +23,14 @@ import jigg.util.LookupTable
 import scala.xml.Node
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
-class KerasParser(modelPath: String, tablePath: String) {
-
-  private val model = KerasModel(modelPath)
-  private val table = LookupTable(tablePath)
+class KerasParser(model: KerasModel, table: LookupTable) {
 
   /*
- * BIO tag
- *  B : Begin of segment.               Value is 0.
- *  I : Continuation or end of segment. Value is 1.
- *  O : Others.                         Value is 2.
- */
+   * BIO tag
+   *  B : Begin of segment.               Value is 0.
+   *  I : Continuation or end of segment. Value is 1.
+   *  O : Others.                         Value is 2.
+   */
   private val tagset:Map[Int, String] = Map(0 -> "B", 1 -> "I", 2 -> "O")
 
   def parsing(str: String): Array[(Int, Int)] = {
@@ -92,8 +89,4 @@ class KerasParser(modelPath: String, tablePath: String) {
     }
     ranges.toArray
   }
-}
-
-object KerasParser{
-  def apply(modelPath: String, tablePath: String) = new KerasParser(modelPath, tablePath)
 }

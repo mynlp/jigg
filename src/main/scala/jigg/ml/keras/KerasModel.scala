@@ -21,9 +21,7 @@ import jigg.util.HDF5Object
 import org.json4s.jackson.JsonMethods._
 import org.json4s.{DefaultFormats, _}
 
-class KerasModel(path: String) {
-
-  private val model = HDF5Object(path)
+class KerasModel(model: HDF5Object) {
 
   private val kerasAttribute = model.checkAndGetAttribute("keras_version")
   private val modelAttribute = model.checkAndGetAttribute("model_config")
@@ -75,8 +73,4 @@ class KerasModel(path: String) {
       callFunctors(interOutput, tail)
     case Nil => input
   }
-}
-
-object KerasModel{
-  def apply(path: String): KerasModel = new KerasModel(path)
 }

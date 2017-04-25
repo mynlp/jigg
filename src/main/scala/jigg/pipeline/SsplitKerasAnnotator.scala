@@ -2,13 +2,13 @@ package jigg.pipeline
 
 /*
  Copyright 2013-2015 Hiroshi Noji
- 
+
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
- 
+
      http://www.apache.org/licencses/LICENSE-2.0
-     
+
  Unless required by applicable law or agreed to in writing, software
  distributed under the License is distributed on an "AS IS" BASIS,
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,23 +17,53 @@ package jigg.pipeline
 */
 
 import java.util.Properties
-
-import jigg.ml.keras.KerasParser
-
 import scala.xml.Node
+
+import jigg.ml.keras.{KerasModel, KerasParser}
+import jigg.util.{HDF5Object, IOUtil, LookupTable}
 import jigg.util.XMLUtil.RichNode
 
-class SsplitKerasAnnotator(override val name: String, override val props: Properties) extends Annotator {
+trait KerasAnnotator extends Annotator {
 
-  def defaultModelFileName = "ssplit-model.h5"
-  def defaultTableFileName = "table.json"
+  def defaultModelPath: String
+  def defaultTablePath: String
 
-  @Prop(gloss = "Model file (if omitted, the default path is used to search file)") var model = ""
+  def model: String
+  def table: String
+
+  def loadParser(): KerasParser  = {
+    val hdf5 = model match {
+      case "" =>
+        System.err.println(s"No model file is given. Defaulting to $defaultModelPath ...")
+        HDF5Object.fromResource(defaultModelPath)
+      case _ =>
+        HDF5Object.fromFile(model)
+    }
+    val kerasModel = new KerasModel(hdf5)
+
+    val lookupTable = table match {
+      case "" =>
+        System.err.println(s"No lookup table file is given. Defaulting to $defaultTablePath ...")
+        LookupTable.fromResource(defaultTablePath)
+      case _ =>
+        LookupTable.fromFile(table)
+    }
+    new KerasParser(kerasModel, lookupTable)
+  }
+}
+
+class SsplitKerasAnnotator(override val name: String, override val props: Properties) extends KerasAnnotator {
+
+  def defaultModelPath = "jigg-models/keras/ssplit_model.h5"
+  def defaultTablePath = "jigg-models/keras/jpnLookupCharacter.json"
+
+  @Prop(gloss = "Model file (use the default if ommited)") var model = ""
   @Prop(gloss = "Lookup table for mapping character into id space") var table = ""
 
   readProps()
 
-  lazy val sentenceSplitter: QueueSentenceSplitter = new QueueSentenceSplitter
+  // lazy val sentenceSplitter: QueueSentenceSplitter = new QueueSentenceSplitter
+  lazy val sentenceSplitter = loadParser()
 
   override def description =s"""${super.description}
 
@@ -52,7 +82,7 @@ class SsplitKerasAnnotator(override val name: String, override val props: Proper
       val splitRegex = """\n+""".r
       val line = e.text
       val sentenceBoundaries = 0 +: splitRegex.findAllMatchIn(line).map(_.end).toVector :+ line.length
-      val sentences: Vector[Node] = sentenceBoundaries.sliding(2).toVector flatMap { case Seq(begin_, end_) =>
+      val sentences: Seq[Node] = sentenceBoundaries.sliding(2).toArray.flatMap { case Seq(begin_, end_) =>
         def isSpace(c: Char) = c == ' ' || c == '\t' || c == '\n'
         val snippet = line.substring(begin_, end_)
         val begin = snippet.indexWhere(!isSpace(_)) match {
@@ -65,9 +95,9 @@ class SsplitKerasAnnotator(override val name: String, override val props: Proper
         }
 
         val preSentence: String = line.substring(begin, end)
-        val boundaries = sentenceSplitter.s.parsing(preSentence)
+        val boundaries = sentenceSplitter.parsing(preSentence)
 
-        boundaries.flatMap{x =>
+        boundaries.flatMap { x =>
           val subline = preSentence.substring(x._1, x._2)
           if (subline.isEmpty)
             None
@@ -83,38 +113,7 @@ class SsplitKerasAnnotator(override val name: String, override val props: Proper
     }
   }
 
-  class QueueSentenceSplitter {
-    private def makeSentenceSplitter: KerasParser = model match {
-      case "" =>
-        System.err.println(s"No model file is given. Try to search default path: $defaultModelFileName")
-        table match {
-          case "" =>
-            System.err.println(s"No lookup table file is given. Try to search default path: $defaultTableFileName")
-            KerasParser(defaultTableFileName, defaultTableFileName)
-          case tableFile =>
-            KerasParser(defaultTableFileName, tableFile)
-        }
-      case modelFile =>
-        table match {
-          case "" =>
-            System.err.println(s"No lookup table file is given. Try to search default path: $defaultTableFileName")
-            KerasParser(model, defaultTableFileName)
-          case tableFile =>
-            KerasParser(model, tableFile)
-        }
-    }
-
-    val s: KerasParser = makeSentenceSplitter
-  }
-
   override def requires() = Set()
   override def requirementsSatisfied(): Set[Requirement] = Set(Requirement.Ssplit)
-
-}
-
-object SsplitKerasAnnotator extends AnnotatorCompanion[SsplitKerasAnnotator] {
-
-  val model = ""
-  val table = ""
 
 }

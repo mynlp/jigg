@@ -17,17 +17,20 @@ package jigg.ml.keras
 */
 
 import java.io._
+import org.scalatest._
+
+import jigg.util.HDF5Object
 
 import breeze.linalg.csvread
 import breeze.numerics.abs
-import org.scalatest._
 
 class FlattenSpec extends FlatSpec with Matchers{
 
   def findPath(localPath: String): String = getClass.getClassLoader.getResource(localPath).getPath
 
   "convert" should "load model and convert input matrix" in {
-    val model = KerasModel(findPath("./data/ml/keras/flatten/flatten_model.h5"))
+    val hdf5 = HDF5Object.fromResource("./data/ml/keras/flatten/flatten_model.h5")
+    val model = new KerasModel(hdf5)
     val inputData = csvread(new File(findPath("./data/ml/keras/flatten/flatten_input.csv")),separator = ',').map{x => x.toFloat}
     val goldData = csvread(new File(findPath("./data/ml/keras/flatten/flatten_gold.csv")),separator = ',').map{x => x.toFloat}
 

@@ -17,6 +17,7 @@ package jigg.util
 */
 
 import java.io._
+import java.net.URL
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -71,4 +72,25 @@ object IOUtil {
     out.flush
     out.close()
   }
+
+  def findResource(path: String): URL =
+    Thread.currentThread.getContextClassLoader.getResource(path)
+
+  /** Open a resource on the `path` as an `InputStream`.
+    *
+    * `path` should be the relative path in the currently loaded jar,
+    * e.g., `a/b/c` when it is on `jar:file:xxx.jar!/a/b/c`
+    */
+  def openResource(path: String): InputStream = {
+    val loader = Thread.currentThread.getContextClassLoader
+    val stream = loader.getResourceAsStream(path)
+    if (path.endsWith(".gz")) new GZIPInputStream(stream)
+    else stream
+  }
+
+  def openResourceAsObjectStream(path: String): ObjectInputStream =
+    openBinIn(openResource(path))
+
+  def openResourceAsReader(path: String): BufferedReader =
+    bufReader(openResource(path))
 }

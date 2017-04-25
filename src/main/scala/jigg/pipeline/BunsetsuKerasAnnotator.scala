@@ -2,36 +2,41 @@ package jigg.pipeline
 
 /*
  Copyright 2013-2015 Hiroshi Noji
- 
+
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
- 
+
    http://www.apache.org/licenses/LICENSE-2.0
-   
+
  Unless required by applicable low or agreed to in writing, software
  distributed under the License is distributed on an "AS IS" BASIS.
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  See the Licensefor the specific language governing permissions and
  limitations under the License.
 */
-import java.util.Properties
-import jigg.ml.keras.KerasParser
 
+import java.util.Properties
 import scala.xml.Node
+
+import jigg.ml.keras.{KerasModel, KerasParser}
+import jigg.util.{HDF5Object, IOUtil, LookupTable}
 import jigg.util.XMLUtil.RichNode
 
-abstract class BunsetsuKerasAnnotator(override val name: String, override val props: Properties) extends ExternalProcessSentencesAnnotator { self =>
+abstract class BunsetsuKerasAnnotator(override val name: String, override val props: Properties)
+    extends KerasAnnotator with AnnotatingSentencesInParallel { self =>
 
-  def defaultModelFileName = "bunsetsu_model.h5"
-  def defaultTableFileName = "jpnLookupWords.json"
+  def defaultModelPath = "jigg-models/keras/bunsetsu_model.h5"
+  def defaultTablePath = "jigg-models/keras/jpnLookupWords.json"
 
-  @Prop(gloss = "Model file (if omitted, the default path is used to search file)") var model = ""
+  @Prop(gloss = "Model file (use the default if ommited)") var model = ""
   @Prop(gloss = "Lookup table for mapping character into id space") var table = ""
 
   readProps()
 
-  localAnnotators // instantiate lazy val here
+  override def init() = {
+    localAnnotators // init here, to output help message without loading
+  }
 
   override def description =s"""${super.description}
 
@@ -43,24 +48,20 @@ abstract class BunsetsuKerasAnnotator(override val name: String, override val pr
 """
 
   trait LocalBunsetsuKerasAnntoator extends LocalAnnotator {
-    lazy val bunsetsuSplitter: QueueBunsetsuSplitter = new QueueBunsetsuSplitter
+    val bunsetsuSplitter = self.loadParser()
 
-    override def init() = {
-      bunsetsuSplitter
-    }
-
-    override def newSentenceAnnotation(senteoce: Node): Node = {
-      val sid = (senteoce \ "@id").toString
+    override def newSentenceAnnotation(sentence: Node): Node = {
+      val sid = (sentence \ "@id").toString
 
       def chunkId(sid: String, idx: Int) = sid + "_chu" + idx
 
-      val chunks = bunsetsuSplitter.b.parsing(senteoce)
+      val chunks = bunsetsuSplitter.parsing(sentence)
 
       var chunkIndex = 0
 
       val chunkNodes = chunks.map{ c =>
         val node = chunkToNode(
-          chunkId(sid,chunkIndex),
+          chunkId(sid, chunkIndex),
           c.mkString(" "),
           c.head,
           c.last
@@ -68,7 +69,7 @@ abstract class BunsetsuKerasAnnotator(override val name: String, override val pr
         chunkIndex += 1
         node
       }
-      senteoce addChild <chunks annotators={ name }>{ chunkNodes }</chunks>
+      sentence addChild <chunks annotators={ name }>{ chunkNodes }</chunks>
     }
 
     private def chunkToNode(id: String, tokens: String, head: String, func: String) =
@@ -78,31 +79,6 @@ abstract class BunsetsuKerasAnnotator(override val name: String, override val pr
         head={ head }
         func={ func }
         />
-
-    class QueueBunsetsuSplitter {
-      private def makeBunsetsuSplitter: KerasParser = model match {
-        case "" =>
-          System.err.println(s"No model file is given. Try to search default path: $defaultModelFileName")
-          table match {
-            case "" =>
-              System.err.println(s"No lookup table file is given. Try to search default path: $defaultTableFileName")
-              KerasParser(defaultModelFileName, defaultTableFileName)
-            case tableFile =>
-              KerasParser(defaultTableFileName, tableFile)
-          }
-        case modelFile =>
-          table match {
-            case "" =>
-              System.err.println(s"No lookup table file is given. Try to search default path: $defaultTableFileName")
-              KerasParser(model, defaultTableFileName)
-            case tableFile =>
-              KerasParser(model, tableFile)
-          }
-      }
-
-      val b: KerasParser = makeBunsetsuSplitter
-    }
-
   }
 
   override def requirementsSatisfied(): Set[Requirement] = Set(JaRequirement.BunsetsuChunk)
@@ -120,11 +96,5 @@ class IPABunsetsuKerasAnnotator(name: String, props: Properties) extends Bunsets
 }
 
 object BunsetsuKerasAnnotator extends AnnotatorCompanion[BunsetsuKerasAnnotator] {
-
-  def defaultModelFileName = ""
-  def defaultTableFileName = ""
-
-  override def fromProps(name: String, props: Properties) = {
-    new IPABunsetsuKerasAnnotator(name, props)
-  }
+  override def fromProps(name: String, props: Properties) = new IPABunsetsuKerasAnnotator(name, props)
 }

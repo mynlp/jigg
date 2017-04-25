@@ -21,14 +21,14 @@ import java.util.Properties
 import org.scalatest.FunSuite
 import org.scalatest.Matchers._
 
+import jigg.util.{HDF5Object, LookupTable}
+
 class KerasParserTest extends FunSuite{
 
-  def findPath(localPath: String): String = getClass.getClassLoader.getResource(localPath).getPath
+  val model = new KerasModel(HDF5Object.fromResource("./data/keras/ssplit_model.h5"))
+  val table = LookupTable.fromResource("data/keras/jpnLookupCharacter.json")
 
-  val modelPath: String = findPath("./data/keras/ssplit_model.h5")
-  val tablePath: String = findPath("data/keras/jpnLookupCharacter.json")
-
-  val parser = KerasParser(modelPath, tablePath)
+  val parser = new KerasParser(model, table)
 
   test("get an offset list from pattern1") {
     val pattern = Array[Int](0,1,1,0,1,1)
@@ -48,7 +48,7 @@ class KerasParserTest extends FunSuite{
     ranges should be (Array[(Int, Int)]((0,3),(4,7)))
 
   }
-  
+
   test("get an offset list from pattern4") {
     val pattern = Array[Int](2,2,0,1,1,2,0,1,1,2)
     val ranges  = parser.getOffsets(pattern)
