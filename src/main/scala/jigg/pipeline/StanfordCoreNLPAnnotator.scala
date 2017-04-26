@@ -23,10 +23,10 @@ import scala.collection.mutable.ArrayBuffer
 import scala.xml._
 import jigg.util.PropertiesUtil
 import jigg.util.XMLUtil.RichNode
-import edu.stanford.nlp.hcoref.data.CorefChain
-import edu.stanford.nlp.hcoref.CorefCoreAnnotations
+import edu.stanford.nlp.coref
+import edu.stanford.nlp.dcoref
 import edu.stanford.nlp.pipeline._
-import edu.stanford.nlp.ling.CoreLabel
+import edu.stanford.nlp.ling.{CoreAnnotation, CoreLabel}
 import edu.stanford.nlp.trees.{GrammaticalRelation, Tree, Trees, TreeCoreAnnotations,
   TypedDependency}
 import edu.stanford.nlp.ling.{CoreAnnotations, IndexedWord}
@@ -72,6 +72,8 @@ class StanfordCoreNLPAnnotator(
     Requirement.BasicDependencies -> new BasicDependencies,
     Requirement.CollapsedDependencies -> new CollapsedDependencies,
     Requirement.CollapsedCCProcessedDependencies -> new CollapsedCCProcessedDependencies,
+    Requirement.EnhancedDependencies -> new EnhancedDependencies,
+    Requirement.EnhancedPlusPlusDependencies -> new EnhancedPlusPlusDependencies,
     Requirement.Mention -> new MentionCandidates,
     Requirement.Coreference -> new Coreference
   )
@@ -86,6 +88,8 @@ class StanfordCoreNLPAnnotator(
     Requirement.BasicDependencies,
     Requirement.CollapsedDependencies,
     Requirement.CollapsedCCProcessedDependencies,
+    Requirement.EnhancedDependencies,
+    Requirement.EnhancedPlusPlusDependencies,
     Requirement.Mention,
     Requirement.Coreference
   )
@@ -96,20 +100,23 @@ class StanfordCoreNLPAnnotator(
   private val requiresByEach: Seq[Set[Requirement]] =
     convRequirements(annotators map (_.requires.asScala.toSet))
   private val requirementsSatisfiedByEach: Seq[Set[Requirement]] = {
-    def reqSet(a: core.Annotator): Set[core.Annotator.Requirement] = a match {
+    def reqSet(a: core.Annotator): Set[Class[_<:CoreAnnotation[_]]] = a match {
       case a: core.TokensRegexNERAnnotator =>
-        Set(StanfordCoreNLPAnnotator.REGEX_REQUIREMENT)
+        Set(classOf[StanfordCoreNLPAnnotator.RegexAnnotation])
       case _ => a.requirementsSatisfied.asScala.toSet
     }
     convRequirements(annotators map reqSet)
   }
 
-  private def convRequirements(seq: Seq[Set[core.Annotator.Requirement]]):
+  private def convRequirements(seq: Seq[Set[Class[_<:CoreAnnotation[_]]]]):
       Seq[Set[Requirement]] = {
 
-    def conv(set: Set[core.Annotator.Requirement], name: String): Set[Requirement] =
-      set flatMap (StanfordCoreNLPAnnotator.requirementMap.getOrElse(_,
-        throw new ArgumentError("$name in Stanford CoreNLP is yet unsupported in jigg.")))
+    def conv(set: Set[Class[_<:CoreAnnotation[_]]], name: String): Set[Requirement] = {
+      val s = set flatMap (StanfordCoreNLPAnnotator.requirementMap)
+        // .getOrElse(_,
+        // throw new ArgumentError(s"$name in Stanford CoreNLP is yet unsupported in jigg.")))
+      s - Requirement.Null
+    }
 
     assert(seq.size == annotatorNames.size)
     (0 until seq.size) map { i => conv(seq(i), annotatorNames(i)) }
@@ -663,6 +670,30 @@ class StanfordCoreNLPAnnotator(
     def depType: String = StanfordCoreNLPAnnotator.ccCollapsedDepType
   }
 
+  class EnhancedDependencies extends StanfordDependencies {
+    def setGraph(sentence: CoreMap, graph: SemanticGraph) =
+      sentence set (
+        classOf[SemanticGraphCoreAnnotations.EnhancedDependenciesAnnotation],
+        graph)
+
+    def semanticGraph(sentence: CoreMap): SemanticGraph =
+      sentence get classOf[SemanticGraphCoreAnnotations.EnhancedDependenciesAnnotation]
+
+    def depType: String = StanfordCoreNLPAnnotator.enhancedDepType
+  }
+
+  class EnhancedPlusPlusDependencies extends StanfordDependencies {
+    def setGraph(sentence: CoreMap, graph: SemanticGraph) =
+      sentence set (
+        classOf[SemanticGraphCoreAnnotations.EnhancedPlusPlusDependenciesAnnotation],
+        graph)
+
+    def semanticGraph(sentence: CoreMap): SemanticGraph =
+      sentence get classOf[SemanticGraphCoreAnnotations.EnhancedPlusPlusDependenciesAnnotation]
+
+    def depType: String = StanfordCoreNLPAnnotator.enhancedPlusPlusDepType
+  }
+
   class MentionCandidates extends CoreNLPRequirement {
 
     def addToCoreMap(annotation: core.Annotation, node: Node) =
@@ -675,12 +706,19 @@ class StanfordCoreNLPAnnotator(
     def addToNode(document: Node, annotation: core.Annotation): Node = document
   }
 
+  /** This class is used for satisfying both `Coreference` (by CorefAnnotator) and
+    * `DeterministicCoreference` (by DeterministicCorefAnnotator). CoreNLP distinguishes
+    * two classes and give different types of `requirementsSatisfied`. However,
+    * both two annotators internally assign the same, `coref.CorefCoreAnnotations` and
+    * we can thus share the code for extracting the reuslts from both annotators.
+    */
   class Coreference extends CoreNLPRequirement {
+    import coref.CorefCoreAnnotations
+    import coref.data.CorefChain
 
     def addToCoreMap(annotation: core.Annotation, node: Node) =
       throw new ArgumentError(
         "Annotators which rely on coref should not exist in corenlp?")
-
     def addToNode(document: Node, annotation: core.Annotation): Node = {
 
       val sentences = document \\ "sentence"
@@ -744,7 +782,6 @@ class StanfordCoreNLPAnnotator(
       document addOrOverwriteChild Seq(mentionsNode, coreferencesNode)
     }
   }
-
 }
 
 object StanfordCoreNLPAnnotator extends AnnotatorCompanion[StanfordCoreNLPAnnotator] {
@@ -754,32 +791,49 @@ object StanfordCoreNLPAnnotator extends AnnotatorCompanion[StanfordCoreNLPAnnota
   // This is an imaginary requirement for representing requirement satisfied by
   // TokensRegexNERAnnotator. This is required because in the original class
   // "satisfied" field is empty so we cannot know whether any annotation is performed.
-  val REGEX_REQUIREMENT = new core.Annotator.Requirement("JIGG_REGEX_REQUIREMENT")
+  class RegexAnnotation extends CoreAnnotation[String] {
+    override def getType = classOf[String]
+  }
 
-  val requirementMap: Map[core.Annotator.Requirement, Seq[Requirement]] = Map(
-    core.Annotator.TOKENIZE_REQUIREMENT -> Seq(R.Tokenize),
-    // core.Annotator.CLEAN_XML_REQUIREMENT -> // unsupported
-    core.Annotator.SSPLIT_REQUIREMENT -> Seq(R.Ssplit),
-    core.Annotator.POS_REQUIREMENT -> Seq(R.POS),
-    core.Annotator.LEMMA_REQUIREMENT -> Seq(R.Lemma),
-    core.Annotator.NER_REQUIREMENT -> Seq(R.StanfordNER),
-    REGEX_REQUIREMENT -> Seq(R.StanfordNER),
-    // core.Annotator.GENDER_REQUIREMENT -> // unsupported
-    // core.Annotator.TRUECASE_REQUIREMENT -> // unsupported
-    core.Annotator.PARSE_REQUIREMENT -> Seq(R.Parse),
-    core.Annotator.DEPENDENCY_REQUIREMENT ->
-      Seq(R.BasicDependencies,
-        R.CollapsedDependencies,
-        R.CollapsedCCProcessedDependencies),
-    core.Annotator.MENTION_REQUIREMENT -> Seq(R.Mention), // unsupported
-    // core.Annotator.ENTITY_MENTIONS_REQUIREMENT -> Seq(R.Mention)  // unsupported
-    core.Annotator.DETERMINISTIC_COREF_REQUIREMENT -> Seq(R.Coreference), // TODO: maybe we need CoreNLP specific Coreference? for e.g., representing Gender
-    core.Annotator.COREF_REQUIREMENT -> Seq(R.Coreference)
-  )
+  val requirementMap: Map[Class[_<:CoreAnnotation[_]], Seq[Requirement]] = {
+    import CoreAnnotations._
+
+    // Since CoreNLP 3.7.0, the requirement specifications in the corenlp have much finer
+    // granuality, and now each corenlp requirement cannot be converted to Jigg's
+    // requirement in one-to-one. I thus provide only a mapping for only a partial set of
+    // corenlp requirements, which are though to be *core*. For example, though corenlp
+    // provides `SentencesAnnotation` as well as `SentenceIndexAnnotation` with
+    // sentence splitter, we only map `SentencesAnnotation` to Jigg's `Ssplit` requirement
+    // and ignore `SentenceIndexAnnotation`. This seems to be fine unless there is an
+    // annotator in corenlp that only provides `SentenceIndexAnnotation` but not
+    // `SentencesAnnotation` and a followed annotator requires `SentenceIndexAnnotation`
+    // only. I think such situation does not usually occur.
+    Map[Class[_<:CoreAnnotation[_]], Seq[Requirement]](
+      classOf[TextAnnotation] -> Seq(R.Tokenize),
+      classOf[TokensAnnotation] -> Seq(R.Tokenize),
+      classOf[SentencesAnnotation] -> Seq(R.Ssplit),
+      classOf[PartOfSpeechAnnotation] -> Seq(R.POS),
+      classOf[LemmaAnnotation] -> Seq(R.Lemma),
+      classOf[NamedEntityTagAnnotation] -> Seq(R.StanfordNER),
+      classOf[RegexAnnotation] -> Seq(R.StanfordNER),
+      classOf[TreeCoreAnnotations.TreeAnnotation] -> Seq(R.Parse),
+      classOf[SemanticGraphCoreAnnotations.BasicDependenciesAnnotation] -> Seq(R.BasicDependencies),
+      classOf[SemanticGraphCoreAnnotations.CollapsedDependenciesAnnotation] -> Seq(R.CollapsedDependencies),
+      classOf[SemanticGraphCoreAnnotations.CollapsedCCProcessedDependenciesAnnotation] -> Seq(R.CollapsedCCProcessedDependencies),
+      classOf[SemanticGraphCoreAnnotations.EnhancedDependenciesAnnotation] -> Seq(R.EnhancedDependencies),
+      classOf[SemanticGraphCoreAnnotations.EnhancedPlusPlusDependenciesAnnotation] -> Seq(R.EnhancedPlusPlusDependencies),
+      classOf[coref.CorefCoreAnnotations.CorefMentionsAnnotation] -> Seq(R.Mention),
+      // classOf[CoreAnnotations.MentionsAnnotation] -> TODO: should we change R.Mention to R.CorefMention for supporing EntityMentionAnnotator? What's the difference between CorefMentions and EntityMentions?
+      classOf[coref.CorefCoreAnnotations.CorefChainAnnotation] -> Seq(R.Coreference),
+      classOf[dcoref.CorefCoreAnnotations.CorefChainAnnotation] -> Seq(R.Coreference)
+    ).withDefaultValue(Seq(R.Null))
+  }
 
   val basicDepType = "basic"
   val collapsedDepType = "collapsed"
   val ccCollapsedDepType = "collapsed-ccprocessed"
+  val enhancedDepType = "enhanced"
+  val enhancedPlusPlusDepType = "enhanced-plus-plus"
 
   /** name may have the form corenlp[tokenize,ssplit]
     */

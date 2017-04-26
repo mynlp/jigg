@@ -50,6 +50,8 @@ trait Annotator extends PropsHolder {
     * override val nThreads = 1
     * }}}
     *
+    * TODO: change try to access to $name.nThreads first and set it to support annotator-specific
+    * parallelism.
     */
   def nThreads: Int = PropertiesUtil.findProperty("nThreads", props).map(_.toInt) match {
     case Some(n) if n > 0 => n
