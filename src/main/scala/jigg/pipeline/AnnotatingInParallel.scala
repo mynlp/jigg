@@ -46,7 +46,7 @@ trait AnnotatingInParallel extends Annotator { self=>
   // some variables that are not yet instantitated; e.g., `command` in
   // `LocalMecabAnnotator`.
   lazy protected val localAnnotators: Seq[A] =
-    (0 until nThreads).map(_=>mkLocalAnnotator())
+    (0 until nThreads).par.map(_=>mkLocalAnnotator()).seq
 
   protected def mkLocalAnnotator(): A
 

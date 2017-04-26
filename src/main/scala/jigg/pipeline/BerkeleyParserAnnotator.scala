@@ -19,7 +19,7 @@ package jigg.pipeline
 
 import jigg.util.PropertiesUtil
 import jigg.util.XMLUtil.RichNode
-import jigg.util.IOUtil
+import jigg.util.{IOUtil, LogUtil}
 
 import java.io.IOException
 import java.util.Properties
@@ -92,7 +92,9 @@ trait BerkeleyParserAnnotator extends AnnotatingSentencesInParallel {
   }
 
   private def mkInternalParser(): CoarseToFineMaxRuleParser = {
-    val parserData = loadParserData()
+    val gr = if (grFileName == "") defaultGrFilePath else grFileName
+    val parserData =
+      LogUtil.track(s"Loading berkeleyparser model from ${gr} ... ") { loadParserData() }
 
     val grammar = parserData.getGrammar
     val lexicon = parserData.getLexicon
