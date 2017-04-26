@@ -41,6 +41,7 @@ trait FeatureExtractor extends Serializable {
   def addFeatures(c:Context, features:ArrayBuffer[UF]): Unit
 }
 
+@SerialVersionUID(8433695275219196660L)
 class ZhangExtractor extends FeatureExtractor {
   import FeatureTypes._
   import FeatureTypes.{ZhangTemplate => TMP}

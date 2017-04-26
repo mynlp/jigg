@@ -56,8 +56,7 @@ class CCGParseAnnotator(override val name: String, override val props: Propertie
       case path => ParserModel.loadFrom(path)
     }
   } catch { case e: Exception =>
-      val errorMsg = s"""Failed to start CCG parser. Make sure the model file of CCG is already installed. If not, execute the following command in jigg directory:
-  ./script/download_models.sh
+      val errorMsg = s"""Failed to start CCG parser. Make sure jigg-models.jar is included in your path, or the path to another model "-${name}.model" is correct.
 """
       argumentError("model", errorMsg)
   }
