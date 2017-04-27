@@ -13,7 +13,7 @@ python setup.py install
 Before using it, the PipelineServer should be started in a command line.
 
 ``` shell
-$ cd jigg-0.6.2/
+$ cd jigg/
 $ java -Xmx4g -cp "*" jigg.pipeline.PipelineServer
 ```
 

@@ -19,7 +19,9 @@ package jigg.pipeline
 
 import jigg.util.PropertiesUtil
 import jigg.util.XMLUtil.RichNode
+import jigg.util.{IOUtil, LogUtil}
 
+import java.io.IOException
 import java.util.Properties
 import java.util.{List => JList}
 
@@ -39,7 +41,7 @@ trait BerkeleyParserAnnotator extends AnnotatingSentencesInParallel {
 
   def keepFunctionLabels = true // but probably the model does not output function labels.
 
-  def defaultGrFileName = "eng_sm6.gr"
+  def defaultGrFilePath = "jigg-models/berkeleyparser/eng_sm6.gr"
 
   @Prop(gloss = "Grammar file") var grFileName = ""
   @Prop(gloss = "Use annotated POS (by another annotator)") var usePOS =
@@ -90,20 +92,9 @@ trait BerkeleyParserAnnotator extends AnnotatingSentencesInParallel {
   }
 
   private def mkInternalParser(): CoarseToFineMaxRuleParser = {
-    val gr = grFileName match {
-      case "" =>
-        System.err.println(s"No grammar file is given. Try to search from default path: ${defaultGrFileName}.")
-        defaultGrFileName
-      case _ => grFileName
-    }
-
-    val parserData = ParserData Load gr
-    if (parserData == null) {
-      argumentError("grFileName", s"""Failed to load grammar from $gr.
-You can download the English model file from:
-  https://github.com/slavpetrov/berkeleyparser/raw/master/eng_sm6.gr
-""")
-    }
+    val gr = if (grFileName == "") defaultGrFilePath else grFileName
+    val parserData =
+      LogUtil.track(s"Loading berkeleyparser model from ${gr} ... ") { loadParserData() }
 
     val grammar = parserData.getGrammar
     val lexicon = parserData.getLexicon
@@ -121,6 +112,37 @@ You can download the English model file from:
       variational,
       true, // copied from BerkeleyParser.java
       true) // copied from BerkeleyParser.java
+  }
+
+  private def loadParserData(): ParserData = {
+    import IOUtil._
+    def safeOpen(path: String) =
+      try Some(openBinIn(defaultGrFilePath, gzipped=true))
+      catch { case e: Throwable => None }
+
+    val in = grFileName match {
+      case "" =>
+        // First try to search from the class loader
+        try Some(openResourceAsObjectStream(defaultGrFilePath, gzipped=true))
+        // then search for the current path on the file system
+        catch { case e: IOException => safeOpen(defaultGrFilePath) }
+      case path => safeOpen(path)
+    }
+    val p: Option[ParserData] = in flatMap { a =>
+      try Some(a.readObject.asInstanceOf[ParserData])
+      catch { case e: Throwable => None }
+    }
+    p match {
+      case Some(pData) => pData
+      case None => // error
+        argumentError("grFileName", s"""Failed to load grammar from ${grFileName}.
+Is "jigg-models.jar" included in the class path?
+
+Or you can download the English model file from:
+  https://github.com/slavpetrov/berkeleyparser/raw/master/eng_sm6.gr
+and specify it by e.g., "-${name}.grFileName eng_sm6.gr"
+""")
+    }
   }
 
   def treeToNode(tree: Tree[String], tokenSeq: Seq[Node], sentenceId: String): Node = {

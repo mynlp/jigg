@@ -2,8 +2,8 @@
 <root>
   <document id="d0">
     <sentences>
-      <sentence characterOffsetEnd="38" characterOffsetBegin="0" id="s0">Alice asked her mother to cook a cake.</sentence>
-      <sentence characterOffsetEnd="85" characterOffsetBegin="39" id="s1">Bob saw a girl in the garden with a telescope.</sentence>
+      <sentence id="s0" characterOffsetBegin="0" characterOffsetEnd="38">Alice asked her mother to cook a cake.</sentence>
+      <sentence id="s1" characterOffsetBegin="39" characterOffsetEnd="85">Bob saw a girl in the garden with a telescope.</sentence>
     </sentences>
   </document>
 </root>
