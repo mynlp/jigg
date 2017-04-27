@@ -207,3 +207,19 @@ class StubExternalCommunicator(outputs: Seq[String]) extends IOCommunicator {
     iter
   }
 }
+
+class MapStubExternalCommunicator(responces: Map[String, String]) extends IOCommunicator {
+
+  var currentIn = ""
+
+  def isAlive = true
+
+  def write(line: String) = currentIn = line.trim() // assuming line ends with `\n`, which is generally true
+  def writeln(line: String) = currentIn = line
+  def flush() = {}
+
+  def readingIter = {
+    val o = responces(currentIn)
+    o.split("\n").toIterator
+  }
+}

@@ -17,11 +17,13 @@ package jigg.util
 */
 
 import java.io._
+import java.net.URL
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 object IOUtil {
-  def openBinIn(path: String): ObjectInputStream = oiStream(inStream(path))
+  def openBinIn(path: String, gzipped: Boolean = false): ObjectInputStream =
+    oiStream(inStream(path, gzipped))
   def openBinIn(in: InputStream): ObjectInputStream = oiStream(in)
 
   def openZipBinIn(in: InputStream) = openBinIn(new GZIPInputStream(in))
@@ -38,14 +40,13 @@ object IOUtil {
   def openStandardIn: BufferedReader = bufReader(System.in)
   def openStandardOut: BufferedWriter = bufWriter(System.out)
 
-  def inStream(path: String) = path match {
-    case gzipped if gzipped.endsWith(".gz") => new GZIPInputStream(new FileInputStream(gzipped))
-    case file => new FileInputStream(file)
-  }
-  def outStream(path: String) = path match {
-    case gzipped if gzipped.endsWith(".gz") => new GZIPOutputStream(new FileOutputStream(gzipped))
-    case file => new FileOutputStream(file)
-  }
+  def inStream(path: String, gzipped: Boolean = false) =
+    if (path.endsWith(".gz") || gzipped) new GZIPInputStream(new FileInputStream(path))
+    else new FileInputStream(path)
+
+  def outStream(path: String) =
+    if (path.endsWith(".gz")) new GZIPOutputStream(new FileOutputStream(path))
+    else new FileOutputStream(path)
 
   def bufReader(stream: InputStream) = new BufferedReader(new InputStreamReader(stream))
   def bufWriter(stream: OutputStream) = new BufferedWriter(new OutputStreamWriter(stream))
@@ -71,4 +72,25 @@ object IOUtil {
     out.flush
     out.close()
   }
+
+  def findResource(path: String): URL =
+    Thread.currentThread.getContextClassLoader.getResource(path)
+
+  /** Open a resource on the `path` as an `InputStream`.
+    *
+    * `path` should be the relative path in the currently loaded jar,
+    * e.g., `a/b/c` when it is on `jar:file:xxx.jar!/a/b/c`
+    */
+  def openResource(path: String, gzipped: Boolean = false): InputStream = {
+    val loader = Thread.currentThread.getContextClassLoader
+    val stream = loader.getResourceAsStream(path)
+    if (path.endsWith(".gz") || gzipped) new GZIPInputStream(stream)
+    else stream
+  }
+
+  def openResourceAsObjectStream(path: String, gzipped: Boolean = false): ObjectInputStream =
+    openBinIn(openResource(path, gzipped))
+
+  def openResourceAsReader(path: String, gzipped: Boolean = false): BufferedReader =
+    bufReader(openResource(path, gzipped))
 }

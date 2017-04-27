@@ -20,7 +20,7 @@ import java.util.Properties
 
 import scala.io.Source
 import scala.xml.{Node, Elem, Text, Atom}
-import jigg.util.XMLUtil
+import jigg.util.XMLUtil.RichNode
 
 class RegexSentenceAnnotator(override val name: String, override val props: Properties) extends Annotator {
 
@@ -44,7 +44,7 @@ class RegexSentenceAnnotator(override val name: String, override val props: Prop
 
   override def annotate(annotation: Node): Node = {
 
-    XMLUtil.replaceAll(annotation, "document") { e =>
+    annotation.replaceAll("document") { e =>
       val line = e.text
       val sentenceBoundaries = 0 +: splitRegex.findAllMatchIn(line).map(_.end).toVector :+ line.length
       val sentences: Vector[Node] =
@@ -75,7 +75,7 @@ class RegexSentenceAnnotator(override val name: String, override val props: Prop
         }
       // val textRemoved = XMLUtil.removeText(e)
       // XMLUtil.addChild(textRemoved, <sentences>{ sentences }</sentences>)
-      XMLUtil.addChild(e, <sentences>{ sentences }</sentences>)
+      e addChild <sentences>{ sentences }</sentences>
     }
   }
 

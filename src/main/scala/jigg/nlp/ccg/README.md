@@ -98,7 +98,7 @@ For this, the gold treebank data (e.g., `test.ccgbank`) should also be converted
 This can be done by:
 
 ``` shell
-$ java -cp jigg.jar jigg.nlp.ccg.Cabocha2CoNLL -ccgBank ccgbank/test.ccgbank -cabocha test.cabocha -output test.conll
+$ cat ccgbank/test.ccgbank | java -cp jigg.jar jigg.nlp.ccg.GoldBunsetsuDepInCoNLL -cabocha test.cabocha > test.conll
 ```
 
 Then, `test.conll` is the CoNLL format file on bunsetsu unit, which can be compared with `out/pred.conll`.

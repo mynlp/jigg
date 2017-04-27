@@ -6,8 +6,6 @@ import org.scalatest.FunSuite
 import org.scalatest.Matchers._
 
 class JSONUtilSpec extends FunSuite{
-  import JSONUtil._
-  import scala.xml._
   import org.json4s._
   import org.json4s.jackson.JsonMethods._
 
@@ -53,6 +51,25 @@ class JSONUtilSpec extends FunSuite{
     * For handling escaped strings.
     */
   val testNodeForEscaping =
+    <root>
+      <document id={"<d0>"}>
+        {"quot\" amp&"}
+      </document>
+      <document id={"d1"}>
+        {"new line\n \n tab\t \t carriage return\r \r backslash\\ \\"}
+      </document>
+    </root>
+
+  val goldJSONForEscaping =
+  parse(
+  """{".tag":"root",".child":
+      [{".tag":"document","id":"<d0>","text":"quot\" amp&"},
+      {".tag":"document", "id":"d1", "text": "new line\n \n tab\t \t carriage return\r \r backslash\\ \\"}
+      ]
+    }"""
+  )
+
+  val testJSONForEscaping =
   parse(
   """{".tag":"root",".child":
       [{".tag":"document","id":"&lt;d0&gt;","text":"&amp;Test Node&quot;amp;"}
@@ -66,6 +83,7 @@ class JSONUtilSpec extends FunSuite{
   test("toJSON should generate formatted String object from scala.xml.Node"){
     parse(JSONUtil.toJSON(testNode)) should be (goldJSON)
     parse(JSONUtil.toJSON(testNodeForBackslash)) should be (goldJSONForBackSlash)
+    parse(JSONUtil.toJSON(testNodeForEscaping)) should be (goldJSONForEscaping)
   }
   /**
    * Unit testing JSON to XML
@@ -73,7 +91,7 @@ class JSONUtilSpec extends FunSuite{
   test("toXML should generate xml.Node"){
     val xmlFromJSON = JSONUtil.toXML(goldJSON)
     val xmlFromJSONWithBackslash = JSONUtil.toXML(goldJSONForBackSlash)
-    val xmlFromJSONWithEscapeChar = JSONUtil.toXML(testNodeForEscaping)
+    val xmlFromJSONWithEscapeChar = JSONUtil.toXML(testJSONForEscaping)
     xmlFromJSON should be (<root><document id={"d0"}>{"Test Node"}</document></root>)
     xmlFromJSONWithBackslash should be (<root><document id={"d0\\N"}>{"Test Node"}</document></root>)
     xmlFromJSONWithEscapeChar should be (<root><document id={"<d0>"}>{"&Test Node\"amp;"}</document></root>)

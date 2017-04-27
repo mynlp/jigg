@@ -18,8 +18,10 @@ package jigg.pipeline
 
 
 import jigg.util.PropertiesUtil
-import jigg.util.XMLUtil
+import jigg.util.XMLUtil.RichNode
+import jigg.util.{IOUtil, LogUtil}
 
+import java.io.IOException
 import java.util.Properties
 import java.util.{List => JList}
 
@@ -34,13 +36,12 @@ import edu.berkeley.nlp.PCFGLA.{
 import edu.berkeley.nlp.syntax.Tree
 import edu.berkeley.nlp.util.{MyMethod, Numberer}
 
-trait BerkeleyParserAnnotator extends SentencesAnnotator with ParallelAnnotator {
-
+trait BerkeleyParserAnnotator extends AnnotatingSentencesInParallel {
   def threshold = 1.0 // this value is used without explanation in original BerkeleyParser.java
 
   def keepFunctionLabels = true // but probably the model does not output function labels.
 
-  def defaultGrFileName = "eng_sm6.gr"
+  def defaultGrFilePath = "jigg-models/berkeleyparser/eng_sm6.gr"
 
   @Prop(gloss = "Grammar file") var grFileName = ""
   @Prop(gloss = "Use annotated POS (by another annotator)") var usePOS =
@@ -50,8 +51,6 @@ trait BerkeleyParserAnnotator extends SentencesAnnotator with ParallelAnnotator 
   @Prop(gloss = "Use variational rule score approximation instead of max-rule (Default: false)") var variational = false
 
   readProps()
-
-  lazy val parser: Parser = new QueueParser
 
   override def description = s"""${super.description}
 
@@ -67,10 +66,83 @@ trait BerkeleyParserAnnotator extends SentencesAnnotator with ParallelAnnotator 
   is the default behavior.
 """
 
-  // lazy val parser = mkParser()
-
   override def init() = {
-    parser // init here, to output help message without loading
+    localAnnotators // init here, to output help message without loading
+  }
+
+  trait LocalBerkeleyAnnotator extends LocalAnnotator {
+
+    type Parser = BerkeleyParserAnnotator.Parser
+
+    val parser: Parser = mkParser()
+
+    protected def mkParser(): Parser = new Parser {
+      val internalParser = mkInternalParser()
+      def parse(sentence: JList[String], pos: JList[String]): Tree[String] = {
+        val deriv = internalParser.getBestConstrainedParse(sentence, pos, null)
+        TreeAnnotations.unAnnotateTree(deriv, keepFunctionLabels)
+      }
+    }
+
+    protected def safeParse(sentence: JList[String], pos: JList[String]): Tree[String] = {
+      val tree = parser.parse(sentence, pos)
+      if (tree.size == 1 && !sentence.isEmpty) throw new AnnotationError("Failed to parse.")
+      else tree
+    }
+  }
+
+  private def mkInternalParser(): CoarseToFineMaxRuleParser = {
+    val gr = if (grFileName == "") defaultGrFilePath else grFileName
+    val parserData =
+      LogUtil.track(s"Loading berkeleyparser model from ${gr} ... ") { loadParserData() }
+
+    val grammar = parserData.getGrammar
+    val lexicon = parserData.getLexicon
+    Numberer.setNumberers(parserData.getNumbs())
+
+    new CoarseToFineMaxRuleParser(
+      grammar,
+      lexicon,
+      threshold,
+      -1,
+      viterbi,
+      false, // substates are not supported
+      false, // scores are not supported
+      accurate,
+      variational,
+      true, // copied from BerkeleyParser.java
+      true) // copied from BerkeleyParser.java
+  }
+
+  private def loadParserData(): ParserData = {
+    import IOUtil._
+    def safeOpen(path: String) =
+      try Some(openBinIn(defaultGrFilePath, gzipped=true))
+      catch { case e: Throwable => None }
+
+    val in = grFileName match {
+      case "" =>
+        // First try to search from the class loader
+        try Some(openResourceAsObjectStream(defaultGrFilePath, gzipped=true))
+        // then search for the current path on the file system
+        catch { case e: IOException => safeOpen(defaultGrFilePath) }
+      case path => safeOpen(path)
+    }
+    val p: Option[ParserData] = in flatMap { a =>
+      try Some(a.readObject.asInstanceOf[ParserData])
+      catch { case e: Throwable => None }
+    }
+    p match {
+      case Some(pData) => pData
+      case None => // error
+        argumentError("grFileName", s"""Failed to load grammar from ${grFileName}.
+Is "jigg-models.jar" included in the class path?
+
+Or you can download the English model file from:
+  https://github.com/slavpetrov/berkeleyparser/raw/master/eng_sm6.gr
+and specify it by e.g., "-${name}.grFileName eng_sm6.gr"
+""")
+    }
   }
 
   def treeToNode(tree: Tree[String], tokenSeq: Seq[Node], sentenceId: String): Node = {
@@ -112,97 +184,40 @@ trait BerkeleyParserAnnotator extends SentencesAnnotator with ParallelAnnotator 
     }
     <parse annotators={ name } root={ root }>{ spans }</parse>
   }
-
-  def safeParse(sentence: JList[String], pos: JList[String]): Tree[String] = {
-    val tree = parser.parse(sentence, pos)
-    if (tree.size == 1 && !sentence.isEmpty) throw new AnnotationError("Failed to parse.")
-    else tree
-  }
-
-  trait Parser {
-    def parse(sentence: JList[String], pos: JList[String]): Tree[String]
-  }
-
-  class QueueParser extends Parser {
-    val parserQueue = new ResourceQueue(nThreads, mkParser _) {
-      def postProcess(parser: CoarseToFineMaxRuleParser, e: ProcessError) = {
-        queue.put(parser)
-        throw e
-      }
-    }
-
-    def mkParser(): CoarseToFineMaxRuleParser = {
-      val gr = grFileName match {
-        case "" =>
-          System.err.println(s"No grammar file is given. Try to search from default path: ${defaultGrFileName}.")
-          defaultGrFileName
-        case _ => grFileName
-      }
-
-      val parserData = ParserData Load gr
-      if (parserData == null) {
-        argumentError("grFileName", s"""Failed to load grammar from $gr.
-You can download the English model file from:
-  https://github.com/slavpetrov/berkeleyparser/raw/master/eng_sm6.gr
-""")
-      }
-
-      val grammar = parserData.getGrammar
-      val lexicon = parserData.getLexicon
-      Numberer.setNumberers(parserData.getNumbs())
-
-      new CoarseToFineMaxRuleParser(
-        grammar,
-        lexicon,
-        threshold,
-        -1,
-        viterbi,
-        false, // substates are not supported
-        false, // scores are not supported
-        accurate,
-        variational,
-        true, // copied from BerkeleyParser.java
-        true) // copied from BerkeleyParser.java
-    }
-
-    def parse(sentence: JList[String], pos: JList[String]): Tree[String] = {
-      parserQueue using { parser =>
-        val deriv = parser.getBestConstrainedParse(sentence, pos, null)
-
-        TreeAnnotations.unAnnotateTree(deriv, keepFunctionLabels)
-      }
-    }
-  }
 }
 
 class BerkeleyParserAnnotatorFromToken(
   override val name: String,
   override val props: Properties) extends BerkeleyParserAnnotator {
 
-  override def newSentenceAnnotation(sentence: Node) = {
+  def mkLocalAnnotator = new LocalTokenBerkeleyAnnotator
 
-    def addPOS(tokenSeq: NodeSeq, tree: Tree[String]): NodeSeq = {
-      val preterminals = tree.getPreTerminals.asScala
-      (0 until tokenSeq.size) map { i =>
-        XMLUtil.addAttribute(tokenSeq(i), "pos", preterminals(i).getLabel)
+  class LocalTokenBerkeleyAnnotator extends LocalBerkeleyAnnotator {
+    def newSentenceAnnotation(sentence: Node) = {
+
+      def addPOS(tokenSeq: NodeSeq, tree: Tree[String]): NodeSeq = {
+        val preterminals = tree.getPreTerminals.asScala
+        (0 until tokenSeq.size) map { i =>
+          tokenSeq(i) addAttribute ("pos", preterminals(i).getLabel)
+        }
       }
+
+      val tokens = (sentence \ "tokens").head
+      val tokenSeq = tokens \ "token"
+
+      val tree = safeParse(tokenSeq.map(_ \@ "form").asJava, null)
+
+      val taggedSeq = addPOS(tokenSeq, tree)
+
+      val newTokens = {
+        val nameAdded = tokens addAnnotatorName name
+        nameAdded replaceChild taggedSeq
+      }
+      val parseNode = treeToNode(tree, taggedSeq, sentence \@ "id")
+
+      // TODO: this may be customized with props?
+      sentence addOrOverwriteChild Seq(newTokens, parseNode)
     }
-
-    val tokens = (sentence \ "tokens").head
-    val tokenSeq = tokens \ "token"
-
-    val tree = safeParse(tokenSeq.map(_ \@ "form").asJava, null)
-
-    val taggedSeq = addPOS(tokenSeq, tree)
-
-    val newTokens = {
-      val nameAdded = XMLUtil.addAnnotatorName(tokens, name)
-      XMLUtil.replaceChild(nameAdded, taggedSeq)
-    }
-    val parseNode = treeToNode(tree, taggedSeq, sentence \@ "id")
-
-    // TODO: this may be customized with props?
-    XMLUtil.addOrOverrideChild(sentence, Seq(newTokens, parseNode))
   }
 
   override def requires = Set(Requirement.Tokenize)
@@ -213,17 +228,21 @@ class BerkeleyParserAnnotatorFromPOS(
   override val name: String,
   override val props: Properties) extends BerkeleyParserAnnotator {
 
-  override def newSentenceAnnotation(sentence: Node) = {
-    val tokens = sentence \ "tokens"
-    val tokenSeq = tokens \ "token"
-    val posSeq = tokenSeq.map(_ \@ "pos").asJava
+  def mkLocalAnnotator = new LocalPOSBerkeleyAnnotator
 
-    val tree = safeParse(tokenSeq.map(_+"").asJava, posSeq)
+  class LocalPOSBerkeleyAnnotator extends LocalBerkeleyAnnotator {
+    def newSentenceAnnotation(sentence: Node) = {
+      val tokens = sentence \ "tokens"
+      val tokenSeq = tokens \ "token"
+      val posSeq = tokenSeq.map(_ \@ "pos").asJava
 
-    val parseNode = treeToNode(tree, tokenSeq, sentence \@ "id")
+      val tree = safeParse(tokenSeq.map(_+"").asJava, posSeq)
 
-    // TODO: is it ok to override in default?
-    XMLUtil.addOrOverrideChild(sentence, Seq(parseNode))
+      val parseNode = treeToNode(tree, tokenSeq, sentence \@ "id")
+
+      // TODO: is it ok to override in default?
+      sentence addOrOverwriteChild Seq(parseNode)
+    }
   }
 
   override def requires = Set(Requirement.POS)
@@ -240,5 +259,12 @@ object BerkeleyParserAnnotator extends AnnotatorCompanion[BerkeleyParserAnnotato
       case "true" => new BerkeleyParserAnnotatorFromPOS(name, props)
       case "false" => new BerkeleyParserAnnotatorFromToken(name, props)
     }
+  }
+
+  /** Parser abstracts how a sentence is parsed with a Berkely parser object.
+    *
+    * Can be stubed for unit-testing. */
+  trait Parser {
+    def parse(sentence: JList[String], pos: JList[String]): Tree[String]
   }
 }

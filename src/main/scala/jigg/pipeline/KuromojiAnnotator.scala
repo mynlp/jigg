@@ -21,6 +21,7 @@ import scala.io.Source
 import scala.xml._
 import collection.JavaConversions._
 import jigg.util.PropertiesUtil
+import jigg.util.XMLUtil.RichNode
 
 import com.atilika.kuromoji.{TokenBase, TokenizerBase}
 import com.atilika.kuromoji.ipadic.{Token=>IToken, Tokenizer=>ITokenizer}
@@ -55,7 +56,7 @@ abstract class KuromojiAnnotator(override val name: String, override val props: 
 
     val tokensAnnotation = <tokens annotators={ name }>{ tokenNodes }</tokens>
 
-    jigg.util.XMLUtil.addChild(sentence, tokensAnnotation)
+    sentence addChild tokensAnnotation
   }
 
   protected def tokenize(text: String): Seq[T]

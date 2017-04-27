@@ -21,13 +21,18 @@ import org.scalatest._
 
 class SimpleKNPAnnotatorSpec extends BaseAnnotatorSpec {
 
-  def newKNP(output: String, p: Properties = new Properties) = new SimpleKNPAnnotator("knp", p) {
-    override def mkCommunicator = new StubExternalCommunicator(output)
+  def newKNP(output: String, p: Properties = new Properties) =
+    new SimpleKNPAnnotator("knp", p) {
+      override def nThreads = 1
+      override def mkLocalAnnotator = new SimpleKNPLocalAnnotator {
+        override def mkCommunicator = new StubExternalCommunicator(output)
+      }
   }
 
   "Annotator" should "add modifed tokens, basicPhrases, chunks, basicPhraseDependencies, dependencies, caseRelations and namedEntities" in {
 
     val jumanOutputNode =
+      <root><document><sentences>
       <sentence id="s0">
         国際連合が設立された
         <tokens annotators="juman">
@@ -39,6 +44,7 @@ class SimpleKNPAnnotatorSpec extends BaseAnnotatorSpec {
           <token id="s0_tok5" form="れた" characterOffsetBegin="8" characterOffsetEnd="10" yomi="れた" lemma="れる" pos="接尾辞" posId="14" pos1="動詞性接尾辞" pos1Id="7" cType="母音動詞" cTypeId="1" cForm="タ形" cFormId="10" misc="&quot;代表表記:れる/れる&quot;"/>
         </tokens>
       </sentence>
+    </sentences></document></root>
 
     val knpOutput = """# S-ID:1 KNP:4.12-CF1.1 DATE:2016/02/18 SCORE:-6.95854
 * 1D <文頭><サ変><組織名疑><ガ><助詞><体言><係:ガ格><区切:0-0><格要素><連用要素><正規化代表表記:国際/こくさい+連合/れんごう><主辞代表表記:連合/れんごう>
@@ -54,7 +60,7 @@ class SimpleKNPAnnotatorSpec extends BaseAnnotatorSpec {
 れた れた れる 接尾辞 14 動詞性接尾辞 7 母音動詞 1 タ形 10 "代表表記:れる/れる" <代表表記:れる/れる><正規化代表表記:れる/れる><文末><表現文末><かな漢字><ひらがな><活用語><付属>
 EOS"""
 
-    val result = newKNP(knpOutput).newSentenceAnnotation(jumanOutputNode)
+    val result = (newKNP(knpOutput).annotate(jumanOutputNode) \\ "sentence")(0)
 
     val deps = result \ "dependencies"
     val chunkDeps = deps.filter(d => d \@ "unit" == "chunk")

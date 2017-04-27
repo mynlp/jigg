@@ -17,6 +17,7 @@ package jigg.nlp.ccg
 */
 
 import lexicon._
+import jigg.util.IOUtil
 
 import breeze.config.{CommandLineParser, Help}
 
@@ -44,7 +45,7 @@ object CCGBank2EnjuXML {
     val reader = new CCGBankReader(dict)
 
     val instances: Seq[(TaggedSentence, Derivation)] =
-      reader.takeLines(opts.ccgBank.getPath, opts.numSentences).toSeq.map { line =>
+      reader.takeLines(IOUtil.openIterator(opts.ccgBank.getPath), opts.numSentences).toSeq.map { line =>
         val trees = reader.readParseFragments(line).map { conv.toLabelTree(_) }
         (conv.toSentenceFromLabelTrees(trees), conv.toFragmentalDerivation(trees))
       }

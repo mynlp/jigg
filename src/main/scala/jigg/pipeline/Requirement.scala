@@ -37,6 +37,8 @@ trait Requirement {
 
 object Requirement {
 
+  case object Null extends Requirement
+
   case object Dsplit extends Requirement
 
   case object Ssplit extends Requirement
@@ -77,6 +79,12 @@ object Requirement {
     override val parent = Seq(Dependencies)
   }
   case object CollapsedCCProcessedDependencies extends Requirement {
+    override val parent = Seq(Dependencies)
+  }
+  case object EnhancedDependencies extends Requirement {
+    override val parent = Seq(Dependencies)
+  }
+  case object EnhancedPlusPlusDependencies extends Requirement {
     override val parent = Seq(Dependencies)
   }
 }
@@ -120,6 +128,10 @@ object JaRequirement {
 
   case object CCGDerivation extends Requirement
   case object CCGDependencies extends Requirement
+
+  case object BunsetsuChunk extends Requirement {
+    override val parent = Seq(Requirement.Chunk)
+  }
 }
 
 /** This set is a specialized set to preserve satisfied requirements. If an element is

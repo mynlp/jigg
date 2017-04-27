@@ -26,19 +26,25 @@ import edu.berkeley.nlp.syntax.Tree
 
 class BerkeleyParserAnnotatorSpec extends BaseAnnotatorSpec {
 
-  class ConstantParser(output: Tree[String]) {
+  def constParser(output: Tree[String]) = new BerkeleyParserAnnotator.Parser {
     def parse(sentence: JList[String], pos: JList[String]) = output
   }
 
   class FromTokenAnnotatorStub(output: Tree[String]) extends
       BerkeleyParserAnnotatorFromToken("berkeleyparser", new Properties) {
-    override lazy val parser = new ConstantParser(output) with Parser
+    override def mkLocalAnnotator = new LocalTokenBerkeleyAnnotator {
+      override def mkParser() = constParser(output)
+    }
   }
 
   class FromPOSAnnotatorStub(output: Tree[String]) extends
-      BerkeleyParserAnnotatorFromPOS(
-    "berkeleyparser", new Properties) {
-    override lazy val parser = new ConstantParser(output) with Parser
+      BerkeleyParserAnnotatorFromPOS("berkeleyparser", new Properties) {
+    override def mkLocalAnnotator = new LocalPOSBerkeleyAnnotator {
+      override def mkParser() = constParser(output)
+      // override val parser = constParser(output) // new BerkeleyParserAnnotator.Parser {
+      //   def parse(sentence: JList[String], pos: JList[String]) = output
+      // }
+    }
   }
 
   def emptyFromTokenAnn = new FromTokenAnnotatorStub(new Tree[String]("(ROOT)"))
@@ -49,58 +55,58 @@ class BerkeleyParserAnnotatorSpec extends BaseAnnotatorSpec {
     val fromPOS = emptyFromPOSAnn
 
     val sentence =
-      <sentence id="s0">
+      <sentences><sentence id="s0">
         <tokens>
         </tokens>
-      </sentence>
+      </sentence></sentences>
 
-    val fromTokenResult = fromToken.newSentenceAnnotation(sentence)
-    val fromPOSResult = fromPOS.newSentenceAnnotation(sentence)
+    val fromTokenResult = fromToken.annotate(sentence)
+    val fromPOSResult = fromPOS.annotate(sentence)
 
     fromTokenResult should equal (
-      <sentence id="s0">
+      <sentences><sentence id="s0">
         <tokens annotators="berkeleyparser">
         </tokens>
         <parse annotators="berkeleyparser" root=""/>
-      </sentence>
+      </sentence></sentences>
     ) (decided by sameElem)
 
     fromPOSResult should equal (
-      <sentence id="s0">
+      <sentences><sentence id="s0">
         <tokens>
         </tokens>
         <parse annotators="berkeleyparser" root=""/>
-      </sentence>
+      </sentence></sentences>
     ) (decided by sameElem)
   }
 
   "FromTokenAnnotator" should "throws AnnotationError if the parse failed" in {
     val ann = emptyFromTokenAnn
     val sentence =
-      <sentence id="s0">
+      <root><document><sentences><sentence id="s0">
         <tokens>
           <token id="t0" from="a" characterOffsetBegin="0" characterOffsetEnd="1"/>
           <token id="t0" from="b" characterOffsetBegin="2" characterOffsetEnd="3"/>
         </tokens>
-      </sentence>
+      </sentence></sentences></document></root>
 
-    a [AnnotationError] should be thrownBy {
-      ann.newSentenceAnnotation(sentence)
-    }
+    val result = (ann.annotate(sentence) \\ "sentence")(0)
+    val e = (result \ "error").filter(_ \@ "annotator" == "berkeleyparser")
+    e.size should be (1)
   }
 
   "FromPOSAnnotator" should "throws AnnotationError if the parse failed" in {
     val ann = emptyFromPOSAnn
     val sentence =
-      <sentence id="s0">
+      <root><document><sentences><sentence id="s0">
         <tokens>
           <token id="t0" from="a" pos="NN" characterOffsetBegin="0" characterOffsetEnd="1"/>
           <token id="t0" from="b" pos="NN" characterOffsetBegin="2" characterOffsetEnd="3"/>
         </tokens>
-      </sentence>
+      </sentence></sentences></document></root>
 
-    a [AnnotationError] should be thrownBy {
-      ann.newSentenceAnnotation(sentence)
-    }
+    val result = (ann.annotate(sentence) \\ "sentence")(0)
+    val e = (result \ "error").filter(_ \@ "annotator" == "berkeleyparser")
+    e.size should be (1)
   }
 }

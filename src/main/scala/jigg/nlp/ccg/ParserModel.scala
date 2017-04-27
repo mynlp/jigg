@@ -93,5 +93,5 @@ object ParserModel {
     }
   }
 
-  def defaultModelPath(beam: Int) = s"ccg-models/parser/beam=${beam}.ser.gz"
+  def defaultModelPath(beam: Int) = s"jigg-models/jaccg/parser/beam=${beam}.ser.gz"
 }
