@@ -13,13 +13,16 @@ The core ideas and software designs are described in detail in [our paper](http:
 
 ## Install
 
-There is no need to install. Just download the package!
+The easist way to start Jigg is to download the self-contained jar, which includes all core components as well as several basic models.
 
 ```bash
-$ wget https://github.com/mynlp/jigg/releases/download/v-0.6.2/jigg-0.6.2.tar.gz
-$ tar xzf jigg-0.6.2.tar.gz
-$ cd jigg-0.6.2
+$ mkdir jigg && cd jigg
+$ wget https://github.com/mynlp/jigg/releases/download/v-0.7.0/jigg-0.7.0.jar
 ```
+<!-- $ tar xzf jigg-0.6.2.tar.gz -->
+<!-- $ cd jigg-0.6.2 -->
+
+If you wish to build your own jar, please read [here](#Build your own jar (advanced)).
 
 ## Usage
 
@@ -126,6 +129,35 @@ berkeleyparser:
   is the default behavior.
 ```
 
+### Python wrapper and server
+
+Jigg can be directly used in a Python (other languages would be supported in future) script.
+See [python directory](https://github.com/mynlp/jigg/tree/master/python) for details of this usage.
+
+Inspired by the wrapper mechanism of Stanford CoreNLP, Jigg's wrapper is based on the server, which can be instantiated by:
+
+```bash
+$ java -cp "*" jigg.pipeline.PipelineServer
+```
+
+This will launch the server on your local system.
+Currently the server only supports POST request.
+See more detail in the help message by:
+
+```bash
+$ java -cp "*" jigg.pipeline.PipelineServer -help
+```
+
+An example of the call via `curl` is:
+
+```bash
+$ curl --data-urlencode 'annotators=corenlp[tokenize,ssplit]' \
+       --data-urlencode 'q=Please annotate me!' \
+       'http://localhost:8080/annotate?outputFormat=json'
+```
+
+Now using `wget` would need many special cares, so I recommend to use `curl` instead.
+
 #### Requirements
 
 Here, `requires` and `reqruiementsSatisfied` describe the role of this annotator (berkeleyparser). Intuitively, the above description says `berkeleyparser` requires that the input text is already tokenized (`Tokenize`), and after the annotation, part-of-speech tags (`POS`) and parse tree (`Parse`) are annotated on each sentence.
@@ -196,7 +228,7 @@ Jigg pipeline can also be incorporated another Java or Scala project. The easies
 In Scala, add the following line in the project `build.sbt`.
 
 ```scala
-libraryDependencies += "com.github.mynlp" % "jigg" % "0.6.2"
+libraryDependencies += "com.github.mynlp" % "jigg" % "0.7.0"
 ```
 
 In Java, add the following lines on `pom.xml`:
@@ -206,7 +238,7 @@ In Java, add the following lines on `pom.xml`:
   <dependency>
     <groupId>com.github.mynlp</groupId>
     <artifactId>jigg</artifactId>
-    <version>0.6.2</version>
+    <version>0.7.0</version>
   </dependency>
 </dependencies>
 ```
@@ -256,6 +288,31 @@ for (sentence <- sentences) { // for each sentence
 
 On the result XML, all annotated elements (e.g., `sentence`, `token`, and `NE`) are assigned unique ids. So element search is basically based on these ids.
 
+## Build your own jar (advanced)
+
+Jigg is developed mainly on `develop` branch. If you want to try the latest version, you can build your own jar from the source codes on this branch:
+
+```bash
+$ git clone git@github.com:mynlp/jigg.git && cd jigg
+$ git checkout develop
+$ ./bin/sbt assembly
+```
+
+The last command may take about 10 or 20 minutes including setup of Scala and sbt.
+This generates a self-contained jar on `target/jigg-assembly-xxx.jar` where `xxx` is the current version number.
+
+Note that differently from the distributed jar `jigg-xxx.jar`, this jar does not contain the Jigg's model files, such as those of `berkeleyparser` and `jaccg`.
+To load the models, you need to get the model jar file by:
+
+```bash
+$ wget https://github.com/mynlp/jigg-models/raw/master/jigg-models.jar
+```
+
+and include it in the class path:
+
+```bash
+$ java -cp "target/jigg-assembly-xxx.jar:jigg-models.jar" jigg.pipeline.Pipeline -annotators ...
+```
 
 ## Supported annotators
 
@@ -268,7 +325,7 @@ TBA
 
 ## Citing in papers
 
-If you use any of the parser models in research publications, please cite:
+If you use Jigg in research publications, please cite:
 
 > Hiroshi Noji and Yusuke Miayo. 2016. [Jigg: A Framework for an Easy Natural Language Processing Pipeline](http://mynlp.github.io/jigg/data/jigg-acl2016.pdf). In Proceedings of the 54th Annual Meeting of the Association for Computational Linguistics: System Demonstrations.
 
