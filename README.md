@@ -20,7 +20,7 @@ $ mkdir jigg && cd jigg
 $ wget https://github.com/mynlp/jigg/releases/download/v-0.7.0/jigg-0.7.0.jar
 ```
 
-If you wish to build your own jar, please read [here](#Build your own jar (advanced)).
+If you wish to build your own jar, please read [here](#build-your-own-jar-advanced)).
 
 ## Usage
 
@@ -338,6 +338,7 @@ Following sample files of SsplitKerasAnnotator/BunsetsuKerasAnnotator is generat
 
 ## Release note
 
+- 0.7.0: Support CoreNLP 3.7.0, server mode, several improvements including support of xml/json inputs.
 - 0.6.1: Bug fixes.
 - 0.6.1: New annotators (syntaxnet, coref in corenlp, etc); JSON output (still incomplete); bug fixes.
 - 0.6.0: The initial official release.
