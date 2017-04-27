@@ -19,8 +19,6 @@ The easist way to start Jigg is to download the self-contained jar, which includ
 $ mkdir jigg && cd jigg
 $ wget https://github.com/mynlp/jigg/releases/download/v-0.7.0/jigg-0.7.0.jar
 ```
-<!-- $ tar xzf jigg-0.6.2.tar.gz -->
-<!-- $ cd jigg-0.6.2 -->
 
 If you wish to build your own jar, please read [here](#Build your own jar (advanced)).
 
