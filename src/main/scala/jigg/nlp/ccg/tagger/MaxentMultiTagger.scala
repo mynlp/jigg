@@ -53,7 +53,7 @@ class MaxEntMultiTagger(
     while (i < features.size) {
       val f = f2index(features(i).assignLabel(label))
       // if (f >= 0) reusableFeatureIdxs += f // discard -1 = unknown features
-      if (f > 0) indexes += f
+      if (f >= 0) indexes += f
       i += 1
     }
     // Example(reusableFeatureIdxs.toArray, label)
