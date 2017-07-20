@@ -63,8 +63,8 @@ class DocumentKNPAnnotator(override val name: String, override val props: Proper
 
       val coreferencesNode = extractCoreferences(annotatedSentences, did)
 
-      val newDoc = document.replaceAll("sentences") {
-        _ copy (child = annotatedSentences)
+      val newDoc = document.replaceAll("sentences") { case e: Elem =>
+        e copy (child = annotatedSentences)
       }
 
       newDoc addChild coreferencesNode

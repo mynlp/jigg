@@ -389,7 +389,7 @@ class StanfordCoreNLPAnnotator(
       val coreSentences =
         (annotation get classOf[CoreAnnotations.SentencesAnnotation]).asScala
 
-      document.replaceAll("sentences") { e =>
+      document.replaceAll("sentences") { case e: Elem =>
         val sentenceSeq = e \ "sentence"
         assert(sentenceSeq.size == coreSentences.size)
         val newChild = sentenceSeq zip coreSentences map {

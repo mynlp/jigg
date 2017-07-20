@@ -16,7 +16,7 @@ package jigg.pipeline
  limitations under the License.
 */
 
-import scala.xml.Node
+import scala.xml.{Elem, Node}
 import jigg.util.XMLUtil.RichNode
 
 /** A trait for an annotator which modifies a document node. Use this trait if an annotator
@@ -25,7 +25,7 @@ import jigg.util.XMLUtil.RichNode
 trait DocumentAnnotator extends Annotator {
   override def annotate(annotation: Node): Node = {
 
-    annotation.replaceAll("root") { e =>
+    annotation.replaceAll("root") { case e: Elem =>
       val newChild = Annotator.makePar(e.child, nThreads).map { c =>
         c match {
           case c if c.label == "document" =>

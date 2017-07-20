@@ -70,7 +70,7 @@ trait BerkeleyParserAnnotator extends AnnotatingSentencesInParallel {
     localAnnotators // init here, to output help message without loading
   }
 
-  trait LocalBerkeleyAnnotator extends LocalAnnotator {
+  trait LocalBerkeleyAnnotator extends SentencesAnnotator with LocalAnnotator {
 
     type Parser = BerkeleyParserAnnotator.Parser
 

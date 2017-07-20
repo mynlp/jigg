@@ -29,7 +29,8 @@ class SimpleKNPAnnotator(override val name: String, override val props: Properti
 
   def mkLocalAnnotator = new SimpleKNPLocalAnnotator
 
-  class SimpleKNPLocalAnnotator extends LocalAnnotator with BaseKNPLocalAnnotator {
+  class SimpleKNPLocalAnnotator
+      extends SentencesAnnotator with LocalAnnotator with BaseKNPLocalAnnotator {
     override def defaultArgs = Seq("-tab")
 
     val knp = mkIO()

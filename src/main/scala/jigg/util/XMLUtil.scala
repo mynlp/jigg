@@ -83,18 +83,63 @@ object XMLUtil { self =>
       node addAttribute ("annotators", newAnnotators)
     }
 
+    def replaceAll(label: String, continueSearch: Boolean = false)
+      (body: Node=>Node): Node = replaceIf(_.label == label, continueSearch)(body)
+
     /** The idiom below is borrowed from:
       * http://stackoverflow.com/questions/21391942/eliminate-duplicates-change-label-with-scala-xml-transform-ruletransformer
       * The previous version used `RuleTransformer` and `RewriteRule` but I found it has some problem.
+      *
+      * The search of this method is top-down while `replaceIfBottomup` works
+      * bottom-up.
+      *
+      * @param cond the condition to decide the target node
+      * @param continueSearch if false, stop delving into descendants for a hitted node
       */
-    def replaceAll(label: String)(body: Elem=>Node): Node = {
+    def replaceIf(cond: Node=>Boolean, continueSearch: Boolean = false)
+      (body: Node=>Node): Node = {
+
       def recurse(n: Node): Seq[Node] = n match {
-        case e: Elem if (e.label == label) =>
-          body(e)
-        case e: Elem => e.copy(child = e.nonEmptyChildren.map(recurse(_).headOption).flatten)
-        case _ => n
+        case e if (cond(e)) =>
+          val replaced = body(e)
+          if (continueSearch) recurseChildren(replaced)
+          else replaced
+        case e => recurseChildren(e)
+      }
+      def recurseChildren(e: Node): Node = e match {
+        case e: Elem =>
+          e.copy(child = e.nonEmptyChildren.map(recurse(_).headOption).flatten)
+        case a => a
+      }
+
+      recurse(node).head
+    }
+
+    def replaceIfBottomup(isTarget: Node=>Boolean)(body: Node=>Node): Node = {
+      def recurse(n: Node): Seq[Node] = {
+        val nWithUpdatedChild = n match {
+          case e: Elem =>
+            e.copy(child = e.nonEmptyChildren.map(recurse(_).headOption).flatten)
+          case a => a
+        }
+        if (isTarget(nWithUpdatedChild)) body(nWithUpdatedChild)
+        else nWithUpdatedChild
       }
       recurse(node).head
+    }
+
+    /** Similar to `replaceAll` but does not attempt to replace the elements.
+      *
+      * Note that the order that the target elements specified with `label` are traversed
+      * will be, and must be identical to that of `replaceAll`.
+      */
+    def traverse(label: String)(body: Elem=>Unit): Unit = {
+      def recurse(n: Node): Unit = n match {
+        case e: Elem if (e.label == label) => body(e)
+        case e: Elem => e.nonEmptyChildren foreach recurse
+        case _ =>
+      }
+      recurse(node)
     }
 
     /** Return concatenation of all Atom[_] elements in the child.
@@ -167,7 +212,7 @@ object XMLUtil { self =>
   def addAnnotatorName(n: Node, annotator: String): Node = n addAnnotatorName annotator
 
   @deprecated(message="Use implicit method in RichNode instead.", "3.6.2")
-  def replaceAll(root: Node, label: String)(body: Elem => Node) =
+  def replaceAll(root: Node, label: String)(body: Node => Node) =
     root.replaceAll(label)(body)
 
   @deprecated(message="Use implicit method in RichNode instead.", "3.6.2")

@@ -35,6 +35,8 @@ object Annotation {
 
   object Dependency extends Annotation("dep")
 
+  object CCG extends Annotation("ccg")
+
   object NE extends Annotation("ne")
 
   object Mention extends Annotation("me")
@@ -44,6 +46,7 @@ object Annotation {
   object PredArg extends Annotation("pa")
 
   object ParseSpan extends Annotation("sp")
+  object CCGSpan extends Annotation("ccgsp")
 
   object Chunk extends Annotation("ch")
 }

@@ -50,7 +50,8 @@ ${helpMessage}
 """
   }
 
-  trait LocalMecabAnnotator extends LocalAnnotator with IOCreator {
+  trait LocalMecabAnnotator
+      extends SentencesAnnotator with LocalAnnotator with IOCreator {
     def command = self.command
 
     override def launchTesters = Seq(

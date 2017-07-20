@@ -14,6 +14,9 @@ parallelExecution in Test := false
 
 crossPaths := false
 
+// Allow shell mode from sbt runMain
+connectInput in run := true
+
 mainClass in assembly := Some("jp.jigg.nlp.pipeline.Pipeline")
 
 javacOptions ++= Seq("-Xlint:all", "-source", "1.6", "-target", "1.6")
