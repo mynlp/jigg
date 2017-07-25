@@ -23,8 +23,12 @@ import scala.xml._
 
 class DepCCGAnnotatorSpec extends BaseAnnotatorSpec {
 
+  val dummyP = new Properties
+  dummyP.setProperty("depccg.path", "b")
+  dummyP.setProperty("depccg.model", "a")
+
   class AnnotatorStub(output: String)
-      extends DepCCGAnnotator("depccg", new Properties) {
+      extends DepCCGAnnotator("depccg", dummyP) {
 
     override def checkArgument() = {} // do not check
 

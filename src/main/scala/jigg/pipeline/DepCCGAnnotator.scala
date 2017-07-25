@@ -28,8 +28,8 @@ import jigg.util.XMLUtil.RichNode
 class DepCCGAnnotator(override val name: String, override val props: Properties)
     extends AnnotatingSentencesInParallel { self =>
 
-  @Prop(gloss = "Path to run.py") var path = ""
-  @Prop(gloss = "Path to the model (e.g., tri_headfirst directory)") var model = ""
+  @Prop(gloss = "Path to run.py", required = true) var path = ""
+  @Prop(gloss = "Path to the model (e.g., tri_headfirst directory)", required = true) var model = ""
   @Prop(gloss = "Language (en|ja)") var lang = "en"
   @Prop(gloss = "If true, launch multiple depccgs for parallel parsing. See -help depccg for more details.") var parallel = false
   readProps()
@@ -86,7 +86,9 @@ class DepCCGAnnotator(override val name: String, override val props: Properties)
       val ccgs = resultNode \\ "ccg"
       assert(ccgs.size == sentences.size)
 
-      val newSentences = sentences zip ccgs map { case (s, c) => annotateSentence(s, c) }
+      val newSentences = sentences zip ccgs map {
+        case (s, c) => CandCAnnotator.annotateCCGSpans(s, c, name)
+      }
 
       annotation.asInstanceOf[Elem].copy(child = newSentences)
     }
@@ -99,79 +101,9 @@ class DepCCGAnnotator(override val name: String, override val props: Properties)
 
     def run(input: String): Stream[String] =
       (cmd #< new ByteArrayInputStream(input.getBytes("UTF-8"))).lineStream_!
-      // (Process(s"echo $input") #| cmd).lineStream_!
 
     val cmd = Process(s"python ${path} --input-format POSandNERtagged --format xml ${model} ${lang}")
 
-    def annotateSentence(sentence: Node, ccg: Node): Node = {
-      val decoratedCCG: Node = {
-        val a = assignId(ccg)
-        val b = assignChildren(a, sentence \\ "token")
-        assignSpan(b)
-      }
-
-      val spans = decoratedCCG.descendant.collect {
-        case e: Elem if (e.label == "lf" || e.label == "rule") =>
-          val a = e.attributes
-          val rule = if (e.label == "lf") None else Some(a("type"))
-          <span
-            id={ a("id") }
-            begin={ a("begin") }
-            end={ a("end") }
-            symbol={ a("cat") }
-            rule={ rule }
-            children={ a("children") }/>
-      }
-      val root = decoratedCCG.nonAtomChild()(0) \@ "id"
-
-      sentence addChild (
-        <ccg annotators={ name } root={ root } id={ Annotation.CCG.nextId }>{ spans }</ccg>)
-    }
-
-    def assignId(ccg: Node): Node = {
-      ccg.replaceIf({ e => e.label == "lf" || e.label == "rule" }, continueSearch=true) {
-        _.addAttribute("id", Annotation.CCGSpan.nextId)
-      }
-    }
-
-    // Assume `assignId` is already performed
-    def assignChildren(ccg: Node, tokens: Seq[Node]): Node = {
-      // this is top-down to assign small ids to shallower nodes
-      ccg.replaceIf(_=>true, continueSearch=true) {
-        case e: Elem if e.label == "lf" || e.label == "rule" =>
-          val children: String = e.label match {
-            case "lf" =>
-              val idx = (e \@ "start").toInt
-              tokens(idx) \@ "id"
-            case "rule" =>
-              e.nonAtomChild.map(_ \@ "id") mkString " "
-          }
-          e.addAttribute("children", children)
-        case e => e
-      }
-    }
-
-    def assignSpan(ccg: Node): Node = {
-      // fill begin/end values bottom-up
-      ccg.replaceIfBottomup { e => e.label == "lf" || e.label == "rule" } { e =>
-        // case e: Elem if e.label == "lf" || e.label == "rule" =>
-          val (begin, end) = e.label match {
-            case "lf" =>
-              val b = (e \@ "start")
-              (b, (b.toInt + 1).toString)
-            case "rule" =>
-              val children = e.nonAtomChild
-              children.size match {
-                case 2 =>
-                  (children(0) \@ "begin", children(1) \@ "end")
-                case 1 => // unary
-                  (children(0) \@ "begin", children(0) \@ "end")
-              }
-          }
-          e.addAttributes(Map("begin" -> begin, "end" -> end))
-        // case e => e
-      }
-    }
   }
 
   override def requires = lang match {
