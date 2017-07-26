@@ -82,12 +82,14 @@ trait AnnotatingInParallel extends Annotator { self=>
 
   private def divideBy(elems: Seq[Node], n: Int): Seq[Seq[Node]] = {
     val divided: Seq[Seq[Node]] =
-      if (elems.size < n) Array(elems) //+: Array.fill(n-1)(Seq[Node]())
-      else elems.grouped(elems.size / n).toIndexedSeq
-    // assert(divided.size == n || divided.size == n + 1)
-    assert(divided.size <= n + 1)
-    if (divided.size == n + 1) divided.take(n - 1) :+ (divided(n - 1) ++ divided(n))
-    else divided
+      if (elems.size < n) Array(elems)
+      else if (elems.size % n == 0) elems.grouped(elems.size / n).toIndexedSeq
+      else elems.grouped(elems.size / n + 1).toIndexedSeq
+
+    if (divided.size > n) {
+      // this corner case should never be happen
+      divided.take(n - 1) :+ (divided(n - 1) ++ divided.drop(n).flatten)
+    } else divided
   }
 
   // protected def annotateSeq(annotations: Seq[Node], annotator: A): Seq[Node]
