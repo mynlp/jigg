@@ -100,8 +100,8 @@ See README in "python/pyjigg" for this usage.
 
 Another usage via curl is that:
 
-  > curl --data-urlencode 'annotators=corenlp[tokenize,ssplit]' \
-         --data-urlencode 'q=Please annotate me!' \
+  > curl --data-urlencode 'annotators=corenlp[tokenize,ssplit]' \\
+         --data-urlencode 'q=Please annotate me!' \\
          'http://localhost:8080/annotate?outputFormat=json'
 
 The data with the key "q" is treated as an input text. Multiple "q"s in a query
