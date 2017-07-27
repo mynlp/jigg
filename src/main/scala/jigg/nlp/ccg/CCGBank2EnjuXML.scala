@@ -42,7 +42,7 @@ object CCGBank2EnjuXML {
 
     val conv = new JapaneseParseTreeConverter(dict)
 
-    val reader = new CCGBankReader(dict)
+    val reader = new CCGBankReader
 
     val instances: Seq[(TaggedSentence, Derivation)] =
       reader.takeLines(IOUtil.openIterator(opts.ccgBank.getPath), opts.numSentences).toSeq.map { line =>

@@ -46,7 +46,7 @@ object CCGBankToCabochaFormat {
     val dict = new JapaneseDictionary()
     val extractors = TreeExtractor(
       new JapaneseParseTreeConverter(dict),
-      new CCGBankReader(dict))
+      new CCGBankReader)
 
     val trees = extractors.readTrees(opts.ccgbank, -1, true)
     val rawString = trees map (extractors.treeConv.toSentenceFromLabelTree) map (_.wordSeq.mkString("")) mkString ("\n")

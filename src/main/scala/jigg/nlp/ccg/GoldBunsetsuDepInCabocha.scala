@@ -38,7 +38,7 @@ object GoldBunsetsuDepInCoNLL {
     val dict = new JapaneseDictionary(new Word2CategoryDictionary)
 
     val conv = new JapaneseParseTreeConverter(dict)
-    val parseTrees = new CCGBankReader(dict)
+    val parseTrees = new CCGBankReader()
       .readParseTrees(IOUtil.openStandardIterator, -1, true)
       .map(conv.toLabelTree _).toSeq
     val goldDerivs = parseTrees.map(conv.toDerivation)
