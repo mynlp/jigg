@@ -37,6 +37,9 @@ class DepCCGAnnotatorSpec extends BaseAnnotatorSpec {
     }
   }
 
+  Annotation.CCGSpan.idGen.reset()
+  Annotation.CCG.idGen.reset()
+
   "Annotator" should "add a CCG annotation" in {
     val doc =
       <document id="d1">

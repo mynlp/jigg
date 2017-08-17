@@ -51,12 +51,24 @@ sealed trait ParseTree[T] {
     mappedTree
   }
   protected def mapBottomupHelper[NewLabel](f: ParseTree[T] => NewLabel): ParseTree[NewLabel]
+
+  def map[A](f: T=>A): ParseTree[A] = {
+    val newLabel = f(label)
+    val newChildren = children.map(_.map(f))
+    this match {
+      case a: UnaryTree[_] => a.copy(child = newChildren(0), newLabel)
+      case a: BinaryTree[_] => a.copy(newChildren(0), newChildren(1), newLabel)
+      case a: LeafTree[_] => a.copy(newLabel)
+    }
+  }
 }
 
 case class UnaryTree[T](child: ParseTree[T], override val label: T) extends ParseTree[T] {
   override def children = child :: Nil
   override def mapBottomupHelper[NewLabel](f: ParseTree[T] => NewLabel): ParseTree[NewLabel] =
     UnaryTree(child.mapBottomup(f), f(this))
+
+  
 }
 
 case class BinaryTree[T](left: ParseTree[T], right: ParseTree[T], override val label: T) extends ParseTree[T] {

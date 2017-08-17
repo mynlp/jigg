@@ -50,6 +50,15 @@ class CCGBankReader {
     parses(0)
   }
 
+  /** The method `readParseTree(line, train)` is deprecated as `train` variable is no
+    * longer used internally.
+    *
+    * Use this method instead. Since the old method is repeatedly used, I do not
+    * annotate it with `@deprecated`.
+    */
+  def readParseTree(line: String): Tree =
+    readParseTree(line, true)
+
   def readParseFragments(line: String): Seq[Tree] = {
     val parser = new TreeParser
     parser.parse(line)

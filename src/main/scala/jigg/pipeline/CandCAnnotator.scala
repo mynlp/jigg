@@ -16,11 +16,10 @@ package jigg.pipeline
  limitations under the License.
  */
 
-import java.io.{ByteArrayInputStream, File}
+import java.io.File
 import java.util.Properties
 
 import scala.xml._
-import scala.sys.process.Process
 
 import jigg.util.PropertiesUtil
 import jigg.util.XMLUtil.RichNode
