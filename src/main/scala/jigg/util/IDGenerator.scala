@@ -26,8 +26,9 @@ package jigg.util
 // }
 
 case class IDGenerator(toId: Int=>String) {
-  private[this] val stream = Stream.from(0).iterator
+  private[this] var stream = Stream.from(0).iterator
   def next() = toId(stream.next)
+  def reset() = stream = Stream.from(0).iterator
 }
 
 object IDGenerator {
