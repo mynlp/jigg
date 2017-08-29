@@ -20,9 +20,9 @@ $ mkdir jigg && cd jigg
 $ wget https://github.com/mynlp/jigg/releases/download/v-0.7.0/jigg-0.7.0.jar
 ```
 
-If you wish to build your own jar, please read [here](#build-your-own-jar-advanced)).
+If you wish to build your own jar, please read [here](#build-your-own-jar-advanced).
 
-If you wish to use docker, please read [here](#use-docker)).
+If you wish to use docker, please read [here](#use-docker).
 
 ## Usage
 
