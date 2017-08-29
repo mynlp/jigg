@@ -2,3 +2,12 @@ version: '2'
 services:
   jigg:
     build: .
+    ports:
+      - 8080:8080
+    entrypoint:
+      - java
+      - -Xms1024M
+      - -Xmx1024M
+      - -cp
+      - "target/*:models/jigg-models.jar"
+      - jigg.pipeline.PipelineServer

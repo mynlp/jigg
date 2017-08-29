@@ -22,6 +22,8 @@ $ wget https://github.com/mynlp/jigg/releases/download/v-0.7.0/jigg-0.7.0.jar
 
 If you wish to build your own jar, please read [here](#build-your-own-jar-advanced)).
 
+If you wish to use docker, please read [here](#use-docker)).
+
 ## Usage
 
 The following command launches Jigg in a shell mode, which parses a given input with Berkeley parser after preprocessing (tokenization and sentence splitting).
@@ -310,6 +312,18 @@ and include it in the class path:
 
 ```bash
 $ java -cp "target/jigg-assembly-xxx.jar:jigg-models.jar" jigg.pipeline.Pipeline -annotators ...
+```
+
+## Use docker
+
+To install docker, follow the [instruction](https://docs.docker.com/engine/installation/).
+
+To build and run PipelineServer container:
+
+```bash
+git clone -b develop --depth 1 git@github.com:mynlp/jigg.git && cd jigg
+time docker-compose build
+docker-compose up
 ```
 
 ## Supported annotators
