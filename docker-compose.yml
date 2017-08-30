@@ -13,3 +13,7 @@ services:
       - jigg.pipeline.PipelineServer
       - -host
       - 0.0.0.0
+    volumes:
+      - ./script:/jigg/script
+      - ./download:/jigg/download
+      - ./models:/jigg/models

@@ -323,7 +323,13 @@ To build and run PipelineServer container:
 ```bash
 git clone -b develop --depth 1 git@github.com:mynlp/jigg.git && cd jigg
 time docker-compose build
-docker-compose up
+docker-compose up -d
+```
+
+To download the model:
+```bash
+mkdir -p models && cd models
+curl -SLO https://github.com/mynlp/jigg-models/raw/master/jigg-models.jar
 ```
 
 An example of the call via `curl` is:
