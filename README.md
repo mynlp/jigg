@@ -326,6 +326,13 @@ time docker-compose build
 docker-compose up
 ```
 
+An example of the call via `curl` is:
+```bash
+curl --data-urlencode 'annotators=ssplit,kuromoji,jaccg' \
+         --data-urlencode 'q=テレビで自転車で走っている少女を見た!' \
+         'http://localhost:8080/annotate?outputFormat=xml'
+```
+
 ## Supported annotators
 
 TBA
