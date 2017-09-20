@@ -20,7 +20,9 @@ $ mkdir jigg && cd jigg
 $ wget https://github.com/mynlp/jigg/releases/download/v-0.7.0/jigg-0.7.0.jar
 ```
 
-If you wish to build your own jar, please read [here](#build-your-own-jar-advanced)).
+If you wish to build your own jar, please read [here](#build-your-own-jar-advanced).
+
+If you wish to use docker, please read [here](#use-docker).
 
 ## Usage
 
@@ -310,6 +312,31 @@ and include it in the class path:
 
 ```bash
 $ java -cp "target/jigg-assembly-xxx.jar:jigg-models.jar" jigg.pipeline.Pipeline -annotators ...
+```
+
+## Use docker
+
+To install docker, follow the [instruction](https://docs.docker.com/engine/installation/).
+
+To build and run PipelineServer container:
+
+```bash
+git clone -b develop --depth 1 git@github.com:mynlp/jigg.git && cd jigg
+time docker-compose build
+docker-compose up -d
+```
+
+To download the model:
+```bash
+mkdir -p models && cd models
+curl -SLO https://github.com/mynlp/jigg-models/raw/master/jigg-models.jar
+```
+
+An example of the call via `curl` is:
+```bash
+curl --data-urlencode 'annotators=ssplit,kuromoji,jaccg' \
+         --data-urlencode 'q=テレビで自転車で走っている少女を見た!' \
+         'http://localhost:8080/annotate?outputFormat=xml'
 ```
 
 ## Supported annotators
