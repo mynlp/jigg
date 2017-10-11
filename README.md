@@ -17,7 +17,7 @@ The easist way to start Jigg is to download the self-contained jar, which includ
 
 ```bash
 $ mkdir jigg && cd jigg
-$ wget https://github.com/mynlp/jigg/releases/download/v-0.7.0/jigg-0.7.0.jar
+$ wget https://github.com/mynlp/jigg/releases/download/v-0.7.1/jigg-0.7.1.jar
 ```
 
 If you wish to build your own jar, please read [here](#build-your-own-jar-advanced)).
@@ -74,7 +74,7 @@ Let's write some sentences in a line.
 >
 ```
 
-The default output format of Jigg is XML (Jigg also supports JSON output, but it still has some issues). One can see that Jigg automatically detects sentence boundaries (there are two sentences), and performs tokenization (e.g, period . is recognized as a single word), on which parse tree (`<parse>`) is built.
+The default output format of Jigg is XML, but it also supports JASON (check `-outputFormat` option below). One can see that Jigg automatically detects sentence boundaries (there are two sentences), and performs tokenization (e.g, period . is recognized as a single word), on which parse tree (`<parse>`) is built.
 
 In Jigg, each NLP tool such as `corenlp` (Stanford CoreNLP) or `berkeleyparser` (Berkeley parser) is called annotator. Jigg helps to construct easily a NLP pipeline by combining several annotators. In the example above, the pipeline is constructed by combining Stanford CoreNLP (which performs tokenization and sentence-splitting) and Berkeley parser (which performs parsing on tokenized sentences).
 
@@ -226,7 +226,7 @@ Jigg pipeline can also be incorporated another Java or Scala project. The easies
 In Scala, add the following line in the project `build.sbt`.
 
 ```scala
-libraryDependencies += "com.github.mynlp" % "jigg" % "0.7.0"
+libraryDependencies += "com.github.mynlp" % "jigg" % "0.7.1"
 ```
 
 In Java, add the following lines on `pom.xml`:
@@ -236,7 +236,7 @@ In Java, add the following lines on `pom.xml`:
   <dependency>
     <groupId>com.github.mynlp</groupId>
     <artifactId>jigg</artifactId>
-    <version>0.7.0</version>
+    <version>0.7.1</version>
   </dependency>
 </dependencies>
 ```
@@ -338,6 +338,7 @@ Following sample files of SsplitKerasAnnotator/BunsetsuKerasAnnotator is generat
 
 ## Release note
 
+- 0.7.1: Bug fixes; Docker for Jigg server; annotators for CCG parsers (candc, easyccg, and depccg)
 - 0.7.0: Support CoreNLP 3.7.0, server mode, several improvements including support of xml/json inputs.
 - 0.6.1: Bug fixes.
 - 0.6.1: New annotators (syntaxnet, coref in corenlp, etc); JSON output (still incomplete); bug fixes.
