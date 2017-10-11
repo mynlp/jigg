@@ -47,7 +47,7 @@ abstract class BunsetsuKerasAnnotator(override val name: String, override val pr
 
 """
 
-  trait LocalBunsetsuKerasAnntoator extends LocalAnnotator {
+  trait LocalBunsetsuKerasAnntoator extends SentencesAnnotator with LocalAnnotator {
     val bunsetsuSplitter = self.loadParser()
 
     override def newSentenceAnnotation(sentence: Node): Node = {

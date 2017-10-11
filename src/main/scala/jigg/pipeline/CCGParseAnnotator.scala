@@ -151,5 +151,5 @@ class CCGParseAnnotator(override val name: String, override val props: Propertie
   }
 
   override def requires = Set(JaRequirement.TokenizeWithIPA)
-  override def requirementsSatisfied = Set(JaRequirement.CCGDerivation)
+  override def requirementsSatisfied = Set(Requirement.CCGDerivation)
 }

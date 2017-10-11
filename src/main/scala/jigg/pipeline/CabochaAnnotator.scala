@@ -62,7 +62,8 @@ ${helpMessage}
 """
   }
 
-  trait LocalCabochaAnnotator extends LocalAnnotator with IOCreator {
+  trait LocalCabochaAnnotator
+      extends SentencesAnnotator with LocalAnnotator with IOCreator {
     def command = self.command
 
     override def launchTesters = Seq(

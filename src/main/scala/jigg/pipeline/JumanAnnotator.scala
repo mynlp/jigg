@@ -36,7 +36,8 @@ class JumanAnnotator(override val name: String, override val props: Properties)
 
   def mkLocalAnnotator = new LocalJumanAnnotator
 
-  class LocalJumanAnnotator extends LocalAnnotator with IOCreator {
+  class LocalJumanAnnotator
+      extends SentencesAnnotator with LocalAnnotator with IOCreator {
     def command = self.command
 
     override def launchTesters = Seq(

@@ -21,7 +21,7 @@ import scala.collection.mutable.ArrayBuffer
 import java.io.BufferedReader
 import jigg.util.IOUtil
 
-class CCGBankReader(dict:Dictionary) {
+class CCGBankReader {
   type Tree = ParseTree[String]
 
   var pos = 0
@@ -49,6 +49,15 @@ class CCGBankReader(dict:Dictionary) {
     assert(parses.size == 1)
     parses(0)
   }
+
+  /** The method `readParseTree(line, train)` is deprecated as `train` variable is no
+    * longer used internally.
+    *
+    * Use this method instead. Since the old method is repeatedly used, I do not
+    * annotate it with `@deprecated`.
+    */
+  def readParseTree(line: String): Tree =
+    readParseTree(line, true)
 
   def readParseFragments(line: String): Seq[Tree] = {
     val parser = new TreeParser
@@ -181,7 +190,7 @@ class CCGBankReader(dict:Dictionary) {
   def newTreeReader(in: java.io.Reader): TreeReader = new ATreeReader(in)
 }
 
-class EnglishCCGBankReader(dict:Dictionary) extends CCGBankReader(dict) {
+class EnglishCCGBankReader extends CCGBankReader {
   class EnglishTreeReader(override val in: java.io.Reader) extends TreeReader {
     def readLabel: String = {
       val sb = new StringBuilder

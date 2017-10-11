@@ -283,7 +283,8 @@ trait IOCreator extends EasyIO {
 
 $msg
 """
-      argumentError("command", fullMsg)
+      throw new ArgumentError(fullMsg)
+      // argumentError("command", fullMsg) // command is not a generic argument always available
     }
   }
 

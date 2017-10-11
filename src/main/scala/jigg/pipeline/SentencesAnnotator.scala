@@ -16,7 +16,7 @@ package jigg.pipeline
  limitations under the License.
 */
 
-import scala.xml.Node
+import scala.xml.{Elem, Node}
 import jigg.util.XMLUtil.RichNode
 
 /** A trait for an annotator which modifies a sentence node.
@@ -32,7 +32,7 @@ import jigg.util.XMLUtil.RichNode
 trait SentencesAnnotator extends Annotator {
   def annotate(annotation: Node): Node = {
 
-    annotation.replaceAll("sentences") { e =>
+    annotation.replaceAll("sentences") { case e: Elem =>
       val annotatedChild = Annotator.makePar(e.child, nThreads).map {
         case s if s.label == "sentence" =>
           try newSentenceAnnotation(s) catch {

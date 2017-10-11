@@ -22,12 +22,14 @@ import java.io.{ByteArrayOutputStream, PrintStream}
 import scala.xml.{XML, Node}
 import scala.xml.dtd.DocType
 import scala.collection.JavaConverters._
+import scala.concurrent._
 import scala.concurrent.duration._
 import scala.io.StdIn
 
 import jigg.util.LogUtil.{ track, multipleTrack }
 import jigg.util.{PropertiesUtil => PU, IOUtil, XMLUtil, JSONUtil}
 
+import akka.Done
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import akka.event.Logging
 import akka.http.scaladsl.coding.Deflate
@@ -100,8 +102,8 @@ See README in "python/pyjigg" for this usage.
 
 Another usage via curl is that:
 
-  > curl --data-urlencode 'annotators=corenlp[tokenize,ssplit]' \
-         --data-urlencode 'q=Please annotate me!' \
+  > curl --data-urlencode 'annotators=corenlp[tokenize,ssplit]' \\
+         --data-urlencode 'q=Please annotate me!' \\
          'http://localhost:8080/annotate?outputFormat=json'
 
 The data with the key "q" is treated as an input text. Multiple "q"s in a query
@@ -197,11 +199,23 @@ where <annotator name> may be specific name such as corenlp or kuromoji."""
 
     val bindingFuture = Http().bindAndHandle(route, host, port)
 
-    println(s"Server online at $host:$port/\nPress RETURN to stop...")
-    StdIn.readLine() // let it run until user presses return
+    println(s"Server online at $host:$port/\nPress Ctrl-C to stop...")
+
+    Await.ready(
+      bindingFuture.flatMap(_ ⇒ waitForShutdownSignal(system)), // chaining both futures to fail fast
+      Duration.Inf) // It's waiting forever because maybe there is never a shutdown signal
+
     bindingFuture
       .flatMap(_.unbind()) // trigger unbinding from the port
       .onComplete(_ => system.terminate()) // and shutdown when done
+  }
+
+  protected def waitForShutdownSignal(system: ActorSystem)(implicit ec: ExecutionContext): Future[Done] = {
+    val promise = Promise[Done]()
+    sys.addShutdownHook {
+      promise.trySuccess(Done)
+    }
+    promise.future
   }
 
   def mkHelp(annotator: String): String = {

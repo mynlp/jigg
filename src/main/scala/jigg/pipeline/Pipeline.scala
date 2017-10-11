@@ -75,7 +75,11 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
     "syntaxnet" -> classOf[SyntaxNetFullAnnotator],
     "collapseddep" -> classOf[StanfordCollapsedDependenciesAnnotator],
     "ssplitKeras" -> classOf[SsplitKerasAnnotator],
-    "bunsetsuKeras" -> classOf[BunsetsuKerasAnnotator]
+    "bunsetsuKeras" -> classOf[BunsetsuKerasAnnotator],
+    "depccg" -> classOf[DepCCGAnnotator],
+    "candc" -> classOf[CandCAnnotator],
+    "candcpos" -> classOf[CandCPOSAnnotator],
+    "easyccg" -> classOf[EasyCCGAnnotator]
   )
 
   // TODO: should document ID be given here?  Somewhere else?

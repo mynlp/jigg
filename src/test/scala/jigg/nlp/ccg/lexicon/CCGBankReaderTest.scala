@@ -48,13 +48,13 @@ class CCGBankReaderTest extends FunSuite {
   def converter = new JapaneseParseTreeConverter(dict)
 
   def getParsedTree(lineStr:String = line): ParseTree[NodeLabel] = {
-    val reader = new CCGBankReader(dict)
+    val reader = new CCGBankReader
     val stringTrees = reader.readParseTree(lineStr, true)
     converter.toLabelTree(stringTrees)
   }
 
   test("read sentence test") {
-    val reader = new CCGBankReader(dict)
+    val reader = new CCGBankReader
 
     val sentence = converter.toSentenceFromStringTree(reader.readParseTree(line, true))
     sentence.word(0) should equal (dict.getWord("村山"))
@@ -112,13 +112,13 @@ class EnglishCCGBankReaderTest extends FunSuite {
   def converter = new EnglishParseTreeConverter(dict)
 
   def getParsedTree(lineStr:String = line): ParseTree[NodeLabel] = {
-    val reader = new EnglishCCGBankReader(dict)
+    val reader = new EnglishCCGBankReader
     val stringTrees = reader.readParseTree(lineStr, true)
     converter.toLabelTree(stringTrees)
   }
 
   test("read sentence test") {
-    val reader = new EnglishCCGBankReader(dict)
+    val reader = new EnglishCCGBankReader
 
     val sentence = converter.toSentenceFromStringTree(reader.readParseTree(line, true))
     sentence.word(0) should equal (dict.getWord("Pierre"))

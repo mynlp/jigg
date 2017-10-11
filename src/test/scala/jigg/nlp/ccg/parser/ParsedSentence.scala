@@ -59,7 +59,7 @@ class ParsedSentences {
   }
 
   def getParsedTree(lineStr:String): ParseTree[NodeLabel] = {
-    val reader = new CCGBankReader(dict)
+    val reader = new CCGBankReader
     val stringTrees = reader.readParseTree(lineStr, true)
     converter.toLabelTree(stringTrees)
   }

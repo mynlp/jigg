@@ -7,3 +7,5 @@
 build/
 target/
 .idea/
+models/
+download

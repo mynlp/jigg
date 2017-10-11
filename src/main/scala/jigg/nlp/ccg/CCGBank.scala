@@ -76,7 +76,7 @@ class JapaneseCCGBank(val info: Opts.BankInfo, dict: Dictionary) extends CCGBank
 
   val extractor = TreeExtractor(
     new JapaneseParseTreeConverter(dict),
-    new CCGBankReader(dict))
+    new CCGBankReader)
 }
 
 case class TreeExtractor(treeConv: ParseTreeConverter, reader: CCGBankReader) {
