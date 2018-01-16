@@ -8,4 +8,5 @@ build/
 target/
 .idea/
 models/
+tools/
 download

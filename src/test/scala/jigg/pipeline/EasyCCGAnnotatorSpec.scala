@@ -23,15 +23,20 @@ import scala.xml._
 
 class EasyCCGAnnotatorSpec extends BaseAnnotatorSpec {
 
-  val dummyP = new Properties
-  dummyP.setProperty("easyccg.path", "b")
-  dummyP.setProperty("easyccg.model", "a")
+  def mkProps(kBest: Int): Properties = {
+    val dummyP = new Properties
+    dummyP.setProperty("easyccg.model", "a")
+    dummyP.setProperty("easyccg.kBest", kBest+"")
+    dummyP
+  }
 
-  class AnnotatorStub(output: String)
-      extends EasyCCGAnnotator("easyccg", dummyP) {
+  class AnnotatorStub(output: String, kBest: Int = 1)
+      extends EasyCCGAnnotator("easyccg", mkProps(kBest)) {
 
     override def mkLocalAnnotator = new LocalEasyCCGAnnotator {
-      override def mkCommunicator = new StubExternalCommunicator(output)
+      override def buildParser() = new WrappedParser {
+        def parse(line: String) = output
+      }
     }
     override def nThreads = 1
   }
@@ -84,4 +89,41 @@ class EasyCCGAnnotatorSpec extends BaseAnnotatorSpec {
     </ccg>) (decided by sameElem)
   }
 
+  it should "add two trees when kBest=2" in {
+    val doc =
+      <document id="d1">
+        <sentences>
+          <sentence id="s1" characterOffsetBegin="0" characterOffsetEnd="1">
+            A
+            <tokens annotators="corenlp">
+              <token characterOffsetEnd="1" characterOffsetBegin="0" id="t8" form="A"/>
+            </tokens>
+          </sentence>
+        </sentences>
+      </document>
+
+    val output ="""ID=1
+(<T S[dcl] tr 0 1> (<L NP A A x x O NP>) )
+ID=1
+(<T S[wq] tr 0 1> (<L NP A A x x O NP>) )"""
+
+    val ann = new AnnotatorStub(output, 2)
+
+    val annotation = ann.annotate(doc)
+
+    val s = annotation \\ "sentence"
+    val ccgs = s \ "ccg"
+    ccgs(0) should equal(
+      <ccg annotators="easyccg" root="ccgsp8" id="ccg1">
+        <span id="ccgsp8" begin="0" end="1" symbol="S[dcl]" rule="tr" children="ccgsp9"/>
+        <span id="ccgsp9" begin="0" end="1" symbol="NP" children="t8"/>
+      </ccg>
+    ) (decided by sameElem)
+    ccgs(1) should equal(
+      <ccg annotators="easyccg" root="ccgsp10" id="ccg2">
+        <span id="ccgsp10" begin="0" end="1" symbol="S[wq]" rule="tr" children="ccgsp11"/>
+        <span id="ccgsp11" begin="0" end="1" symbol="NP" children="t8"/>
+      </ccg>
+    ) (decided by sameElem)
+  }
 }

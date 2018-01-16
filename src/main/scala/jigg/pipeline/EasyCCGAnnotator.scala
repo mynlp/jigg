@@ -19,7 +19,9 @@ package jigg.pipeline
 import java.io.{ByteArrayInputStream, File}
 import java.util.Properties
 
+import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.HashMap
 import scala.xml._
 import scala.sys.process.Process
 
@@ -27,60 +29,61 @@ import jigg.nlp.ccg.lexicon.{EnglishCCGBankReader, ParseTree}
 import jigg.util.PropertiesUtil
 import jigg.util.XMLUtil.RichNode
 
+import uk.ac.ed.easyccg.syntax.Category
+import uk.ac.ed.easyccg.syntax.Combinator.RuleType
+import uk.ac.ed.easyccg.syntax.ParsePrinter
+import uk.ac.ed.easyccg.syntax.Parser
+import uk.ac.ed.easyccg.syntax.ParserAStar
+import uk.ac.ed.easyccg.syntax.SyntaxTreeNode
+import uk.ac.ed.easyccg.syntax.TaggerEmbeddings
+import uk.ac.ed.easyccg.main.EasyCCG
 
 class EasyCCGAnnotator(override val name: String, override val props: Properties)
-    extends AnnotatingSentencesInParallel { self =>
+    extends AnnotatingSentencesInParallel {
 
-  @Prop(gloss = "Path to easyccg.jar", required = true) var path = ""
   @Prop(gloss = "Path to the model directory (containing bias, capitals, etc)", required = true) var model = ""
+  @Prop(gloss = "Outputs k-best derivations if this value > 1") var kBest = 1
+  // TODO: Support other options defined in EasyCCG (e.g., max length?)
+  val rootCategories = Seq("S[dcl]", "S[wq]", "S[q]", "S[qem]", "NP")
+  val maxLength = 70
+  val superTaggerBeam = 0.0001
+  val maxTagsPerWord = 50
+  val nbestbeam = 0.0
 
   readProps()
 
-  localAnnotators // instantiate lazy val here
+  val printer = ParsePrinter.EXTENDED_CCGBANK_PRINTER
+  val reader = new EnglishCCGBankReader
 
-  def mkLocalAnnotator = new LocalEasyCCGAnnotator
+  override def init() = {
+    localAnnotators
+  }
 
-  class LocalEasyCCGAnnotator
-      extends SentencesAnnotator with LocalAnnotator with IOCreator {
+  class LocalEasyCCGAnnotator extends SentencesAnnotator with LocalAnnotator {
 
-    def command = s"java -jar ${path} -m ${model}"
+    val parser: WrappedParser = buildParser()
 
-    override def launchTesters = Seq(
-      LaunchTester("", _ == "Parsing...", _ => true))
-    override def defaultArgs = Seq("-i", "POSandNERtagged", "-o", "extended")
-    def softwareUrl = "http://homepages.inf.ed.ac.uk/s1049478/easyccg.html"
+    def newSentenceAnnotation(sentence: Node): Node = {
 
-    val parser = mkIO()
-    override def close() = parser.close()
+      val tokenseq = sentence \ "tokens" \ "token"
+      val line = tokenseq map (t => (t \@ "form") + "|*|*") mkString " "
+      val output = parser.parse(line).split("\n")
+      assert(output.size % 2 == 0)
+      val parseStrs = output.indices collect { case i if i % 2 == 1 => output(i) }
+      assert(parseStrs.size <= kBest)
 
-    override def newSentenceAnnotation(sentence: Node): Node = {
+      //val ccgs = parses.map { parse => mkCCGNode(tokenseq, parse) }
+      val ccgs = parseStrs.map { line =>
+        val tree = reader.readParseTree(line, true)
+        mkCCGSpans(tokenseq, tree)
+      }
 
-      val output = run(mkInput(sentence))
-      val tree = mkTree(output)
-
-      annotateCCGSpans(sentence, tree)
+      sentence addChild ccgs
     }
 
-    private def mkInput(sentence: Node): String = {
-      val tokenSeq = sentence \\ "token"
-      tokenSeq.map { t => (t \@ "form") + "|x|x" } mkString " "
-    }
-
-    protected def run(text: String): String = {
-      parser.safeWriteWithFlush(text)
-      parser.readUntil(_.startsWith("(<")).last
-    }
-
-    private def mkTree(line: String): ParseTree[String] = {
-      val reader = new EnglishCCGBankReader
-      reader.readParseTree(line, true)
-    }
-
-    def annotateCCGSpans(sentence: Node, tree: ParseTree[String]): Node = {
+    def mkCCGSpans(tokenseq: Seq[Node], tree: ParseTree[String]): Node = {
       val treeWithIds = tree.map { (Annotation.CCGSpan.nextId, _) }
       treeWithIds.setSpans()
-      val tokens = sentence \ "tokens" \ "token"
-
       val root = treeWithIds.label._1
 
       val spans = new ArrayBuffer[Node]
@@ -96,7 +99,7 @@ class EasyCCGAnnotator(override val name: String, override val props: Properties
           case "T" => t.children.map(_.label._1).mkString(" ")
           case "L" =>
             val idx = t.span.get.begin
-            tokens(idx) \@ "id"
+            tokenseq(idx) \@ "id"
         }
 
         val rule = items(0) match {
@@ -113,14 +116,44 @@ class EasyCCGAnnotator(override val name: String, override val props: Properties
         rule={ rule }
         children={ children }/>
       }
-      sentence addChild (
-        <ccg annotators={ name } root={ root } id={ Annotation.CCG.nextId }>{ spans }</ccg>
-      )
+      <ccg annotators={ name } root={ root } id={ Annotation.CCG.nextId }>{ spans }</ccg>
+    }
+
+    def buildParser(): WrappedParser = new WrappedParser {
+      val parser = new ParserAStar(
+        new TaggerEmbeddings(new File(model), maxLength, superTaggerBeam, maxTagsPerWord),
+        maxLength,
+        kBest,
+        nbestbeam,
+        EasyCCG.InputFormat.POSANDNERTAGGED,
+        rootCategories.asJava,
+        new File(model, "unaryRules"),
+        new File(model, "binaryRules"),
+        new File(model, "seenRules"))
+
+      def parse(line: String): String = {
+        val parses = parser.parse(line)
+        printer.print(parses, 0)
+      }
     }
   }
 
-  override def requires = Set(Requirement.Ssplit, Requirement.Tokenize)
+  /** Abstracts `parse` method. Useful for unit-testing.
+    *
+    * Inherited in `buildParser` of local annotator.
+    * Output string is the output of the printer for K-best outputs, which look like:
+    * ID=1
+    * (T S[dcl] ... )
+    * ID=1
+    * (T S[dcl] ... )
+    */
+  trait WrappedParser {
+    def parse(line: String): String
+  }
 
+  def mkLocalAnnotator = new LocalEasyCCGAnnotator()
+
+  override def requires = Set(Requirement.Ssplit, Requirement.Tokenize)
   override def requirementsSatisfied = Set(Requirement.CCGDerivation)
 }
 
