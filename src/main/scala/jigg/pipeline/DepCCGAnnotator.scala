@@ -22,15 +22,18 @@ import java.util.Properties
 import scala.xml._
 import scala.sys.process.Process
 
+import jigg.util.IOUtil
 import jigg.util.PropertiesUtil
 import jigg.util.XMLUtil.RichNode
 
 class DepCCGAnnotator(override val name: String, override val props: Properties)
     extends AnnotatingSentencesInParallel { self =>
 
-  @Prop(gloss = "Path to run.py", required = true) var path = ""
+  // @Prop(gloss = "Path to run.py", required = true) var path = ""
+  @Prop(gloss = "Path to src/ dir of depccg, where depccg.so exists", required = true) var srcdir = ""
   @Prop(gloss = "Path to the model (e.g., tri_headfirst directory)", required = true) var model = ""
   @Prop(gloss = "Language (en|ja)") var lang = "en"
+  @Prop(gloss = "Outputs k-best derivations if this value > 1") var kBest = 1
   @Prop(gloss = "If true, launch multiple depccgs for parallel parsing. See -help depccg for more details.") var parallel = false
   readProps()
 
@@ -58,11 +61,19 @@ class DepCCGAnnotator(override val name: String, override val props: Properties)
 
 """
 
+  override def init() = {
+    System.err.println(s"Loading depccg... (${nThreads} instances)")
+    localAnnotators
+    System.err.println("done.")
+  }
+
   checkArgument()
 
   def checkArgument() = {
-    if (!path.endsWith("run.py") || !new File(path).exists) argumentError("path",
-      s"Something wrong in -${name}.path. That should be the path to run.py")
+    val src = new File(srcdir)
+    if (!src.isDirectory || !src.listFiles.exists(_.getPath.endsWith(".so")))
+      argumentError("srcdir",
+        s"Something wrong with -${name}.srcdir, which should contains a *.so file.")
 
     if (!new File(model).isDirectory || !new File(model, "tagger_model").exists)
       argumentError("model", s"-${name}.model seems incorrect. That should points to a directory containing tagger_model, cat_dict.txt, etc.")
@@ -70,24 +81,52 @@ class DepCCGAnnotator(override val name: String, override val props: Properties)
 
   def mkLocalAnnotator = new LocalDepCCGAnnotator
 
-  class LocalDepCCGAnnotator extends LocalAnnotator {
+  class LocalDepCCGAnnotator extends LocalAnnotator with IOCreator {
+
+    lazy val command = {
+      val script = mkScript
+      s"python ${script.getPath} ${srcdir} ${model} ${kBest} ${lang}"
+    }
+
+    def mkScript(): File = {
+      val script = File.createTempFile("depccg", ".py")
+      script.deleteOnExit
+      val stream = getClass.getResourceAsStream("/python/depccg.py")
+      IOUtil.writing(script.getPath) { o =>
+        scala.io.Source.fromInputStream(stream).getLines foreach { line =>
+          o.write(line + "\n")
+        }
+      }
+      script
+    }
+
+    override def launchTesters = Seq(
+      LaunchTester("a\n####EOD####", _ == "END", _ == "END"))
+    def softwareUrl = "https://github.com/masashi-y/depccg"
+
+    val depccg = mkIO()
+    override def close() = depccg.close()
 
     override def annotate(annotation: Node) = {
       assert(annotation.label == "sentences")
 
       val sentences = annotation.child
 
-      val input = sentences.map(mkInput).mkString("\n")
-      val result = run(input)
+      val input = sentences.map(mkInput).mkString("\n") + "\n####EOD####"
+      val result = runDepccg(input)
 
       // result is given by candc-style xml
       val resultNode = XML.loadString(result.mkString("\n"))
 
-      val ccgs = resultNode \\ "ccg"
-      assert(ccgs.size == sentences.size)
+      val outputs = resultNode \\ "ccgs"
+      assert(outputs.size == sentences.size)
 
-      val newSentences = sentences zip ccgs map {
-        case (s, c) => CandCAnnotator.annotateCCGSpans(s, c, name)
+      val newSentences = sentences zip outputs map {
+        case (sentence, ccgs) =>
+          val kbest = ccgs \ "ccg"
+          kbest.foldLeft(sentence) { (current, ccg) =>
+            CandCAnnotator.annotateCCGSpans(current, ccg, name)
+          }
       }
 
       annotation.asInstanceOf[Elem].copy(child = newSentences)
@@ -96,14 +135,13 @@ class DepCCGAnnotator(override val name: String, override val props: Properties)
     // Input looks like "This|X|X is|X|X ..."
     def mkInput(sentence: Node): String = {
       val forms = (sentence \\ "token") map (_ \@ "form")
-      forms map (_ + "|X|X") mkString " "
+      forms mkString " "
     }
 
-    def run(input: String): Stream[String] =
-      (cmd #< new ByteArrayInputStream(input.getBytes("UTF-8"))).lineStream_!
-
-    val cmd = Process(s"python ${path} --input-format POSandNERtagged --format xml ${model} ${lang}")
-
+    def runDepccg(input: String): Seq[String] = {
+      depccg.safeWriteWithFlush(input)
+      depccg.readUntil(_ == "END").dropRight(1)
+    }
   }
 
   override def requires = lang match {
