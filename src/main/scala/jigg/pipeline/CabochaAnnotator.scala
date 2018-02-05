@@ -155,9 +155,9 @@ ${helpMessage}
           case id => chunkId(sid, id)
         }
         val dep = chunkId(sid, chunk.id)
-        <dependency unit="chunk" id={ id } head={ head } dependent={ dep } deprel={ chunk.rel } />
+        <dependency id={ id } head={ head } dependent={ dep } deprel={ chunk.rel } />
       }
-      <dependencies annotators={ name }>{ nodeSeq }</dependencies>
+      <dependencies annotators={ name } unit={ "chunk" } >{ nodeSeq }</dependencies>
     }
 
     def chunkId(sid: String, idx: Int) = sid + "_chu" + idx
