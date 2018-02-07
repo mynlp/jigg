@@ -34,6 +34,7 @@ class DepCCGAnnotator(override val name: String, override val props: Properties)
   @Prop(gloss = "Path to the model (e.g., tri_headfirst directory)", required = true) var model = ""
   @Prop(gloss = "Language (en|ja)") var lang = "en"
   @Prop(gloss = "Outputs k-best derivations if this value > 1") var kBest = 1
+  @Prop(gloss = "Path 'activate' script of the virtual environment that you wish to run on depccg") var venv = ""
   @Prop(gloss = "If true, launch multiple depccgs for parallel parsing. See -help depccg for more details.") var parallel = false
   readProps()
 
@@ -44,6 +45,11 @@ class DepCCGAnnotator(override val name: String, override val props: Properties)
   A wrapper for depccg (https://github.com/masashi-y/depccg). -${name}.path (path to the
   main script) and ${name}.model (path to the model directory) are two necessary
   arguments.
+
+  If your depccg should be run in specific virtualenv, you can specify that in
+  -${name}.venv. For example, if your depccg-specific virtualenv is in
+  `~/venvs/depccg`, supply `-${name}.venv ~/venvs/depccg/bin/activate`. Note that
+  you should point to the path to `activate` script found on `bin`.
 
   One complication is that DepCCG originally supports parallel parsing in itself but it
   depends on how a user compiles the code. Speficially, DepCCG can be run in parallel
@@ -85,7 +91,8 @@ class DepCCGAnnotator(override val name: String, override val props: Properties)
 
     lazy val command = {
       val script = mkScript
-      s"python ${script.getPath} ${srcdir} ${model} ${kBest} ${lang}"
+      val venvcommand = if (venv == "") "" else s"source ${venv} && "
+      venvcommand + s"python ${script.getPath} ${srcdir} ${model} ${kBest} ${lang}"
     }
 
     def mkScript(): File = {

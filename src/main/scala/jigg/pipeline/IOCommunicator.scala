@@ -160,8 +160,8 @@ trait ProcessCommunicator extends IOCommunicator {
     }
 
   private def startWithRedirectError() = {
-    val fullCmd = (cmd.split("\\s+") ++ args).toSeq.asJava
-    val pb = new ProcessBuilder(fullCmd)
+    val fullcmd = (cmd +: args).mkString(" ")
+    val pb = new ProcessBuilder("bash", "-c", fullcmd)
     pb.redirectErrorStream(true)
     pb.start
   }
