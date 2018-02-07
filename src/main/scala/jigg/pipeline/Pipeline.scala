@@ -94,7 +94,6 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
     pattern.findAllIn(_annotators).toIndexedSeq
   }
 
-  // Some known annotators, e.g., corenlp, are found from here
   // TODO: documentation of this mechanism. Maybe currently this not used?
   // An intended use was to specify the path to some annotator class,
   // possibly defined by a user, in build.sbt.
