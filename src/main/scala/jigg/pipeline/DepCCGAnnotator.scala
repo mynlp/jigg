@@ -16,7 +16,7 @@ package jigg.pipeline
  limitations under the License.
  */
 
-import java.io.{ByteArrayInputStream, File}
+import java.io.File
 import java.util.Properties
 
 import scala.xml._
