@@ -22,6 +22,7 @@ import java.util.Properties
 import scala.xml._
 import scala.collection.mutable.ArrayBuffer
 
+import jigg.util.PropertiesUtil
 import jigg.util.ResourceUtil
 import jigg.util.XMLUtil.RichNode
 
@@ -293,7 +294,12 @@ object UDPipeAnnotator extends AnnotatorCompanion[UDPipeAnnotator] {
     def error() = throw new ArgumentError(
       s"Invalid options for udpipe (${name}), which should be like udpipe[parse] or udpipe[tokenize,pos,parse]")
     name.indexOf('[') match {
-      case -1 => error()
+      case -1 =>
+        // Launch if annotator's help is invoked.
+        val dummy = PropertiesUtil.findProperty("help", props).filter { p =>
+          p.split(",").map(_.trim).contains(name)
+        }.map(_ => new All(name, props))
+        dummy getOrElse error()
       case b =>
         val base = name.substring(0, b)
         name.substring(b+1, name.size-1).split("""[,\s]+""").toSeq match {
