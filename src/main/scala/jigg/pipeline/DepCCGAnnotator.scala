@@ -24,6 +24,7 @@ import scala.sys.process.Process
 
 import jigg.util.IOUtil
 import jigg.util.PropertiesUtil
+import jigg.util.ResourceUtil
 import jigg.util.XMLUtil.RichNode
 
 class DepCCGAnnotator(override val name: String, override val props: Properties)
@@ -89,8 +90,9 @@ class DepCCGAnnotator(override val name: String, override val props: Properties)
 
   class LocalDepCCGAnnotator extends LocalAnnotator with IOCreator {
 
-    lazy val command = {
-      val script = mkScript
+    // Avoid reading resource at test time.
+    lazy val script: File = ResourceUtil.readPython("depccg.py")
+    def command = {
       val venvcommand = if (venv == "") "" else s"source ${venv} && "
       venvcommand + s"python ${script.getPath} ${srcdir} ${model} ${kBest} ${lang}"
     }
