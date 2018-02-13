@@ -47,7 +47,11 @@ object Requirement {
 
   case object POS extends Requirement
 
+  case object UPOS extends Requirement
+
   case object Lemma extends Requirement
+
+  case object UDFeatures extends Requirement
 
   case object Dependencies extends Requirement
 

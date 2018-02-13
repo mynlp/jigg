@@ -161,7 +161,7 @@ class JumanDicMecabAnnotator(name: String, props: Properties) extends MecabAnnot
         cForm={ feats(3) }
         lemma={ feats(4) }
         yomi={ feats(5) }
-    misc={ feats(6) }/>
+        misc={ feats(6) }/>
   }
 
   override def requirementsSatisfied = Set(JaRequirement.TokenizeWithJumandic)

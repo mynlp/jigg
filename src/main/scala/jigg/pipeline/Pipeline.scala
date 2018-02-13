@@ -79,7 +79,7 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
     "depccg" -> classOf[DepCCGAnnotator],
     "candc" -> classOf[CandCAnnotator],
     "candcpos" -> classOf[CandCPOSAnnotator],
-    "easyccg" -> classOf[EasyCCGAnnotator]
+    "udpipe" -> classOf[UDPipeAnnotator]
   )
 
   // TODO: should document ID be given here?  Somewhere else?
@@ -95,7 +95,9 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
     pattern.findAllIn(_annotators).toIndexedSeq
   }
 
-  // Some known annotators, e.g., corenlp, are found from here
+  // TODO: documentation of this mechanism. Maybe currently this not used?
+  // An intended use was to specify the path to some annotator class,
+  // possibly defined by a user, in build.sbt.
   val knownAnnotatorNameToClassPath: Map[String, String] = {
     val buildInfo = annotator.BuildInfo
     import scala.reflect.runtime.universe._
@@ -129,6 +131,7 @@ Currently the annotators listed below are installed. See the detail of each anno
 
   ${defaultAnnotatorClassMap.keys mkString ", "}
   ${knownAnnotatorNameToClassPath.keys mkString ", "}
+  ${UnmanagedAnnotators.list.keys mkString ", "}
   ${customAnnotatorsStr}"""
   }
 
@@ -193,15 +196,15 @@ Currently the annotators listed below are installed. See the detail of each anno
     }
   } catch { case e: java.lang.reflect.InvocationTargetException => throw e.getCause }
 
-  def getAnnotatorCompanion(name: String): Option[AnnotatorCompanion[Annotator]] = {
-    import scala.reflect.runtime.{currentMirror => cm}
-
+  def getAnnotatorCompanion(name: String): Option[AnnotatorCompanion[Annotator]] =
     getAnnotatorClass(name) flatMap { clazz =>
-      val symbol = cm.classSymbol(clazz).companion
-      try Some(cm.reflectModule(symbol.asModule).instance.asInstanceOf[AnnotatorCompanion[Annotator]])
+      try {
+        import scala.reflect.runtime.{currentMirror => cm}
+        val symbol = cm.classSymbol(clazz).companion
+        Some(cm.reflectModule(symbol.asModule).instance.asInstanceOf[AnnotatorCompanion[Annotator]])
+      }
       catch { case e: Throwable => None }
     }
-  }
 
   def getAnnotatorClass(name: String): Option[Class[_]] = {
     val noOption = name.indexOf('[') match {
@@ -218,11 +221,26 @@ Currently the annotators listed below are installed. See the detail of each anno
       }
     } orElse {
       resolveAnnotatorClass(noOption, noOption)
+    } orElse {
+      resolveUnmanagedClass(noOption)
     }
   }
 
   private[this] def resolveAnnotatorClass(path: String, name: String): Option[Class[_]] =
     try Some(Class.forName(path)) catch { case e: Throwable => None }
+
+  private[this] def resolveUnmanagedClass(name: String): Option[Class[_]] = {
+    // Finally try to find from UnmanagedAnnotators ...
+    UnmanagedAnnotators.list get(name) map { a =>
+      // but this might not be loaded, if the necessary jar is missing in the class path so we first test it.
+      try {
+        a.clazz.getFields
+        a.clazz.getDeclaredFields
+      } catch { case e: Throwable => throw new ArgumentError(a.msg) }
+
+      a.clazz
+    }
+  }
 
   def run = {
     val reader = IOUtil.openIn(file)

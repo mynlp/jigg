@@ -17,7 +17,7 @@ The easist way to start Jigg is to download the self-contained jar, which includ
 
 ```bash
 $ mkdir jigg && cd jigg
-$ wget https://github.com/mynlp/jigg/releases/download/v-0.7.1/jigg-0.7.1.jar
+$ wget https://github.com/mynlp/jigg/releases/download/v-0.7.2/jigg-0.7.2.jar
 ```
 
 If you wish to build your own jar, please read [here](#build-your-own-jar-advanced).
@@ -341,12 +341,9 @@ curl --data-urlencode 'annotators=ssplit,kuromoji,jaccg' \
 
 ## Supported annotators
 
-TBA
+Supported annotators in the current environment can be listed with the help command.
+To see more details on each annotator, try `-help annotator_name` (see also [Command-line usage](#command-line-usage)).
 
-
-## Implementing new annotator
-
-TBA
 
 ## Citing in papers
 

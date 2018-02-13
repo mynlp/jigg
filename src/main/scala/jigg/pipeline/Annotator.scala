@@ -246,20 +246,21 @@ trait IOCreator extends EasyIO {
 
   def mkCommunicator(): IOCommunicator = new InstructiveProcessCommunicator
 
-  class InstructiveProcessCommunicator extends ProcessCommunicator {
-    def cmd = command
-    def args = defaultArgs
-
-    override def startError(e: Throwable) = {
-      val commandName = makeFullName("command")
-      val msg = s"""
+  def launchErrorMessage = {
+    val commandName = makeFullName("command")
+    s"""
   If the command is not installed, you can get it from ${softwareUrl}.
   You may also customize the way to launch the process by specifying a
   path to the command, e.g.:
     -${commandName} /path/to/$prefix
 """
-      launchError(msg)
-    }
+  }
+
+  class InstructiveProcessCommunicator extends ProcessCommunicator {
+    def cmd = command
+    def args = defaultArgs
+
+    override def startError(e: Throwable) = launchError(launchErrorMessage)
 
     override def checkStartError() = for (LaunchTester(i, u, c) <- launchTesters) {
       safeWriteWithFlush(i) match {

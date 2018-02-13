@@ -24,7 +24,7 @@ import scala.xml._
 class DepCCGAnnotatorSpec extends BaseAnnotatorSpec {
 
   val dummyP = new Properties
-  dummyP.setProperty("depccg.path", "b")
+  dummyP.setProperty("depccg.srcdir", "b")
   dummyP.setProperty("depccg.model", "a")
 
   class AnnotatorStub(output: String)
@@ -33,8 +33,10 @@ class DepCCGAnnotatorSpec extends BaseAnnotatorSpec {
     override def checkArgument() = {} // do not check
 
     override def mkLocalAnnotator = new LocalDepCCGAnnotator {
-      override def run(input: String) = output.split("\n").toStream
+      override def mkCommunicator = new StubExternalCommunicator(output)
+      // override def runDepccg(input: String) = output.split("\n").toStream
     }
+    override def nThreads = 1
   }
 
   Annotation.CCGSpan.idGen.reset()
@@ -57,6 +59,7 @@ class DepCCGAnnotatorSpec extends BaseAnnotatorSpec {
       </document>
 
     val output ="""<candc>
+<ccgs>
 <ccg>
 <rule cat="S[dcl]" type="rp">
 <rule cat="S[dcl]" type="ba">
@@ -72,7 +75,9 @@ class DepCCGAnnotatorSpec extends BaseAnnotatorSpec {
 </rule>
 
 </ccg>
+</ccgs>
 </candc>
+END
 """
 
     val ann = new AnnotatorStub(output)
@@ -113,15 +118,16 @@ class DepCCGAnnotatorSpec extends BaseAnnotatorSpec {
       </document>
 
     val output ="""<candc>
-<ccg>
+<ccgs><ccg>
 <lf start="0" span="1" word="A" lemma="XX" pos="x" chunk="XX" entity="x" cat="NP" />
 
-</ccg>
-<ccg>
+</ccg></ccgs>
+<ccgs><ccg>
 <lf start="0" span="1" word="B" lemma="XX" pos="x" chunk="XX" entity="x" cat="N" />
 
-</ccg>
+</ccg></ccgs>
 </candc>
+END
 """
 
     val ann = new AnnotatorStub(output)

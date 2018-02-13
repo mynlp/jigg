@@ -44,7 +44,7 @@ class CabochaAnnotatorSpec extends BaseAnnotatorSpec {
     val deps = result \\ "dependencies"
     deps.size should be (1)
     deps.head should equal (
-      <dependencies annotators="cabocha"><dependency unit="chunk" id="s0_dep0" head="root" dependent="s0_chu0" deprel="D"/></dependencies>)
+      <dependencies annotators="cabocha" unit="chunk"><dependency id="s0_dep0" head="root" dependent="s0_chu0" deprel="D"/></dependencies>)
 
     val sentences = result \\ "sentence"
 
@@ -72,10 +72,10 @@ class CabochaAnnotatorSpec extends BaseAnnotatorSpec {
     val deps = result \\ "dependencies"
     deps.size should be (1)
     deps.head should equal (
-      <dependencies annotators="cabocha">
-        <dependency unit="chunk" id="s0_dep0" head="s0_chu2" dependent="s0_chu0" deprel="D"/>
-        <dependency unit="chunk" id="s0_dep1" head="s0_chu2" dependent="s0_chu1" deprel="D"/>
-        <dependency unit="chunk" id="s0_dep2" head="root" dependent="s0_chu2" deprel="D"/>
+      <dependencies annotators="cabocha" unit="chunk">
+        <dependency id="s0_dep0" head="s0_chu2" dependent="s0_chu0" deprel="D"/>
+        <dependency id="s0_dep1" head="s0_chu2" dependent="s0_chu1" deprel="D"/>
+        <dependency id="s0_dep2" head="root" dependent="s0_chu2" deprel="D"/>
       </dependencies>
     ) (decided by sameElem)
   }

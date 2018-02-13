@@ -6,7 +6,7 @@ name := "jigg"
 
 scalaVersion := "2.11.8"
 
-version := "0.7.1"
+version := "0.7.2"
 
 fork in run := true
 
@@ -22,6 +22,20 @@ mainClass in assembly := Some("jp.jigg.nlp.pipeline.Pipeline")
 javacOptions ++= Seq("-Xlint:all", "-source", "1.6", "-target", "1.6")
 
 scalacOptions ++= Seq("-deprecation", "-feature")
+
+// The unmanaged jars can be put on both lib/ and jar/ directories.
+// The intended use of jar/ is to put the third-party NLP software (e.g., easyccg.jar),
+// which we do not want to include in an assembled jar.
+val externalJars = Seq("lib", "jar")
+  .map(file).flatMap(_.listFiles()).filter(_.getName.endsWith(".jar"))
+unmanagedJars in Compile ++= externalJars
+unmanagedJars in Runtime ++= externalJars
+
+assemblyExcludedJars in assembly := {
+  val cp = (fullClasspath in assembly).value
+  val unmanaged = file("jar").listFiles().map(_.getName).filter(_.endsWith(".jar"))
+  cp filter { x => unmanaged contains x.data.getName }
+}
 
 libraryDependencies ++= Seq(
   "com.novocode" % "junit-interface" % "0.10-M4" % "test->default",
@@ -46,7 +60,7 @@ libraryDependencies ++= (
 val stanfordCoreNLPDependencies = Seq(
   "org.slf4j" % "slf4j-api" % "1.7.20", // logger
   "org.slf4j" % "slf4j-simple" % "1.7.6",
-  "edu.stanford.nlp" % "stanford-corenlp" % "3.7.0"
+  "edu.stanford.nlp" % "stanford-corenlp" % "3.8.0"
 )
 
 val kuromojiDependencies = Seq(
@@ -73,17 +87,17 @@ lazy val root = (project in file(".")).
 
 resolvers ++= Seq(
   "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/",
-  "Unidata maven repository" at "http://artifacts.unidata.ucar.edu/content/repositories/unidata-releases"
+  "Unidata maven repository" at "https://artifacts.unidata.ucar.edu/content/repositories/unidata-releases"
 )
 
 publishMavenStyle := true
 
-publishTo <<= version { (v: String) =>
-    val nexus = "https://oss.sonatype.org/"
-    if (v.trim.endsWith("SNAPSHOT"))
-      Some("snapshots" at nexus + "content/repositories/snapshots")
-    else
-      Some("releases" at nexus + "service/local/staging/deploy/maven2")
+publishTo := {
+  val nexus = "https://oss.sonatype.org/"
+  if (isSnapshot.value)
+    Some("snapshots" at nexus + "content/repositories/snapshots")
+  else
+    Some("releases" at nexus + "service/local/staging/deploy/maven2")
 }
 
 publishArtifact in Test := false
