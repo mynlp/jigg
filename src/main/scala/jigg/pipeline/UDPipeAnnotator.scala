@@ -258,9 +258,12 @@ trait UDPipeAnnotator extends Annotator with IOCreator {
 
     // CoNLLSentence is just Seq[Seq[String]]
     val newTokenSeq = tokenseq.zip(conllSentence).map { case (tokenNode, conllToken) =>
-      val pos = conllToken(3)
-      val upos = conllToken(2)
-      val lemma = conllToken(4)
+      val upos = conllToken(3)
+      val pos = conllToken(4) match {
+        case "_" => upos // pos may not be supplied for some languages, so we reuse upos when absent.
+        case p => p
+      }
+      val lemma = conllToken(2)
       val feats = conllToken(5)
 
       tokenNode.addAttributes(
