@@ -362,6 +362,7 @@ Following sample files of SsplitKerasAnnotator/BunsetsuKerasAnnotator is generat
 
 ## Release note
 
+- 0.7.2: Many improvements around CCG parsers, including K-best outputs of depccg and easyccg. Support of udpipe.
 - 0.7.1: Bug fixes; Docker for Jigg server; annotators for CCG parsers (candc, easyccg, and depccg)
 - 0.7.0: Support CoreNLP 3.7.0, server mode, several improvements including support of xml/json inputs.
 - 0.6.1: Bug fixes.
