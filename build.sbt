@@ -27,7 +27,7 @@ scalacOptions ++= Seq("-deprecation", "-feature")
 // The intended use of jar/ is to put the third-party NLP software (e.g., easyccg.jar),
 // which we do not want to include in an assembled jar.
 val externalJars = Seq("lib", "jar")
-  .map(file).flatMap(_.listFiles()).filter(_.getName.endsWith(".jar"))
+  .map(file).filter(_.exists).flatMap(_.listFiles()).filter(_.getName.endsWith(".jar"))
 unmanagedJars in Compile ++= externalJars
 unmanagedJars in Runtime ++= externalJars
 
