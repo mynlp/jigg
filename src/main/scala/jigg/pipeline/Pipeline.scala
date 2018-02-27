@@ -264,7 +264,7 @@ Currently the annotators listed below are installed. See the detail of each anno
           os.close()
         }
       }
-      case _ => { 
+      case _ => {
         val outputPath = output match {
           case "" => file + ".xml"
           case _ => output
