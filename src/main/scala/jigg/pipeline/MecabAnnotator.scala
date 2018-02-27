@@ -56,7 +56,7 @@ ${helpMessage}
 
     override def launchTesters = Seq(
       LaunchTester("EOS", _ == "EOS", _ == "EOS"))
-    override def defaultArgs = Seq("-O", "")
+    override def defaultArgs = Seq("-O", "''")
     def softwareUrl = "https://taku910.github.io/mecab/"
 
     val mecab = mkIO()
