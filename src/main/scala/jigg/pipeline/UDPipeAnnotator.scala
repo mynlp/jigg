@@ -136,7 +136,7 @@ trait UDPipeAnnotator extends Annotator with IOCreator {
         val text = document.textElem
         mkSentencesNode(text, conllSentences)
       case _ =>
-        (document \ "sentence").head
+        (document \ "sentences").head
     }
     val mayAddTags = if (doPOS) Some(addTags _) else None
     val mayAddDeps = if (doDeps) Some(addDependencies _) else None
