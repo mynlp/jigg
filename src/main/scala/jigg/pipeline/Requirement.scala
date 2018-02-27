@@ -147,11 +147,13 @@ sealed trait RequirementSet { self =>
   protected val elems: Set[Requirement]
 
   def |(other: RequirementSet): RequirementSet =
-    this | other.elems.map(_.allAncestors).flatten.toSet
+    this | other.elems
 
   def |(otherElems: Set[Requirement]): RequirementSet = new RequirementSet {
-    override val elems = self.elems | otherElems
+    override val elems = self.elems | otherElems.map(_.allAncestors).flatten.toSet
   }
+
+  override def toString = elems.toString
 
   /** Elements in requirements, which is not in this.
     */
