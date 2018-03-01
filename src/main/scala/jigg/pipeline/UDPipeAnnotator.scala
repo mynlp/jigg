@@ -47,6 +47,10 @@ trait UDPipeAnnotator extends Annotator with IOCreator {
   for parsing to universal dependencies from raw inputs. It can perform sentence-
   splitting, tokenization, POS-tagging, and dependency parsing from raw text.
 
+  To use this annotator, we assume its python binding is installed on the system via
+  pip: "pip install ufal.udpipe". If udpipe is only installed on some virtualenv,
+  you can also specify the path by setting "-${name}.venv".
+
   As in CoreNLP, Jigg assumes special form of an annotation name, like udpipe[tokenize]
   and udpipe[tokenize,pos,parse]. Three candidates are valid for this option:
 
