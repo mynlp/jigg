@@ -21,7 +21,7 @@ import org.scalatest._
 import scala.xml._
 import jigg.util.{XMLUtil, JSONUtil}
 
-class IntermediateInputSpec extends FlatSpec with Matchers {
+class IntermediateInputSpec extends BaseAnnotatorSpec {
 
   def findPath(localPath: String) = getClass.getClassLoader.getResource(localPath).getPath
 
@@ -39,7 +39,7 @@ class IntermediateInputSpec extends FlatSpec with Matchers {
     val testXML = XML.load(findPath("./data/xml/english.ssplit.spaceTokenize.test.xml"))
     val goldXML = XML.load(findPath("./data/xml/english.ssplit.spaceTokenize.gold.xml"))
 
-    testXML should be (goldXML)
+    testXML should equal (goldXML) (decided by sameElem)
   }
 
   "Pipeline" should "accept a XML file and handle it in Japanese" in {
@@ -56,7 +56,7 @@ class IntermediateInputSpec extends FlatSpec with Matchers {
     val testXML = XML.load(findPath("./data/xml/japanese.ssplit.kuromoji.test.xml"))
     val goldXML = XML.load(findPath("./data/xml/japanese.ssplit.kuromoji.gold.xml"))
 
-    testXML should be (goldXML)
+    testXML should equal (goldXML) (decided by sameElem)
   }
 
   "Pipeline" should "accept a JSON file and handle it in English" in {
@@ -73,7 +73,7 @@ class IntermediateInputSpec extends FlatSpec with Matchers {
     val testXML = XML.load(findPath("./data/json/english.ssplit.spaceTokenize.test.xml"))
     val goldXML = XML.load(findPath("./data/xml/english.ssplit.spaceTokenize.gold.xml"))
 
-    testXML should be (goldXML)
+    testXML should equal (goldXML) (decided by sameElem)
   }
 
   "Pipeline" should "accept a JSON file and handle it in Japanese" in {
@@ -90,6 +90,6 @@ class IntermediateInputSpec extends FlatSpec with Matchers {
     val testXML = XML.load(findPath("./data/json/japanese.ssplit.kuromoji.test.xml"))
     val goldXML = XML.load(findPath("./data/xml/japanese.ssplit.kuromoji.gold.xml"))
 
-    testXML should be (goldXML)
+    testXML should equal (goldXML) (decided by sameElem)
   }
 }
