@@ -281,14 +281,7 @@ Currently the annotators listed below are installed. See the detail of each anno
     }
   }
 
-  // The output of basic XML.save method is not formatted, so we instead use PrettyPrinter.
-  // However, this method have to convert an entire XML into a String object, which would be problematic for huge dataset.
-  def writeTo(os: Writer, xml: Node) = {
-    val printer = new scala.xml.PrettyPrinter(500, 2)
-    val size = (xml \\ "sentences").map(_.child.size).sum
-    val outputXML = if (size > 100) xml else XML.loadString(printer.format(xml))
-    XML.write(os, outputXML, "UTF-8", true, null)
-  }
+  def writeTo(os: Writer, xml: Node) = OutputConverter.writeInXML(os, xml)
 
   def runFromStdin = {
     val reader = IOUtil.openStandardIn

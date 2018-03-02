@@ -73,6 +73,13 @@ object IOUtil {
     out.close()
   }
 
+  def writing[A](mkWriter: ()=>Writer)(f: Writer=>A) = {
+    val writer = mkWriter()
+    f(writer)
+    writer.flush
+    writer.close
+  }
+
   def findResource(path: String): URL =
     Thread.currentThread.getContextClassLoader.getResource(path)
 
