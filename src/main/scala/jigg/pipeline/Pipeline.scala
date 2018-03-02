@@ -70,8 +70,6 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
     "corenlp" -> classOf[StanfordCoreNLPAnnotator],
     "berkeleyparser" -> classOf[BerkeleyParserAnnotator],
     "kuromoji" -> classOf[KuromojiAnnotator[_]],
-    "kuromojitoken" -> classOf[KuromojiTokenAnnotator[_]],
-    "kuromojipos" -> classOf[KuromojiPOSAnnotator[_]],
     "syntaxnetpos" -> classOf[SyntaxNetPOSAnnotator],
     "syntaxnetparse" -> classOf[SyntaxNetParseAnnotator],
     "syntaxnet" -> classOf[SyntaxNetFullAnnotator],

@@ -27,7 +27,7 @@ class KuromojiAnnotatorSpec extends FlatSpec with Matchers {
 
   "Annotator" should "assign token id using sentence id" in {
 
-    val annotator = KuromojiAnnotator.mkIPA("kuromoji", new Properties)
+    val annotator = KuromojiAnnotator.fromProps("kuromoji", new Properties)
 
     val sentence = <sentence id="a">あ</sentence>
     val annotated = annotator newSentenceAnnotation sentence
@@ -37,7 +37,7 @@ class KuromojiAnnotatorSpec extends FlatSpec with Matchers {
   }
 
   "TokenAnnotator" should "segment into tokens" in {
-    val annotator = KuromojiTokenAnnotator.mkIPA("kuromoji", new Properties)
+    val annotator = KuromojiAnnotator.fromProps("kuromoji[tokenize]", new Properties)
 
     val sentence = <sentence id = "a">あ</sentence>
     val annotated = annotator newSentenceAnnotation sentence
@@ -48,7 +48,7 @@ class KuromojiAnnotatorSpec extends FlatSpec with Matchers {
   }
 
   "POSAnnotator" should "assign POS tags" in {
-    val annotator = KuromojiPOSAnnotator.mkIPA("kuromoji", new Properties)
+    val annotator = KuromojiAnnotator.fromProps("kuromoji[pos]", new Properties)
 
     val sentence = <sentence id = "a">
     <tokens>

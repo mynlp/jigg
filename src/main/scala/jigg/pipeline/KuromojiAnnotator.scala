@@ -29,14 +29,12 @@ import com.atilika.kuromoji.ipadic.{Token=>IToken, Tokenizer=>ITokenizer}
 import com.atilika.kuromoji.jumandic.{Token=>JToken, Tokenizer=>JTokenizer}
 import com.atilika.kuromoji.unidic.{Token=>UToken, Tokenizer=>UTokenizer}
 
-abstract class KuromojiAnnotator[T<:TokenBase](
+// Base class for kuromoji doing both tokenization and pos-tagging
+abstract class KuromojiFullAnnotator[T<:TokenBase](
   override val name: String,
   override val props: Properties)
-    extends KuromojiTokenAnnotator[T]
-    with KuromojiPOSAnnotator[T] {
-
-  // @Prop(gloss = "Which dictionary do you use? Currently supported: ipa|juman|unidic") var dic = KuromojiAnnotator.defaultDic
-  // readProps()
+    extends KuromojiTokenBaseAnnotator[T]
+    with KuromojiPOSBaseAnnotator[T] {
 
   override def newSentenceAnnotation(sentence: Node): Node = {
     val tokenizedSentence = tokenize(sentence.text)
@@ -47,8 +45,17 @@ abstract class KuromojiAnnotator[T<:TokenBase](
   }
 }
 
+// Base class for kuromoji doing only tokenization
+abstract class KuromojiTokenAnnotator[T<:TokenBase](
+  override val name: String, override val props: Properties)
+    extends KuromojiTokenBaseAnnotator[T]
 
-sealed trait KuromojiBaseAnnotator[T<:TokenBase] extends SentencesAnnotator {
+// Base class for kuromoji doing only pos-tagging
+abstract class KuromojiPOSAnnotator[T<:TokenBase](
+  override val name: String, override val props: Properties)
+    extends KuromojiPOSBaseAnnotator[T]
+
+sealed trait KuromojiAnnotator[T<:TokenBase] extends SentencesAnnotator {
 
   @Prop(gloss = "Which dictionary do you use? Currently supported: ipa|juman|unidic") var dic = KuromojiAnnotator.defaultDic
   readProps()
@@ -56,28 +63,25 @@ sealed trait KuromojiBaseAnnotator[T<:TokenBase] extends SentencesAnnotator {
   protected def tokenize(text: String): Seq[T]
 
   override def requires = Set(Requirement.Ssplit)
-  // Tokenize requirment would be satified by all sub-annotators, though POS annotators
-  // later additionally satisfy TokenizeWithXXX requirement.
   override def requirementsSatisfied = Set(Requirement.Tokenize)
 }
 
-trait KuromojiIPABaseAnnotator extends KuromojiBaseAnnotator[IToken] {
+trait KuromojiIPABaseAnnotator extends KuromojiAnnotator[IToken] {
   val tokenizer = new ITokenizer
   def tokenize(text: String) = tokenizer.tokenize(text)
 }
 
-trait KuromojiJumanBaseAnnotator extends KuromojiBaseAnnotator[JToken] {
+trait KuromojiJumanBaseAnnotator extends KuromojiAnnotator[JToken] {
   val tokenizer = new JTokenizer
   def tokenize(text: String) = tokenizer.tokenize(text)
 }
 
-trait KuromojiUnidicBaseAnnotator extends KuromojiBaseAnnotator[UToken] {
+trait KuromojiUnidicBaseAnnotator extends KuromojiAnnotator[UToken] {
   val tokenizer = new UTokenizer
   def tokenize(text: String) = tokenizer.tokenize(text)
 }
 
-
-trait KuromojiTokenAnnotator[T<:TokenBase] extends KuromojiBaseAnnotator[T] {
+trait KuromojiTokenBaseAnnotator[T<:TokenBase] extends KuromojiAnnotator[T] {
 
   def mkid(sindex: String, tindex: Int) = sindex + "_" + tindex
 
@@ -103,7 +107,7 @@ trait KuromojiTokenAnnotator[T<:TokenBase] extends KuromojiBaseAnnotator[T] {
   }
 }
 
-trait KuromojiPOSAnnotator[T<:TokenBase] extends KuromojiBaseAnnotator[T] {
+trait KuromojiPOSBaseAnnotator[T<:TokenBase] extends KuromojiAnnotator[T] {
 
   override def newSentenceAnnotation(sentence: Node): Node = {
     val tokenizedSentence = tokenize(sentence.text)
@@ -127,7 +131,7 @@ trait KuromojiPOSAnnotator[T<:TokenBase] extends KuromojiBaseAnnotator[T] {
 // TODO: support naist-jdic annotator, possibly by making a trait implementing tokenToNodes,
 // which is used both for ipa and naist.
 trait KuromojiIPAPOSAnnotator
-    extends KuromojiPOSAnnotator[IToken] with KuromojiIPABaseAnnotator {
+    extends KuromojiPOSBaseAnnotator[IToken] with KuromojiIPABaseAnnotator {
   def decorate(tokenNode: Node, token: IToken): Node =
     tokenNode.addAttributes(Map(
       "pos" -> token.getPartOfSpeechLevel1,
@@ -145,7 +149,7 @@ trait KuromojiIPAPOSAnnotator
 }
 
 trait KuromojiJumanPOSAnnotator
-    extends KuromojiPOSAnnotator[JToken] with KuromojiJumanBaseAnnotator {
+    extends KuromojiPOSBaseAnnotator[JToken] with KuromojiJumanBaseAnnotator {
   def decorate(tokenNode: Node, token: JToken): Node =
     tokenNode.addAttributes(Map(
       "pos" -> token.getPartOfSpeechLevel1,
@@ -161,7 +165,7 @@ trait KuromojiJumanPOSAnnotator
 }
 
 trait KuromojiUnidicPOSAnnotator
-    extends KuromojiPOSAnnotator[UToken] with KuromojiUnidicBaseAnnotator {
+    extends KuromojiPOSBaseAnnotator[UToken] with KuromojiUnidicBaseAnnotator {
   def decorate(tokenNode: Node, token: UToken): Node =
     tokenNode.addAttributes(Map(
       "pos" -> token.getPartOfSpeechLevel1,
@@ -186,65 +190,67 @@ trait KuromojiUnidicPOSAnnotator
     super.requirementsSatisfied | Set(JaRequirement.TokenizeWithUnidic)
 }
 
-abstract class KuromojiCompanionBase[A<:Annotator](implicit m: ClassTag[A])
-    extends AnnotatorCompanion[A] {
+object KuromojiAnnotator extends AnnotatorCompanion[KuromojiAnnotator[_]] {
 
   def defaultDic = "ipa"
 
-  def mkIPA(name: String, props: Properties): A
-  def mkJuman(name: String, props: Properties): A
-  def mkUnidic(name: String, props: Properties): A
+  trait Launcher {
+    def name: String
+    def props: Properties
 
-  override def fromProps(name: String, props: Properties) = {
     val key = name + ".dic"
     val dic = PropertiesUtil.findProperty(key, props) getOrElse defaultDic
-    dic match {
-      case "ipa" => mkIPA(name, props)
-      case "juman" => mkJuman(name, props)
-      case "unidic" => mkUnidic(name, props)
-      case _ =>
-        System.err.println(s"WARNING: Dictionary ${dic} is unsupported in kuromoji. Use ipadic...")
-        mkIPA(name, props)
+
+    def launch(): KuromojiAnnotator[_] = dic match {
+      case "ipa" => mkIPA()
+      case "juman" => mkJuman()
+      case "unidic" => mkUnidic()
     }
+
+    def mkIPA(): KuromojiAnnotator[_]
+    def mkJuman(): KuromojiAnnotator[_]
+    def mkUnidic(): KuromojiAnnotator[_]
   }
-}
 
-object KuromojiAnnotator extends KuromojiCompanionBase[KuromojiAnnotator[_]] {
+  class FullLauncher(val name: String, val props: Properties) extends Launcher {
+    def mkIPA() =
+      new KuromojiFullAnnotator[IToken](name, props) with KuromojiIPAPOSAnnotator
+    def mkJuman() =
+      new KuromojiFullAnnotator[JToken](name, props) with KuromojiJumanPOSAnnotator
+    def mkUnidic() =
+      new KuromojiFullAnnotator[UToken](name, props) with KuromojiUnidicPOSAnnotator
+  }
 
-  def mkIPA(name: String, props: Properties) =
-    new KuromojiAnnotator[IToken](name, props) with KuromojiIPAPOSAnnotator
+  class TokenLauncher(val name: String, val props: Properties) extends Launcher {
+    def mkIPA() =
+      new KuromojiTokenAnnotator[IToken](name, props) with KuromojiIPABaseAnnotator
+    def mkJuman() =
+      new KuromojiTokenAnnotator[JToken](name, props) with KuromojiJumanBaseAnnotator
+    def mkUnidic() =
+      new KuromojiTokenAnnotator[UToken](name, props) with KuromojiUnidicBaseAnnotator
+  }
 
-  def mkJuman(name: String, props: Properties) =
-    new KuromojiAnnotator[JToken](name, props) with KuromojiJumanPOSAnnotator
+  class POSLauncher(val name: String, val props: Properties) extends Launcher {
+    def mkIPA() =
+      new KuromojiPOSAnnotator[IToken](name, props) with KuromojiIPAPOSAnnotator
+    def mkJuman() =
+      new KuromojiPOSAnnotator[JToken](name, props) with KuromojiJumanPOSAnnotator
+    def mkUnidic() =
+      new KuromojiPOSAnnotator[UToken](name, props) with KuromojiUnidicPOSAnnotator
+  }
 
-  def mkUnidic(name: String, props: Properties) =
-    new KuromojiAnnotator[UToken](name, props) with KuromojiUnidicPOSAnnotator
-}
-
-object KuromojiTokenAnnotator extends KuromojiCompanionBase[KuromojiTokenAnnotator[_]] {
-
-  abstract class TokenAnnotator[T<:TokenBase](
-    override val name: String, override val props: Properties)
-      extends KuromojiTokenAnnotator[T]
-
-  def mkIPA(name: String, props: Properties) =
-    new TokenAnnotator[IToken](name, props) with KuromojiIPABaseAnnotator
-  def mkJuman(name: String, props: Properties) =
-    new TokenAnnotator[JToken](name, props) with KuromojiJumanBaseAnnotator
-  def mkUnidic(name: String, props: Properties) =
-    new TokenAnnotator[UToken](name, props) with KuromojiUnidicBaseAnnotator
-}
-
-object KuromojiPOSAnnotator extends KuromojiCompanionBase[KuromojiPOSAnnotator[_]] {
-
-  abstract class POSAnnotator[T<:TokenBase](
-    override val name: String, override val props: Properties)
-      extends KuromojiPOSAnnotator[T]
-
-  def mkIPA(name: String, props: Properties) =
-    new POSAnnotator[IToken](name, props) with KuromojiIPAPOSAnnotator
-  def mkJuman(name: String, props: Properties) =
-    new POSAnnotator[JToken](name, props) with KuromojiJumanPOSAnnotator
-  def mkUnidic(name: String, props: Properties) =
-    new POSAnnotator[UToken](name, props) with KuromojiUnidicPOSAnnotator
+  override def fromProps(_name: String, props: Properties) = {
+    val (name, options) = _name.indexOf('[') match {
+      case -1 => (_name, "")
+      case b => (_name.substring(0, b), _name.substring(b+1, _name.size-1))
+    }
+    val launcher = options match {
+      case "tokenize" => new TokenLauncher(name, props)
+      case "pos" => new POSLauncher(name, props)
+      case "tokenize,pos"|"" => new FullLauncher(name, props)
+      case _ => throw new ArgumentError(
+        s"Invalid options for kuromoji (${_name}), which should be like kuromoji, kuromoji[tokenize], or kuromoji[pos]")
+    }
+    launcher.launch()
+  }
 }
