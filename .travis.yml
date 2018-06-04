@@ -1,0 +1,18 @@
+language: scala
+
+scala:
+  -  2.11.8
+
+before_install:
+  - sudo apt update -y
+
+install:
+  - ".checker/scripts/install-jar.sh"
+
+script:
+  - sbt ++$TRAVIS_SCALA_VERSION test
+  - ".checker/scripts/run-test.sh"
+
+branches:
+  only:
+    - feature/ci

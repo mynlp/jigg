@@ -1,0 +1,61 @@
+Sentence #1 (7 tokens):
+Stanford University is located in California.
+[Text=Stanford CharacterOffsetBegin=0 CharacterOffsetEnd=8 PartOfSpeech=NNP]
+[Text=University CharacterOffsetBegin=9 CharacterOffsetEnd=19 PartOfSpeech=NNP]
+[Text=is CharacterOffsetBegin=20 CharacterOffsetEnd=22 PartOfSpeech=VBZ]
+[Text=located CharacterOffsetBegin=23 CharacterOffsetEnd=30 PartOfSpeech=VBN]
+[Text=in CharacterOffsetBegin=31 CharacterOffsetEnd=33 PartOfSpeech=IN]
+[Text=California CharacterOffsetBegin=34 CharacterOffsetEnd=44 PartOfSpeech=NNP]
+[Text=. CharacterOffsetBegin=44 CharacterOffsetEnd=45 PartOfSpeech=.]
+(ROOT
+  (S
+    (NP (NNP Stanford) (NNP University))
+    (VP (VBZ is)
+      (VP (VBN located)
+        (PP (IN in)
+          (NP (NNP California)))))
+    (. .)))
+
+root(ROOT-0, located-4)
+compound(University-2, Stanford-1)
+nsubjpass(located-4, University-2)
+auxpass(located-4, is-3)
+case(California-6, in-5)
+nmod:in(located-4, California-6)
+punct(located-4, .-7)
+
+Sentence #2 (10 tokens):
+It is a great university, founded in 1891.
+[Text=It CharacterOffsetBegin=46 CharacterOffsetEnd=48 PartOfSpeech=PRP]
+[Text=is CharacterOffsetBegin=49 CharacterOffsetEnd=51 PartOfSpeech=VBZ]
+[Text=a CharacterOffsetBegin=52 CharacterOffsetEnd=53 PartOfSpeech=DT]
+[Text=great CharacterOffsetBegin=54 CharacterOffsetEnd=59 PartOfSpeech=JJ]
+[Text=university CharacterOffsetBegin=60 CharacterOffsetEnd=70 PartOfSpeech=NN]
+[Text=, CharacterOffsetBegin=70 CharacterOffsetEnd=71 PartOfSpeech=,]
+[Text=founded CharacterOffsetBegin=72 CharacterOffsetEnd=79 PartOfSpeech=VBN]
+[Text=in CharacterOffsetBegin=80 CharacterOffsetEnd=82 PartOfSpeech=IN]
+[Text=1891 CharacterOffsetBegin=83 CharacterOffsetEnd=87 PartOfSpeech=CD]
+[Text=. CharacterOffsetBegin=87 CharacterOffsetEnd=88 PartOfSpeech=.]
+(ROOT
+  (S
+    (NP (PRP It))
+    (VP (VBZ is)
+      (NP
+        (NP (DT a) (JJ great) (NN university))
+        (, ,)
+        (VP (VBN founded)
+          (PP (IN in)
+            (NP (CD 1891))))))
+    (. .)))
+
+root(ROOT-0, university-5)
+nsubj(university-5, It-1)
+cop(university-5, is-2)
+det(university-5, a-3)
+amod(university-5, great-4)
+punct(university-5, ,-6)
+acl(university-5, founded-7)
+case(1891-9, in-8)
+nmod:in(founded-7, 1891-9)
+punct(university-5, .-10)
+
