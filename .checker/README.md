@@ -27,3 +27,13 @@ The target file: The correct answer of the output file.
 When the version of stanford-corenlp is updated in `build.sbt`
 and the result is different from the previous version, the script will output an error.
 
+## How to Travis CI
+
+Host of the repository can use Travis CI.
+For details on registering with Travis CI, please see Travis CI
+[Getting Stated](https://docs.travis-ci.com/user/getting-started/).
+
+## Update the target files
+
+When you update the target files, please run the script `.checker/text_generator/generate-all.sh`.
+For details, please read [here](text_generator/README.md).
