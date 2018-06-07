@@ -12,7 +12,7 @@ class BaseTest(TestCase):
                     exe: List[str],
                     input_text: str,
                     expected_text: str,
-                    output_file_ext='.xml': str):
+                    output_file_ext='.xml'):
         '''check the expected text and the result text are equal.
         '''
         # The constants 
