@@ -2,11 +2,5 @@
 
 set -e
 
-source ./.checker/scripts/set-env.sh
-
-# stanford-corenlp
-./.checker/stanford_corenlp/scripts/check_all.sh
-
-# jigg & stanford-corenlp
-./.checker/jigg/scripts/check_all.sh
-
+# run an unit test for the files under the directory `.checker/tests`.
+python -m unittest discover -s .checker/tests/
