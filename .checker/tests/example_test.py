@@ -1,58 +1,67 @@
-from unittest import TestCase
-
-import subprocess
-import sys
-import time
-
-from basetest import BaseTest
+\from basetest import BaseTest
 from constant import (
     JIGG_JAR,
     JIGG_MODEL_JAR,
-    CORENLP_JAR,
     CORENLP_MODEL_JAR
 )
 
 
 class TestName(BaseTest):
+    '''
+    This is an exmaple (or a based) file of unittest. You want
+    to add the new test file, please copy this file and edit
+    it as the following.
 
+    1. Copy this file
+       please, copy this file as the following command:
+       ```
+       cp example_test.py test_***.py
+       ```
+       You need to name the file like `test_***.py`. `***` is any name.
+       Note the head to the file name must give the `test`. For example,
+       `test_tokenize.py`.
+    2. Change the class name
+       For each the test case, You change the class name from
+       TestName to Test***. `***` is any name, for example,
+       Tokenize, Ssplit, ... etc.
+    3. Change three variables in the setUp() function
+       - self.input_text : a sample text using for test
+       - self.expected_text : an expected output text by test run
+       - self.exe : an execution command
+         You change the annotators term.
+    4. Change the function name.
+       For each the test case, You also change the function name
+       from test_name to test_***. `***` is any name, for example,
+       tokenize, ssplit, ... etc. Note that the head of the
+       function name must give the `test`.
+
+    For example, the case of the annotator `pos`:
+    1. file name -> test_pos.py
+    2. class name -> class TestPos(BaseTest):
+    3. variables ->
+       self.input_text = "This is a sample text."
+       self.expected_text = "[the result text]"
+       self.exe = 'jar -cp ' + self.classpath + ' jigg.pipeline.Pipeline ' + \
+                  ' -annotators corenlp[tokenize,ssplit,pos]'
+    4. function name -> def test_pos(self):
+    '''
     def setUp(self):
-        ## Set an input text
+        # Set an input (sample) text
         self.input_text = ""
 
-        ## Set an expected text
+        # Set an expected text
         self.expected_text = ""
 
-        ## Set the annotators
-        # For example,
-        # jigg: 'corenlp[tokenize,ssplit,pos]'
-        # corenlp: `tokenize,ssplit,pos`
-        self.annotators = 'corenlp[tokenize]'
+        # Set a class path
+        jar_files = [JIGG_JAR, JIGG_MODEL_JAR, CORENLP_MODEL_JAR]
+        self.classpath = ':'.join(jar_files)
 
-        ## Set a class path
-        # When you set the class path to the current directory (variable `current_dir`),
-        # please set the element of the `jar_files` list to empty.
-        # If you specify the class path directory, please change the `current_dir`        
-        jar_files = [JIGG_JAR, JIGG_MODEL_JAR]
-        current_dir = "*"        
-        self.classpath = ':'.join(jar_files) if len(jar_files) > 0 else current_dir
+        # Set a execution command
+        # You need to change the `-annotators` term according to the test case.
+        # For example, the case of annotation `lemma`, corenlp[tokenize,ssplit,pos,lemma].
+        self.exe = 'java -cp ' + self.classpath + ' jigg.pipeline.Pipeline ' \
+                   + '-annotators corenlp[tokenize]'
 
-        ## Set a pipeline command (?)
-        # For example,
-        # jigg: 'jigg.pipeline.Pipeline'
-        # corenlp: 'edu.stanford.nlp.pipeline.StanfordCoreNLP'
-        self.pipeline = "jigg.pipeline.Pipeline"
-        
-        ## Set a execution command
-        # The execution command is defined with the list type as the following.
-        self.exe = ['java',
-                    '-cp', self.classpath,
-                    self.pipeline,
-                    '-annotators', self.annotators]
-        
-    def test_tokenize(self):
-        input_text = self.input_text
-        expected_text = self.expected_text
-        annotators = self.annotators
-        exe = self.exe
-        
-        self.check_equal(exe, input_text, expected_text)
+    def test_name(self):
+        # A function check_equal() is defined on the superclass BaseTest.
+        self.check_equal(self.exe, self.input_text, self.expected_text)

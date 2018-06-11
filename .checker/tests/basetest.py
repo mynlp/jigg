@@ -1,41 +1,43 @@
 from unittest import TestCase
-from typing import List
-
 import subprocess
-import sys
-import time
+import xml.etree.ElementTree as ET
+
+from comparison import elements_equal
 
 class BaseTest(TestCase):
     '''
     '''
     def check_equal(self,
-                    exe: List[str],
+                    exe: str,
                     input_text: str,
-                    expected_text: str,
-                    output_file_ext='.xml'):
+                    expected_text: str):
         '''check the expected text and the result text are equal.
         '''
-        # The constants 
+        # The constants
         self.input_file_name = 'input_.txt'
-        self.output_file_name = self.input_file_name + output_file_ext
+        self.output_file_name = self.input_file_name + '.xml'
 
-        # Make an input file `input_.txt`
+        # Write to the input file `input_.txt`
         with open(self.input_file_name, mode='w', encoding='utf-8') as f:
             f.write(input_text)
 
-        # the command option
-        exe.append('-file')
-        exe.append(self.input_file_name)
+        # Add the command option
+        exe = exe + ' -file ' + self.input_file_name
 
         # The execution of the command `exe`. The output file is generated.
-        p = subprocess.Popen(exe).wait()
+        subprocess.Popen(exe, shell=True).wait()
 
-        # Read output file
+        # Read the output file
         result_text = ''
         with open(self.output_file_name, mode='r', encoding='utf-8') as f:
             result_text = f.read()
 
         # Remove the input file and the output file
         subprocess.run(['rm', self.input_file_name, self.output_file_name])
-        
-        self.assertEqual(expected_text, result_text)
+
+        self.assertTrue(elements_equal(ET.fromstring(result_text), ET.fromstring(expected_text)))
+
+    def check_any(self):
+        '''you can add any function.
+        '''
+        return None
