@@ -52,7 +52,7 @@ You need to rename and edit the `example_test.py` file according to test case.
    You open the copied file with any editor. Please, rename the class name `TestName(BaseTest)`
    `Test***(BaseTest)`. `***` is any name. 
    
-3. Change four variables in the setUp() function with the class  
+3. Change three variables in the `setUp()` function with the class  
    You change the following variables.
    - `self.input_text` : a sample text using for test  
    - `self.expceted_text` : an expected output text by test run  

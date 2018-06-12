@@ -1,4 +1,3 @@
-import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import Element
 
 
@@ -41,8 +40,8 @@ def _compare_tag(e1: Element, e2: Element) -> bool:
 
 def _compare_text(e1: Element, e2: Element) -> bool:
     # remove whitespace in text.
-    text1 = e1.text if e1.text == None else e1.text.strip()
-    text2 = e2.text if e2.text == None else e2.text.strip()
+    text1 = e1.text if e1.text is None else e1.text.strip()
+    text2 = e2.text if e2.text is None else e2.text.strip()
     return True if text1 == text2 else False
 
 

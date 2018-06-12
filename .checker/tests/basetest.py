@@ -4,6 +4,7 @@ import xml.etree.ElementTree as ET
 
 from comparison import elements_equal
 
+
 class BaseTest(TestCase):
     '''
     '''

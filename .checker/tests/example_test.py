@@ -1,4 +1,4 @@
-\from basetest import BaseTest
+from basetest import BaseTest
 from constant import (
     JIGG_JAR,
     JIGG_MODEL_JAR,
