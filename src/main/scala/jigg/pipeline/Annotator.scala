@@ -266,7 +266,7 @@ trait IOCreator extends EasyIO {
       safeWriteWithFlush(i) match {
         case Left(e) =>
           val msg = readAll() mkString "\n"
-          launchError(s"output:\n$msg")
+          launchError(s"$launchErrorMessage \nOutput of the command:\n$msg")
         case _ =>
       }
       readUntil(u) match {
@@ -285,7 +285,6 @@ trait IOCreator extends EasyIO {
 $msg
 """
       throw new ArgumentError(fullMsg)
-      // argumentError("command", fullMsg) // command is not a generic argument always available
     }
   }
 
