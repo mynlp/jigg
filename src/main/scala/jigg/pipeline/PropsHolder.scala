@@ -113,8 +113,14 @@ trait PropsHolder { outer =>
       case missings =>
         val comment = "Missing required option(s):"
         val usage = missings map(_ + "") mkString("\n")
-        throw new ArgumentError(comment + "\n" + usage)
-    }
+        throw new ArgumentError(s"""
+$comment
+
+$usage
+------------------------------------------
+
+$description
+""")}
   }
 
   def description: String = propertyMessage
