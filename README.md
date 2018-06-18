@@ -238,7 +238,7 @@ In Java, add the following lines on `pom.xml`:
   <dependency>
     <groupId>com.github.mynlp</groupId>
     <artifactId>jigg</artifactId>
-    <version>0.7.1</version>
+    <version>0.7.2</version>
   </dependency>
 </dependencies>
 ```
@@ -290,11 +290,8 @@ On the result XML, all annotated elements (e.g., `sentence`, `token`, and `NE`) 
 
 ## Build your own jar (advanced)
 
-Jigg is developed mainly on `develop` branch. If you want to try the latest version, you can build your own jar from the source codes on this branch:
-
 ```bash
 $ git clone git@github.com:mynlp/jigg.git && cd jigg
-$ git checkout develop
 $ ./bin/sbt assembly
 ```
 
@@ -321,7 +318,7 @@ To install docker, follow the [instruction](https://docs.docker.com/engine/insta
 To build and run PipelineServer container:
 
 ```bash
-git clone -b develop --depth 1 git@github.com:mynlp/jigg.git && cd jigg
+git clone --depth 1 git@github.com:mynlp/jigg.git && cd jigg
 time docker-compose build
 docker-compose up -d
 ```
