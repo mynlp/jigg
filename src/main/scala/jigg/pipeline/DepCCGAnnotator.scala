@@ -69,12 +69,11 @@ class DepCCGAnnotator(override val name: String, override val props: Properties)
 """
 
   override def init() = {
+    checkArgument()
     System.err.println(s"Loading depccg... (${nThreads} instances)")
     localAnnotators
     System.err.println("done.")
   }
-
-  checkArgument()
 
   def checkArgument() = {
     val src = new File(srcdir)
