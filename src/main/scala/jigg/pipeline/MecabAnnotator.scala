@@ -37,7 +37,9 @@ abstract class MecabAnnotator(override val name: String, override val props: Pro
   override def description = {
 
     def keyName = makeFullName("command")
-    def helpMessage = MecabAnnotator.getHelp(command).map("    " + _).mkString("\n")
+    def helpMessage = MecabAnnotator.getHelp(command) map { lines =>
+      lines map ("    " + _) mkString "\n"
+    }
 
     s"""${super.description}
 
@@ -232,21 +234,30 @@ object MecabAnnotator extends AnnotatorCompanion[MecabAnnotator] {
   }
 
   def currentDictionary(cmd: String): Option[SystemDic] = {
-    try {
-      val config = getConfig(cmd)
-      val dicdirLine = config.find(_.startsWith("dicdir:"))
+    val config = getConfig(cmd)
+    val dicdirLine = config.flatMap { c =>
+      c.find(_.startsWith("dicdir:"))
+    }
 
-      dicdirLine map { l => l.drop(l.lastIndexOf('/') + 1) } map {
-        // NOTE: we use slice to pick up a variant of ipadic, e.g., mecab-ipadic-neologd.
-        // We also assume naist-jdic is a variant of ipadic.
-        case dicdir if dicdir.containsSlice("ipadic") || dicdir.containsSlice("naist-jdic") =>
-          SystemDic.ipadic
-        case dicdir if dicdir.containsSlice("jumandic") => SystemDic.jumandic
-        case dicdir if dicdir.containsSlice("unidic") => SystemDic.unidic
-      }
-    } catch { case e: Throwable => None }
+    val dicpath = dicdirLine.map { l =>
+      val d = l.split(' ')(1)
+      Process(s"readlink -f $d").!!
+    }
+
+    dicpath map { l => l.drop(l.lastIndexOf('/') + 1) } map {
+      // NOTE: we use slice to pick up a variant of ipadic, e.g., mecab-ipadic-neologd.
+      // We also assume naist-jdic is a variant of ipadic.
+      case dicdir if dicdir.containsSlice("ipadic") || dicdir.containsSlice("naist-jdic") =>
+        SystemDic.ipadic
+      case dicdir if dicdir.containsSlice("juman") => SystemDic.jumandic
+      case dicdir if dicdir.containsSlice("unidic") => SystemDic.unidic
+    }
   }
 
-  def getConfig(cmd: String) = Process(cmd + " --dump-config").lineStream_!
-  def getHelp(cmd: String) = Process(cmd + " --help").lineStream_!
+  def getConfig(cmd: String) = safeExec(cmd + " --dump-config")
+  def getHelp(cmd: String) = safeExec(cmd + " --help")
+
+  private def safeExec(cmd: String): Option[Stream[String]] =
+    scala.util.control.Exception.catching(classOf[java.io.IOException]) opt (
+      Process(cmd).lineStream_!)
 }
