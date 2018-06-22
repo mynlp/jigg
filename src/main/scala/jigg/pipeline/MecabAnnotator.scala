@@ -16,6 +16,7 @@ package jigg.pipeline
  limitations under the License.
 */
 
+import java.io.File
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.Properties
 import scala.annotation.tailrec
@@ -241,7 +242,7 @@ object MecabAnnotator extends AnnotatorCompanion[MecabAnnotator] {
 
     val dicpath = dicdirLine.map { l =>
       val d = l.split(' ')(1)
-      Process(s"readlink -f $d").!!
+      new File(d).getCanonicalPath.toString
     }
 
     dicpath map { l => l.drop(l.lastIndexOf('/') + 1) } map {
