@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/mynlp/jigg.svg?branch=master)](https://travis-ci.org/mynlp/jigg)
+
 # Jigg
 
 Jigg is a natural language processing pipeline framework on JVM languages (mainly for Scala), which is easy to use and extensible. Using Jigg, one can obtain several linguistic annotations on a given input from POS tagging, parsing, and coreference resolution from command-lines. The main features include:
