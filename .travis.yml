@@ -24,10 +24,10 @@ install:
 
 before_script:
   - ./.checker/scripts/install-jar.sh
- 
+
 script:
   - .checker/scripts/run-test.sh
 
 branches:
   only:
-    - feature/ci
+    - master
