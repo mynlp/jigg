@@ -1,0 +1,33 @@
+language: scala
+
+scala:
+  -  2.11.8
+
+env:
+  - ANNOTATORS=corenlp
+  - ANNOTATORS=udpipe
+  - ANNOTATORS=depccg
+  - ANNOTATORS=juman
+  - ANNOTATORS=knp
+  - ANNOTATORS=mecab
+  - ANNOTATORS=cabocha
+
+before_install:
+  - ./.checker/scripts/before-install.sh
+  - sudo apt install python3.4-venv python3.4-dev
+  - python3 -m venv .venv
+  - source .venv/bin/activate
+  - pip install --upgrade pip
+
+install:
+  - ./.checker/scripts/install-annotators.sh
+
+before_script:
+  - ./.checker/scripts/install-jar.sh
+ 
+script:
+  - .checker/scripts/run-test.sh
+
+branches:
+  only:
+    - feature/ci
