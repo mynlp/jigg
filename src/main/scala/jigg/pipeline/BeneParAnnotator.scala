@@ -136,4 +136,7 @@ class BeneParAnnotator(override val name: String, override val props: Properties
       benepar.readUntil(_ == "END").dropRight(1)
     }
   }
+
+  override def requires = Set(Requirement.Ssplit, Requirement.Tokenize, Requirement.POS)
+  override def requirementsSatisfied = Set(Requirement.Parse)
 }
