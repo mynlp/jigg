@@ -76,9 +76,9 @@ class BeneParAnnotator(override val name: String, override val props: Properties
 """
 
   override def init() = {
-    System.err.println(s"Loading benepar... (${nThreads} instances)")
+    System.err.print(s"Loading benepar... (${nThreads} instances)")
     localAnnotators
-    System.err.println("done.")
+    System.err.println(" done.")
   }
 
   def mkLocalAnnotator = new LocalBeneParAnnotator
@@ -118,7 +118,6 @@ class BeneParAnnotator(override val name: String, override val props: Properties
       val postags = tokens map (_ \@ "pos")
 
       val tree = runParser(mkInput(sentence)).mkString("")
-      println(tree)
       val node = TreesUtil.streeToNode(tree, sentence, name)
 
       sentence addChild node
