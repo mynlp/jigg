@@ -117,7 +117,7 @@ trait BerkeleyParserAnnotator extends AnnotatingSentencesInParallel {
   private def loadParserData(): ParserData = {
     import IOUtil._
     def safeOpen(path: String) =
-      try Some(openBinIn(defaultGrFilePath, gzipped=true))
+      try Some(openBinIn(path, gzipped=true))
       catch { case e: Throwable => None }
 
     val in = grFileName match {
