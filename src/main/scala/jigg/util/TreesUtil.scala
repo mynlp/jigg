@@ -37,7 +37,8 @@ object TreesUtil {
 
       def collectChildren(curChildren: List[String], cur: Int): (Seq[String], Int) =
         tokens(cur) match {
-          case ")" => (curChildren.reverse, cur)
+          case ")" =>
+            (curChildren.reverse, cur)
           case "(" =>
             val (nextChildId, nextIdx) = readTopdown(cur)
             collectChildren(nextChildId :: curChildren, nextIdx)
@@ -45,18 +46,18 @@ object TreesUtil {
 
       tokens(idx) match {
         case "(" =>
-          def skip_paren(i: Int = 0): Int = {
-            if (tokens(idx + i) == "(") skip_paren(i + 1)
+          def skipParen(i: Int = 0): Int = {
+            if (tokens(idx + i) == "(") skipParen(i + 1)
             else i
           }
-          val paren_count = skip_paren()
+          val parenCount = skipParen()
 
-          val label_idx = idx + paren_count
-          val label = tokens(label_idx)
+          val labelIdx = idx + parenCount
+          val label = tokens(labelIdx)
 
-          val (children, nextIdx) = tokens(label_idx + 1) match {
-            case "(" => collectChildren(Nil, label_idx + 1)
-            case word => (Nil, label_idx + 1 + 1)
+          val (children, closeIdx) = tokens(labelIdx + 1) match {
+            case "(" => collectChildren(Nil, labelIdx + 1)
+            case word => (Nil, labelIdx + 1 + 1)
           }
           val thisId = children match {
             case Nil => nextTokId
@@ -66,8 +67,8 @@ object TreesUtil {
             val childStr = children mkString " "
             spans += <span id={ thisId } symbol={ label } children={ childStr }/>
           }
-          for (i <- 0 until paren_count) { assert(tokens(nextIdx + i) == ")") }
-          (thisId, nextIdx + paren_count)
+          for (i <- 0 until parenCount) { assert(tokens(closeIdx + i) == ")") }
+          (thisId, closeIdx + parenCount)
       }
     }
 
