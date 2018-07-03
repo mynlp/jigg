@@ -35,7 +35,7 @@ class DepCCGAnnotator(override val name: String, override val props: Properties)
   @Prop(gloss = "Path to the model (e.g., tri_headfirst directory)", required = true) var model = ""
   @Prop(gloss = "Language (en|ja)") var lang = "en"
   @Prop(gloss = "Outputs k-best derivations if this value > 1") var kBest = 1
-  @Prop(gloss = "Path 'activate' script of the virtual environment that you wish to run on depccg") var venv = ""
+  @Prop(gloss = "Path to 'activate' script of the virtual environment that you wish to run on depccg") var venv = ""
   @Prop(gloss = "If true, launch multiple depccgs for parallel parsing. See -help depccg for more details.") var parallel = false
   readProps()
 

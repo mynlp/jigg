@@ -35,7 +35,7 @@ trait UDPipeAnnotator extends Annotator with IOCreator {
 
   type CoNLLSentence = Seq[Seq[String]]
 
-  @Prop(gloss = "Path 'activate' script of the virtual environment that you wish to run on depccg") var venv = ""
+  @Prop(gloss = "Path to 'activate' script of the virtual environment that you wish to run on depccg") var venv = ""
   @Prop(gloss = "Path to the model file (e.g., english-ud-2.0-170801.udpipe)", required = true) var model = ""
   readProps()
 
