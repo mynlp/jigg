@@ -80,7 +80,8 @@ class Pipeline(val properties: Properties = new Properties) extends PropsHolder 
     "candc" -> classOf[CandCAnnotator],
     "candcpos" -> classOf[CandCPOSAnnotator],
     "udpipe" -> classOf[UDPipeAnnotator],
-    "benepar" -> classOf[BeneParAnnotator]
+    "benepar" -> classOf[BeneParAnnotator],
+    "stanfordtypeddep" -> classOf[StanfordTypedDependenciesAnnotator]
   )
 
   // TODO: should document ID be given here?  Somewhere else?
