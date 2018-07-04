@@ -57,7 +57,7 @@ class TestCabocha(BaseTest):
   </document>
 </root>"""
 
-        self.exe = 'runMain jigg.pipeline.Pipeline -annotators ssplit,mecab,cacocha '
+        self.exe = 'runMain jigg.pipeline.Pipeline -annotators ssplit,mecab,cabocha '
 
     def test_cabocha(self):
         # A function check_equal() is defined on the superclass BaseTest.

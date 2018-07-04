@@ -84,7 +84,7 @@ class TestDepccgCcg(BaseTest):
   </document>
 </root>"""
 
-        self.exe = 'sbt jigg.pipeline.Pipeline ' \
+        self.exe = 'runMain jigg.pipeline.Pipeline ' \
                    + '-annotators corenlp[tokenize,ssplit],depccg ' \
                    + '-depccg.model depccg/models/tri_headfirst/ ' \
                    + '-depccg.srcdir depccg/src/ '
