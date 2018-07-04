@@ -2,11 +2,6 @@ import sys
 sys.path.append(".checker/tests")
 
 from basetest import BaseTest
-from constant import (
-    JIGG_JAR,
-    JIGG_MODEL_JAR,
-    CORENLP_MODEL_JAR
-)
 
 
 class TestKNP(BaseTest):
@@ -117,11 +112,7 @@ class TestKNP(BaseTest):
   </document>
 </root>"""
 
-        jar_files = [JIGG_JAR, JIGG_MODEL_JAR, CORENLP_MODEL_JAR]
-        self.classpath = ':'.join(jar_files)
-
-        self.exe = 'java -cp ' + self.classpath + ' jigg.pipeline.Pipeline ' \
-                   + '-annotators ssplit,juman,knp'
+        self.exe = 'runMain jigg.pipeline.Pipeline -annotators ssplit,juman,knp'
 
     def test_knp(self):
         self.check_equal(self.exe, self.input_text, self.expected_text)

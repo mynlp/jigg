@@ -25,8 +25,8 @@ class BaseTest(TestCase):
         # Add the command option
         exe = exe + ' -file ' + self.input_file_name
 
-        # The execution of the command `exe`. The output file is generated.
-        subprocess.Popen(exe, shell=True).wait()
+        # The execution of the command `sbt "exe"`. The output file is generated.
+        subprocess.Popen('sbt "{}"'.format(exe), shell=True).wait()
 
         # Read the output file
         result_text = ''

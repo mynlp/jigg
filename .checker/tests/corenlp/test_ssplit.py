@@ -2,11 +2,6 @@ import sys
 sys.path.append(".checker/tests")
 
 from basetest import BaseTest
-from constant import (
-    JIGG_JAR,
-    JIGG_MODEL_JAR,
-    CORENLP_MODEL_JAR
-)
 
 
 class TestSsplit(BaseTest):
@@ -15,8 +10,7 @@ class TestSsplit(BaseTest):
 
         self.input_text = "Stanford University is located in California. It is a great university, founded in 1891."
 
-        self.expected_text = \
-"""<?xml version='1.0' encoding='UTF-8'?>
+        self.expected_text = """<?xml version='1.0' encoding='UTF-8'?>
 <root>
   <document id="d0">
     <sentences>
@@ -51,13 +45,7 @@ class TestSsplit(BaseTest):
   </document>
 </root>"""
 
-        jar_files = [JIGG_JAR, JIGG_MODEL_JAR, CORENLP_MODEL_JAR]
-        self.classpath = ':'.join(jar_files)
-
-        self.pipeline = "jigg.pipeline.Pipeline"
-
-        self.exe = 'java -cp ' + self.classpath + ' jigg.pipeline.Pipeline ' \
-                   + '-annotators corenlp[tokenize,ssplit]'
+        self.exe = 'runMain jigg.pipeline.Pipeline -annotators corenlp[tokenize,ssplit]'
 
     def test_ssplit(self):
         self.check_equal(self.exe, self.input_text, self.expected_text)

@@ -2,21 +2,14 @@ import sys
 sys.path.append(".checker/tests")
 
 from basetest import BaseTest
-from constant import (
-    JIGG_JAR,
-    JIGG_MODEL_JAR,
-    CORENLP_MODEL_JAR
-)
 
 
 class TestMecab(BaseTest):
     '''
     '''
     def setUp(self):
-        # Set an input (sample) text
         self.input_text = "太郎はこの本を二郎を見た女性に渡した。"
 
-        # Set an expected text
         self.expected_text = """<?xml version='1.0' encoding='UTF-8'?>
 <root>
   <document id="d0">
@@ -45,16 +38,7 @@ class TestMecab(BaseTest):
   </document>
 </root>"""
 
-        # Set a class path
-        jar_files = [JIGG_JAR, JIGG_MODEL_JAR, CORENLP_MODEL_JAR]
-        self.classpath = ':'.join(jar_files)
-
-        # Set a execution command
-        # You need to change the `-annotators` term according to the test case.
-        # For example, the case of annotation `lemma`, corenlp[tokenize,ssplit,pos,lemma].
-        self.exe = 'java -cp ' + self.classpath + ' jigg.pipeline.Pipeline ' \
-                   + '-annotators ssplit,mecab'
+        self.exe = 'runMain jigg.pipeline.Pipeline -annotators ssplit,mecab'
 
     def test_mecab(self):
-        # A function check_equal() is defined on the superclass BaseTest.
         self.check_equal(self.exe, self.input_text, self.expected_text)
