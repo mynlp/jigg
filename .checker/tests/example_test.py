@@ -2,11 +2,6 @@ import sys
 sys.path.append(".checker/tests")
 
 from basetest import BaseTest
-from constant import (
-    JIGG_JAR,
-    JIGG_MODEL_JAR,
-    CORENLP_MODEL_JAR
-)
 
 
 class TestName(BaseTest):
@@ -18,8 +13,9 @@ class TestName(BaseTest):
     1. Copy this file
        please, copy this file as the following command:
        ```
-       cp example_test.py test_***.py
+       cp example_test.py {ANNOTATORS}/test_***.py
        ```
+       The {ANNOTATORS} is annotator name.
        You need to name the file like `test_***.py`. `***` is any name.
        Note the head to the file name must give the `test`. For example,
        `test_tokenize.py`.
@@ -31,7 +27,9 @@ class TestName(BaseTest):
        - self.input_text : a sample text using for test
        - self.expected_text : an expected output text by test run
        - self.exe : an execution command
-         You change the annotators term.
+         This program runs with the sbt runMain command. For example,
+         `sbt "runMain jigg.pipeline.Pipeline -annotators corenlp[tokenize]"`.
+         You set the part of "runMain ~" in the variable `self.exe`.
     4. Change the function name.
        For each the test case, You also change the function name
        from test_name to test_***. `***` is any name, for example,
@@ -44,8 +42,7 @@ class TestName(BaseTest):
     3. variables ->
        self.input_text = "This is a sample text."
        self.expected_text = "[the result text]"
-       self.exe = 'jar -cp ' + self.classpath + ' jigg.pipeline.Pipeline ' + \
-                  ' -annotators corenlp[tokenize,ssplit,pos]'
+       self.exe = 'runMain jigg.pipeline.Pipeline -annotators corenlp[tokenize,ssplit,pos]'
     4. function name -> def test_pos(self):
     '''
     def setUp(self):
@@ -55,15 +52,10 @@ class TestName(BaseTest):
         # Set an expected text
         self.expected_text = ""
 
-        # Set a class path
-        jar_files = [JIGG_JAR, JIGG_MODEL_JAR, CORENLP_MODEL_JAR]
-        self.classpath = ':'.join(jar_files)
-
         # Set a execution command
         # You need to change the `-annotators` term according to the test case.
         # For example, the case of annotation `lemma`, corenlp[tokenize,ssplit,pos,lemma].
-        self.exe = 'java -cp ' + self.classpath + ' jigg.pipeline.Pipeline ' \
-                   + '-annotators corenlp[tokenize]'
+        self.exe = 'runMain jigg.pipeline.Pipeline -annotators corenlp[tokenize]'
 
     def test_name(self):
         # A function check_equal() is defined on the superclass BaseTest.

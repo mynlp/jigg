@@ -2,20 +2,13 @@ import sys
 sys.path.append(".checker/tests")
 
 from basetest import BaseTest
-from constant import (
-    JIGG_JAR,
-    JIGG_MODEL_JAR,
-    CORENLP_MODEL_JAR
-)
 
 
 class TestDepccgCcg(BaseTest):
 
     def setUp(self):
-        # Set an input (sample) text
         self.input_text = "Stanford University is located in California. It is a great university, founded in 1891."
 
-        # Set an expected text
         self.expected_text = r"""<?xml version='1.0' encoding='UTF-8'?>
 <root>
   <document id="d0">
@@ -91,15 +84,10 @@ class TestDepccgCcg(BaseTest):
   </document>
 </root>"""
 
-        # Set a class path
-        jar_files = [JIGG_JAR, JIGG_MODEL_JAR, CORENLP_MODEL_JAR]
-        self.classpath = ':'.join(jar_files)
-
-        self.exe = 'java -cp ' + self.classpath + ' jigg.pipeline.Pipeline ' \
+        self.exe = 'sbt jigg.pipeline.Pipeline ' \
                    + '-annotators corenlp[tokenize,ssplit],depccg ' \
                    + '-depccg.model depccg/models/tri_headfirst/ ' \
-                   + '-depccg.srcdir depccg/src/'
+                   + '-depccg.srcdir depccg/src/ '
 
     def test_depccg_ccg(self):
-        # A function check_equal() is defined on the superclass BaseTest.
         self.check_equal(self.exe, self.input_text, self.expected_text)

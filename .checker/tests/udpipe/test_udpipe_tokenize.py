@@ -2,18 +2,13 @@ import sys
 sys.path.append(".checker/tests")
 
 from basetest import BaseTest
-from constant import (
-    JIGG_JAR,
-    JIGG_MODEL_JAR,
-    CORENLP_MODEL_JAR)
+
 
 class TestUDpipeTokenize(BaseTest):
 
     def setUp(self):
-        # Set an input (sample) text
         self.input_text = "Stanford University is located in California. It is a great university, founded in 1891."
 
-        # Set an expected text
         self.expected_text = r"""<?xml version='1.0' encoding='UTF-8'?>
 <root>
   <document id="d0">
@@ -47,17 +42,11 @@ class TestUDpipeTokenize(BaseTest):
       </sentence>
     </sentences>
   </document>
-</root>
-"""
+</root>"""
 
-        # Set a class path
-        jar_files = [JIGG_JAR, JIGG_MODEL_JAR, CORENLP_MODEL_JAR]
-        self.classpath = ':'.join(jar_files)
-
-        self.exe = 'java -cp ' + self.classpath + ' jigg.pipeline.Pipeline ' \
+        self.exe = 'runMain jigg.pipeline.Pipeline ' \
                    + '-annotators udpipe[tokenize] ' \
                    + '-udpipe.model udpipe-ud-model/english-ud-2.0-170801.udpipe '
 
     def test_udpipe_tokenize(self):
-        # A function check_equal() is defined on the superclass BaseTest.
         self.check_equal(self.exe, self.input_text, self.expected_text)

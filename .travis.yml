@@ -22,9 +22,6 @@ before_install:
 install:
   - ./.checker/scripts/install-annotators.sh
 
-before_script:
-  - ./.checker/scripts/install-jar.sh
-
 script:
   - .checker/scripts/run-test.sh
 
