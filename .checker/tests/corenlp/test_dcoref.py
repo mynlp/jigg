@@ -17,7 +17,7 @@ class TestDcoref(BaseTest):
         Joe Smith was born in California.
         <NEs annotators="corenlp">
           <NE tokens="t0 t1" label="PERSON" id="s0_corene0"/>
-          <NE tokens="t5" label="LOCATION" id="s0_corene1"/>
+          <NE tokens="t5" label="STATE_OR_PROVINCE" id="s0_corene1"/>
         </NEs>
         <tokens annotators="corenlp">
           <token form="Joe" id="t0" characterOffsetBegin="0" characterOffsetEnd="3" lemma="Joe" pos="NNP"/>
@@ -86,8 +86,8 @@ class TestDcoref(BaseTest):
         In 2017, he went to Paris, France in the summer.
         <NEs annotators="corenlp">
           <NE tokens="t8" normalizedLabel="2017" label="DATE" id="s1_corene0"/>
-          <NE tokens="t13" label="LOCATION" id="s1_corene1"/>
-          <NE tokens="t15" label="LOCATION" id="s1_corene2"/>
+          <NE tokens="t13" label="CITY" id="s1_corene1"/>
+          <NE tokens="t15" label="COUNTRY" id="s1_corene2"/>
           <NE tokens="t18" normalizedLabel="XXXX-SU" label="DATE" id="s1_corene3"/>
         </NEs>
         <tokens annotators="corenlp">
@@ -207,87 +207,90 @@ class TestDcoref(BaseTest):
           <token form="pm" id="t25" characterOffsetBegin="23" characterOffsetEnd="25" lemma="pm" pos="NN"/>
           <token form="on" id="t26" characterOffsetBegin="26" characterOffsetEnd="28" lemma="on" pos="IN"/>
           <token form="July" id="t27" characterOffsetBegin="29" characterOffsetEnd="33" lemma="July" pos="NNP"/>
-          <token form="10th" id="t28" characterOffsetBegin="34" characterOffsetEnd="38" lemma="10th" pos="CD"/>
+          <token form="10th" id="t28" characterOffsetBegin="34" characterOffsetEnd="38" lemma="10th" pos="JJ"/>
           <token form="," id="t29" characterOffsetBegin="38" characterOffsetEnd="39" lemma="," pos=","/>
           <token form="2017" id="t30" characterOffsetBegin="40" characterOffsetEnd="44" lemma="2017" pos="CD"/>
           <token form="." id="t31" characterOffsetBegin="44" characterOffsetEnd="45" lemma="." pos="."/>
         </tokens>
-        <parse annotators="corenlp" root="sp21">
+        <parse annotators="corenlp" root="sp24">
           <span children="t20 t21" symbol="NP" id="sp15"/>
           <span children="t24 t25" symbol="NP" id="sp16"/>
-          <span children="t23 sp16" symbol="PP" id="sp17"/>
-          <span children="t27 t28 t29 t30" symbol="NP" id="sp18"/>
-          <span children="t26 sp18" symbol="PP" id="sp19"/>
-          <span children="t22 sp17 sp19" symbol="VP" id="sp20"/>
-          <span children="sp15 sp20 t31" symbol="S" id="sp21"/>
+          <span children="t27 t28" symbol="NP" id="sp17"/>
+          <span children="t26 sp17" symbol="PP" id="sp18"/>
+          <span children="sp16 sp18" symbol="NP" id="sp19"/>
+          <span children="t30" symbol="NP" id="sp20"/>
+          <span children="sp19 t29 sp20" symbol="NP" id="sp21"/>
+          <span children="t23 sp21" symbol="PP" id="sp22"/>
+          <span children="t22 sp22" symbol="VP" id="sp23"/>
+          <span children="sp15 sp23 t31" symbol="S" id="sp24"/>
         </parse>
         <dependencies annotators="corenlp" type="basic">
           <dependency deprel="root" dependent="t22" head="ROOT" id="dep20"/>
-          <dependency deprel="case" dependent="t23" head="t25" id="dep21"/>
-          <dependency deprel="nummod" dependent="t24" head="t25" id="dep22"/>
-          <dependency deprel="case" dependent="t26" head="t27" id="dep23"/>
-          <dependency deprel="nummod" dependent="t28" head="t27" id="dep24"/>
-          <dependency deprel="punct" dependent="t29" head="t27" id="dep25"/>
-          <dependency deprel="nummod" dependent="t30" head="t27" id="dep26"/>
-          <dependency deprel="nmod:poss" dependent="t20" head="t21" id="dep27"/>
-          <dependency deprel="nmod" dependent="t25" head="t22" id="dep28"/>
-          <dependency deprel="nmod" dependent="t27" head="t22" id="dep29"/>
+          <dependency deprel="nmod" dependent="t27" head="t25" id="dep21"/>
+          <dependency deprel="punct" dependent="t29" head="t25" id="dep22"/>
+          <dependency deprel="amod" dependent="t30" head="t25" id="dep23"/>
+          <dependency deprel="case" dependent="t23" head="t25" id="dep24"/>
+          <dependency deprel="nummod" dependent="t24" head="t25" id="dep25"/>
+          <dependency deprel="case" dependent="t26" head="t27" id="dep26"/>
+          <dependency deprel="amod" dependent="t28" head="t27" id="dep27"/>
+          <dependency deprel="nmod:poss" dependent="t20" head="t21" id="dep28"/>
+          <dependency deprel="nmod" dependent="t25" head="t22" id="dep29"/>
           <dependency deprel="punct" dependent="t31" head="t22" id="dep30"/>
           <dependency deprel="nsubj" dependent="t21" head="t22" id="dep31"/>
         </dependencies>
         <dependencies annotators="corenlp" type="collapsed">
           <dependency deprel="root" dependent="t22" head="ROOT" id="dep70"/>
-          <dependency deprel="case" dependent="t23" head="t25" id="dep71"/>
-          <dependency deprel="nummod" dependent="t24" head="t25" id="dep72"/>
-          <dependency deprel="case" dependent="t26" head="t27" id="dep73"/>
-          <dependency deprel="nummod" dependent="t28" head="t27" id="dep74"/>
-          <dependency deprel="punct" dependent="t29" head="t27" id="dep75"/>
-          <dependency deprel="nummod" dependent="t30" head="t27" id="dep76"/>
-          <dependency deprel="nmod:poss" dependent="t20" head="t21" id="dep77"/>
-          <dependency deprel="nmod" dependent="t25" head="t22" id="dep78"/>
-          <dependency deprel="nmod" dependent="t27" head="t22" id="dep79"/>
+          <dependency deprel="nmod" dependent="t27" head="t25" id="dep71"/>
+          <dependency deprel="punct" dependent="t29" head="t25" id="dep72"/>
+          <dependency deprel="amod" dependent="t30" head="t25" id="dep73"/>
+          <dependency deprel="case" dependent="t23" head="t25" id="dep74"/>
+          <dependency deprel="nummod" dependent="t24" head="t25" id="dep75"/>
+          <dependency deprel="case" dependent="t26" head="t27" id="dep76"/>
+          <dependency deprel="amod" dependent="t28" head="t27" id="dep77"/>
+          <dependency deprel="nmod:poss" dependent="t20" head="t21" id="dep78"/>
+          <dependency deprel="nmod" dependent="t25" head="t22" id="dep79"/>
           <dependency deprel="punct" dependent="t31" head="t22" id="dep80"/>
           <dependency deprel="nsubj" dependent="t21" head="t22" id="dep81"/>
         </dependencies>
         <dependencies annotators="corenlp" type="collapsed-ccprocessed">
           <dependency deprel="root" dependent="t22" head="ROOT" id="dep120"/>
-          <dependency deprel="case" dependent="t23" head="t25" id="dep121"/>
-          <dependency deprel="nummod" dependent="t24" head="t25" id="dep122"/>
-          <dependency deprel="case" dependent="t26" head="t27" id="dep123"/>
-          <dependency deprel="nummod" dependent="t28" head="t27" id="dep124"/>
-          <dependency deprel="punct" dependent="t29" head="t27" id="dep125"/>
-          <dependency deprel="nummod" dependent="t30" head="t27" id="dep126"/>
-          <dependency deprel="nmod:poss" dependent="t20" head="t21" id="dep127"/>
-          <dependency deprel="nmod" dependent="t25" head="t22" id="dep128"/>
-          <dependency deprel="nmod" dependent="t27" head="t22" id="dep129"/>
+          <dependency deprel="nmod" dependent="t27" head="t25" id="dep121"/>
+          <dependency deprel="punct" dependent="t29" head="t25" id="dep122"/>
+          <dependency deprel="amod" dependent="t30" head="t25" id="dep123"/>
+          <dependency deprel="case" dependent="t23" head="t25" id="dep124"/>
+          <dependency deprel="nummod" dependent="t24" head="t25" id="dep125"/>
+          <dependency deprel="case" dependent="t26" head="t27" id="dep126"/>
+          <dependency deprel="amod" dependent="t28" head="t27" id="dep127"/>
+          <dependency deprel="nmod:poss" dependent="t20" head="t21" id="dep128"/>
+          <dependency deprel="nmod" dependent="t25" head="t22" id="dep129"/>
           <dependency deprel="punct" dependent="t31" head="t22" id="dep130"/>
           <dependency deprel="nsubj" dependent="t21" head="t22" id="dep131"/>
         </dependencies>
         <dependencies annotators="corenlp" type="enhanced">
           <dependency deprel="root" dependent="t22" head="ROOT" id="dep170"/>
-          <dependency deprel="case" dependent="t23" head="t25" id="dep171"/>
-          <dependency deprel="nummod" dependent="t24" head="t25" id="dep172"/>
-          <dependency deprel="case" dependent="t26" head="t27" id="dep173"/>
-          <dependency deprel="nummod" dependent="t28" head="t27" id="dep174"/>
-          <dependency deprel="punct" dependent="t29" head="t27" id="dep175"/>
-          <dependency deprel="nummod" dependent="t30" head="t27" id="dep176"/>
-          <dependency deprel="nmod:poss" dependent="t20" head="t21" id="dep177"/>
-          <dependency deprel="nmod" dependent="t25" head="t22" id="dep178"/>
-          <dependency deprel="nmod" dependent="t27" head="t22" id="dep179"/>
+          <dependency deprel="nmod" dependent="t27" head="t25" id="dep171"/>
+          <dependency deprel="punct" dependent="t29" head="t25" id="dep172"/>
+          <dependency deprel="amod" dependent="t30" head="t25" id="dep173"/>
+          <dependency deprel="case" dependent="t23" head="t25" id="dep174"/>
+          <dependency deprel="nummod" dependent="t24" head="t25" id="dep175"/>
+          <dependency deprel="case" dependent="t26" head="t27" id="dep176"/>
+          <dependency deprel="amod" dependent="t28" head="t27" id="dep177"/>
+          <dependency deprel="nmod:poss" dependent="t20" head="t21" id="dep178"/>
+          <dependency deprel="nmod" dependent="t25" head="t22" id="dep179"/>
           <dependency deprel="punct" dependent="t31" head="t22" id="dep180"/>
           <dependency deprel="nsubj" dependent="t21" head="t22" id="dep181"/>
         </dependencies>
         <dependencies annotators="corenlp" type="enhanced-plus-plus">
           <dependency deprel="root" dependent="t22" head="ROOT" id="dep220"/>
-          <dependency deprel="case" dependent="t23" head="t25" id="dep221"/>
-          <dependency deprel="nummod" dependent="t24" head="t25" id="dep222"/>
-          <dependency deprel="case" dependent="t26" head="t27" id="dep223"/>
-          <dependency deprel="nummod" dependent="t28" head="t27" id="dep224"/>
-          <dependency deprel="punct" dependent="t29" head="t27" id="dep225"/>
-          <dependency deprel="nummod" dependent="t30" head="t27" id="dep226"/>
-          <dependency deprel="nmod:poss" dependent="t20" head="t21" id="dep227"/>
-          <dependency deprel="nmod" dependent="t25" head="t22" id="dep228"/>
-          <dependency deprel="nmod" dependent="t27" head="t22" id="dep229"/>
+          <dependency deprel="nmod" dependent="t27" head="t25" id="dep221"/>
+          <dependency deprel="punct" dependent="t29" head="t25" id="dep222"/>
+          <dependency deprel="amod" dependent="t30" head="t25" id="dep223"/>
+          <dependency deprel="case" dependent="t23" head="t25" id="dep224"/>
+          <dependency deprel="nummod" dependent="t24" head="t25" id="dep225"/>
+          <dependency deprel="case" dependent="t26" head="t27" id="dep226"/>
+          <dependency deprel="amod" dependent="t28" head="t27" id="dep227"/>
+          <dependency deprel="nmod:poss" dependent="t20" head="t21" id="dep228"/>
+          <dependency deprel="nmod" dependent="t25" head="t22" id="dep229"/>
           <dependency deprel="punct" dependent="t31" head="t22" id="dep230"/>
           <dependency deprel="nsubj" dependent="t21" head="t22" id="dep231"/>
         </dependencies>
@@ -318,21 +321,21 @@ class TestDcoref(BaseTest):
           <token form="!" id="t48" characterOffsetBegin="76" characterOffsetEnd="77" lemma="!" pos="."/>
           <token form="''" id="t49" characterOffsetBegin="77" characterOffsetEnd="78" lemma="''" pos="''"/>
         </tokens>
-        <parse annotators="corenlp" root="sp35">
-          <span children="t34 t35" symbol="NP" id="sp22"/>
-          <span children="t37 t38 t39" symbol="NP" id="sp23"/>
-          <span children="t36 sp23" symbol="PP" id="sp24"/>
-          <span children="sp22 sp24" symbol="NP" id="sp25"/>
-          <span children="t33 sp25" symbol="VP" id="sp26"/>
-          <span children="sp26" symbol="S" id="sp27"/>
-          <span children="t32 sp27" symbol="PP" id="sp28"/>
-          <span children="t41" symbol="NP" id="sp29"/>
-          <span children="t42" symbol="VP" id="sp30"/>
-          <span children="t40 sp29 sp30 t43" symbol="PRN" id="sp31"/>
-          <span children="t45" symbol="NP" id="sp32"/>
-          <span children="t47" symbol="ADJP" id="sp33"/>
-          <span children="t46 sp33" symbol="VP" id="sp34"/>
-          <span children="sp28 sp31 t44 sp32 sp34 t48 t49" symbol="S" id="sp35"/>
+        <parse annotators="corenlp" root="sp38">
+          <span children="t34 t35" symbol="NP" id="sp25"/>
+          <span children="t37 t38 t39" symbol="NP" id="sp26"/>
+          <span children="t36 sp26" symbol="PP" id="sp27"/>
+          <span children="sp25 sp27" symbol="NP" id="sp28"/>
+          <span children="t33 sp28" symbol="VP" id="sp29"/>
+          <span children="sp29" symbol="S" id="sp30"/>
+          <span children="t32 sp30" symbol="PP" id="sp31"/>
+          <span children="t41" symbol="NP" id="sp32"/>
+          <span children="t42" symbol="VP" id="sp33"/>
+          <span children="t40 sp32 sp33 t43" symbol="PRN" id="sp34"/>
+          <span children="t45" symbol="NP" id="sp35"/>
+          <span children="t47" symbol="ADJP" id="sp36"/>
+          <span children="t46 sp36" symbol="VP" id="sp37"/>
+          <span children="sp31 sp34 t44 sp35 sp37 t48 t49" symbol="S" id="sp38"/>
         </parse>
         <dependencies annotators="corenlp" type="basic">
           <dependency deprel="root" dependent="t47" head="ROOT" id="dep32"/>
@@ -446,33 +449,36 @@ class TestDcoref(BaseTest):
       <mention head="t18" tokens="t17 t18" id="me6"/>
       <mention head="t21" tokens="t20 t21" id="me7"/>
       <mention head="t20" tokens="t20" id="me8"/>
-      <mention head="t25" tokens="t24 t25" id="me9"/>
-      <mention head="t27" tokens="t27 t28 t29 t30" id="me10"/>
-      <mention head="t38" tokens="t38" id="me11"/>
-      <mention head="t41" tokens="t41" id="me12"/>
-      <mention head="t35" tokens="t34 t35 t36 t37 t38 t39" id="me13"/>
-      <mention head="t39" tokens="t37 t38 t39" id="me14"/>
-      <mention head="t45" tokens="t45" id="me15"/>
+      <mention head="t25" tokens="t24 t25 t26 t27 t28 t29 t30" id="me9"/>
+      <mention head="t25" tokens="t24 t25 t26 t27 t28" id="me10"/>
+      <mention head="t27" tokens="t27 t28" id="me11"/>
+      <mention head="t30" tokens="t30" id="me12"/>
+      <mention head="t38" tokens="t38" id="me13"/>
+      <mention head="t41" tokens="t41" id="me14"/>
+      <mention head="t35" tokens="t34 t35 t36 t37 t38 t39" id="me15"/>
+      <mention head="t39" tokens="t37 t38 t39" id="me16"/>
+      <mention head="t45" tokens="t45" id="me17"/>
     </mentions>
     <coreferences annotators="corenlp">
-      <coreference representative="me0" mentions="me0 me4 me8 me12" id="cr0"/>
+      <coreference representative="me0" mentions="me0 me4 me8 me14" id="cr0"/>
       <coreference representative="me1" mentions="me1" id="cr1"/>
       <coreference representative="me2" mentions="me2" id="cr2"/>
-      <coreference representative="me3" mentions="me3" id="cr3"/>
+      <coreference representative="me3" mentions="me3 me12" id="cr3"/>
       <coreference representative="me5" mentions="me5" id="cr4"/>
       <coreference representative="me6" mentions="me6" id="cr5"/>
       <coreference representative="me7" mentions="me7" id="cr6"/>
       <coreference representative="me9" mentions="me9" id="cr7"/>
       <coreference representative="me10" mentions="me10" id="cr8"/>
       <coreference representative="me11" mentions="me11" id="cr9"/>
-      <coreference representative="me13" mentions="me13 me15" id="cr10"/>
-      <coreference representative="me14" mentions="me14" id="cr11"/>
+      <coreference representative="me13" mentions="me13" id="cr10"/>
+      <coreference representative="me15" mentions="me15 me17" id="cr11"/>
+      <coreference representative="me16" mentions="me16" id="cr12"/>
     </coreferences>
   </document>
 </root>"""
 
-        self.exe = 'runMain jigg.pipeline.Pipeline ' \
-                   + '-annotators corenlp[tokenize,ssplit,parse,lemma,ner,dcoref] '
+        self.exe = 'java -cp "jar/*" -Xmx6g jigg.pipeline.Pipeline ' \
+                   + '-annotators corenlp[tokenize,ssplit,pos,lemma,ner,parse,dcoref] '
 
     def test_dcoref(self):
-        self.check_equal(self.exe, self.input_text, self.expected_text)
+        self.check_equal_with_java(self.exe, self.input_text, self.expected_text)
