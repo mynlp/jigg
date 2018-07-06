@@ -90,6 +90,12 @@ resolvers ++= Seq(
   "Unidata maven repository" at "https://artifacts.unidata.ucar.edu/content/repositories/unidata-releases"
 )
 
+// FIXME: remove setting of overwrite flag when the following issue will be fixed: https://github.com/sbt/sbt/issues/3725
+publishConfiguration := publishConfiguration.value.withOverwrite(isSnapshot.value)
+com.typesafe.sbt.pgp.PgpKeys.publishSignedConfiguration := com.typesafe.sbt.pgp.PgpKeys.publishSignedConfiguration.value.withOverwrite(isSnapshot.value)
+publishLocalConfiguration := publishLocalConfiguration.value.withOverwrite(isSnapshot.value)
+com.typesafe.sbt.pgp.PgpKeys.publishLocalSignedConfiguration := com.typesafe.sbt.pgp.PgpKeys.publishLocalSignedConfiguration.value.withOverwrite(isSnapshot.value)
+
 publishMavenStyle := true
 
 publishTo := {
