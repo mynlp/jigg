@@ -58,7 +58,7 @@ object CoNLLUtil {
           depseq.map { arc =>
             val dep = unitId2idx(arc \@ "dependent")
             val head = (arc \@ "head") match {
-              case "root" => -1
+              case "root"|"ROOT" => -1
               case id => unitId2idx(id)
             }
             val deprel = (arc \@ "deprel") match { case "" => "_"; case r => r }

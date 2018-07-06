@@ -40,7 +40,9 @@ class OutputConverter(val properties: Properties = new Properties) extends Props
     case "true" =>
       printHelp(System.out)
     case _ => {
+      System.err.print(s"Loading $file...")
       val xml = loadInput()
+      System.err.println("done.")
       outputFormat match {
         case "xml" => writeInXML(xml)
         case "json" => writeInJson(xml)
