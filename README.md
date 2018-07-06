@@ -1,6 +1,6 @@
-[![Build Status](https://travis-ci.org/mynlp/jigg.svg?branch=master)](https://travis-ci.org/mynlp/jigg)
-
 # Jigg
+
+[![Build Status](https://travis-ci.org/mynlp/jigg.svg?branch=master)](https://travis-ci.org/mynlp/jigg)
 
 Jigg is a natural language processing pipeline framework on JVM languages (mainly for Scala), which is easy to use and extensible. Using Jigg, one can obtain several linguistic annotations on a given input from POS tagging, parsing, and coreference resolution from command-lines. The main features include:
 
@@ -15,14 +15,24 @@ The core ideas and software designs are described in detail in [our paper](http:
 
 ## Install
 
-The easist way to start Jigg is to download the self-contained jar, which includes all core components as well as several basic models.
+The easist way to start Jigg is to download the latet release package (current version is 0.8.0), which includes the core Jar file, as well as several model files, such as a Stanford CoreNLP model file.
+
+[[Download Jigg 0.8.0](https://github.com/mynlp/jigg/releases/download/v-0.8.0/jigg-0.8.0.zip)]
+
+Or you can get it in the command line:
 
 ```bash
-$ mkdir jigg && cd jigg
-$ wget https://github.com/mynlp/jigg/releases/download/v-0.7.2/jigg-0.7.2.jar
+$ wget https://github.com/mynlp/jigg/releases/download/v-0.8.0/jigg-0.8.0.zip
+$ unzip jigg-0.8.0.zip
 ```
 
-If you wish to build your own jar, please read [here](#build-your-own-jar-advanced).
+Enter the directory before running the following examples:
+
+```bash
+$ cd jigg-0.8.0
+```
+
+If you wish to build your own jar from sources, please read [here](#build-your-own-jar-advanced).
 
 If you wish to use docker, please read [here](#use-docker).
 
@@ -78,9 +88,9 @@ Let's write some sentences in a line.
 >
 ```
 
-The default output format of Jigg is XML, but it also supports JASON (check `-outputFormat` option below). One can see that Jigg automatically detects sentence boundaries (there are two sentences), and performs tokenization (e.g, period . is recognized as a single word), on which parse tree (`<parse>`) is built.
+The default output format of Jigg is XML, but it also supports JSON (check `-outputFormat` option below). One can see that Jigg automatically detects sentence boundaries (there are two sentences), and performs tokenization (e.g, period . is recognized as a single word), on which parse tree (`<parse>`) is built.
 
-In Jigg, each NLP tool such as `corenlp` (Stanford CoreNLP) or `berkeleyparser` (Berkeley parser) is called annotator. Jigg helps to construct easily a NLP pipeline by combining several annotators. In the example above, the pipeline is constructed by combining Stanford CoreNLP (which performs tokenization and sentence-splitting) and Berkeley parser (which performs parsing on tokenized sentences).
+In Jigg, each NLP tool such as `corenlp` (Stanford CoreNLP) or `berkeleyparser` (Berkeley parser) is called an annotator. Jigg helps to construct easily a NLP pipeline by combining several annotators. In the example above, the pipeline is constructed by combining Stanford CoreNLP (which performs tokenization and sentence-splitting) and Berkeley parser (which performs parsing on tokenized sentences).
 
 ### Command-line usage
 
@@ -176,7 +186,7 @@ The error message says `tokenize` should be performed before running `berkeleypa
 
 #### Parallel processing
 
-In the help message above, we can see that `berkeleyparser` is implemented to be thread-safe. This means we can run Berkeley parser in parallel, which is not supported in the original software. The most of supported annotators in Jigg are implemented as thread-safe, meaning that annotation can be very efficient in multi-core environment.
+In the help message above, we can see that `berkeleyparser` is implemented to be thread-safe. This means we can run Berkeley parser in parallel, which is not supported in the original software. The most of supported annotators in Jigg are implemented as thread-safe, meaning that annotation can be very efficient in a multi-core environment.
 
 To perform parallel annotation, first prepare an input document (whatever you want to analyze).
 
@@ -202,17 +212,17 @@ $ cat input.txt | java -cp "*" jigg.pipeline.Pipeline -annotators "corenlp[token
 
 By default, Jigg tries to use as many threads as the machine can use. On my laptop (with 4 cores), when annotating about 1000 sentences, annotation with `-nThreads 1` takes about 154 seconds, which is reduced to 79 seconds with parallel annotation.
 
-#### Full pipeline
-
-For English, currently the main components in Jigg are Stanford CoreNLP. To run the full pipeline in Stanford CoreNLP, you need to download the model file of it first (if you don't have):
+You can also customize the number of threads for each annotator separately. For example, the following restrictes the number of threads of berkeleyparser to 2, while allow the corenlp to use 4 threads.
 ```bash
-$ wget http://nlp.stanford.edu/software/stanford-corenlp-full-2018-02-27.zip
-$ unzip stanford-corenlp-full-2018-02-27.zip
+$ cat input.txt | java -cp "*" jigg.pipeline.Pipeline -annotators "corenlp[tokenize,ssplit],berkeleyparser" -nThreads 4 -berkeleyparser.nThreads 2 > output.xml
 ```
 
-You move the model file `stanford-corenlp-3.9.1-models.jar` in the directory `stanford-corenlp-full-2018-02-27` to the current directory.
-Then, a pipeline to the coreference resolution, for example, can be constructed as follows:
 
+#### Full pipeline
+
+For English, currently the main components in Jigg are Stanford CoreNLP. While many components of Stanford CoreNLP requries a model file, it is included in the directory of the latest Jigg (above link) so no need to download a model by yourself.
+
+The following pipeline is one of full CoreNLP pipeline toward coreference resolution.
 ```bash
 $ java -cp "*" jigg.pipeline.Pipeline -annotators "corenlp[tokenize,ssplit,parse,lemma,ner,dcoref]"
 ```
@@ -223,7 +233,7 @@ This is the usage of Jigg just as a wrapper of Stanford CoreNLP, which may not b
 $ java -cp "*" jigg.pipeline.Pipeline -annotators "corenlp[tokenize,ssplit],berkeleyparser,corenlp[lemma,ner,dcoref]"
 ```
 
-This command replaces the parser component in a CoreNLP pipeline with Berkeley parser. Jigg alleviates to include a NLP tool into a pipeline. In future Jigg will support many existing NLP tools, and the goal is to provide a platform on which a user can freely connect the tools to construct several NLP pipelines.
+This command replaces the parser component in a CoreNLP pipeline with Berkeley parser. Jigg alleviates to include a NLP tool into a pipeline. As such, the goal of Jigg is to provide a platform on which a user can freely connect the tools to construct several NLP pipelines.
 
 ### Programmatic usage
 
@@ -232,7 +242,7 @@ Jigg pipeline can also be incorporated another Java or Scala project. The easies
 In Scala, add the following line in the project `build.sbt`.
 
 ```scala
-libraryDependencies += "com.github.mynlp" % "jigg" % "0.7.1"
+libraryDependencies += "com.github.mynlp" % "jigg" % "0.8.0"
 ```
 
 In Java, add the following lines on `pom.xml`:
@@ -242,7 +252,7 @@ In Java, add the following lines on `pom.xml`:
   <dependency>
     <groupId>com.github.mynlp</groupId>
     <artifactId>jigg</artifactId>
-    <version>0.7.2</version>
+    <version>0.8.0</version>
   </dependency>
 </dependencies>
 ```
@@ -302,18 +312,19 @@ $ ./bin/sbt assembly
 The last command may take about 10 or 20 minutes including setup of Scala and sbt.
 This generates a self-contained jar on `target/jigg-assembly-xxx.jar` where `xxx` is the current version number.
 
-Note that differently from the distributed jar `jigg-xxx.jar`, this jar does not contain the Jigg's model files, such as those of `berkeleyparser` and `jaccg`.
-To load the models, you need to get the model jar file by:
+Although this assembled jar is rather self-contained, several model files, including the model files for `berkeleyparser` and `jaccg` are missing. These can be obtained by:
 
 ```bash
 $ wget https://github.com/mynlp/jigg-models/raw/master/jigg-models.jar
 ```
 
-and include it in the class path:
+and including it in the class path:
 
 ```bash
 $ java -cp "target/jigg-assembly-xxx.jar:jigg-models.jar" jigg.pipeline.Pipeline -annotators ...
 ```
+
+Note that in this usage, the CoreNLP models should also be downloaded from the official [homepage](https://stanfordnlp.github.io/CoreNLP/download.html) manually and included in your class path.
 
 ## Use docker
 
@@ -363,6 +374,7 @@ Following sample files of SsplitKerasAnnotator/BunsetsuKerasAnnotator is generat
 
 ## Release note
 
+- 0.8.0: Many bug fixes; kuromoji is modulated; CoreNLP is upgraded to 3.9.1; support benepar and stanfordtypeddep (combine them to obtain state-of-the-art constituency and dependency parsers!; see -help benear and -help stanfordtypeddep).
 - 0.7.2: Many improvements around CCG parsers, including K-best outputs of depccg and easyccg. Support of udpipe.
 - 0.7.1: Bug fixes; Docker for Jigg server; annotators for CCG parsers (candc, easyccg, and depccg)
 - 0.7.0: Support CoreNLP 3.7.0, server mode, several improvements including support of xml/json inputs.

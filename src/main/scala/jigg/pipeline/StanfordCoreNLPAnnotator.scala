@@ -156,10 +156,11 @@ class StanfordCoreNLPAnnotator(
   (2) Berkeley parser performs POS tagging and parsing; and finally (3) the second
   CoreNLP performs lemma, ner, dcoref given the annotations so far.
 
-  Note that the model file for Stanford CoreNLP is not included Jigg. Please download
-  it from:
-    http://nlp.stanford.edu/software/stanford-english-corenlp-2016-01-10-models.jar
-  and include it into your path!
+  Note that the model file for Stanford CoreNLP is not included in Jigg itself, unless you
+  are in the official release directory. Please read README
+  (https://github.com/mynlp/jigg#build-your-own-jar-advanced) for how to get the model by
+  yourself.
+
 """ + (if (annotatorNames.isEmpty) """
   To see the requirements and satisfied requirements for this annotator, please call
   the help with specific annotators, e.g., -help "${name}[parse,lemma]".
