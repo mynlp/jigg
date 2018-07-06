@@ -4,12 +4,29 @@ set -e
 
 source ./.checker/scripts/set-env.sh
 
+home_dir=`pwd ./`
 jar_dir="jar/"
 
-## stanford-corenlp
-CORENLP_MODEL_JAR="stanford-corenlp-${CORENLP_VERSION}-models.jar"
+
+# download stanford corenlp
+url=http://nlp.stanford.edu/software/stanford-corenlp-full-2018-02-27.zip
+zip=stanford-corenlp-full-2018-02-27.zip
+dir=stanford-corenlp-full-2018-02-27
+file=stanford-corenlp-3.9.1.jar
+file_model=stanford-corenlp-3.9.1-models.jar
 
 # download Stanford CoreNLP models
-./script/download_corenlp_models.sh
-DOWNLOAD_JAR="`pwd`/`ls -clt stanford*models*.jar | head -n 1 | gawk '{ print $9 }'`"
-mv ${DOWNLOAD_JAR} ${jar_dir}"/"${CORENLP_MODEL_JAR}
+wget ${url}
+
+# unpack
+unzip ${zip}
+
+cp ${dir}"/"${file} ${jar_dir}
+cp ${dir}"/"${file_model} ${jar_dir}
+
+
+# create jigg jar file
+cd ${home_dir}
+jigg_file="target/jigg-assembly-0.7.2.jar"
+./bin/sbt assembly
+cp ${jigg_file} ${jar_dir}
