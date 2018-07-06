@@ -27,6 +27,6 @@ cp ${dir}"/"${file_model} ${jar_dir}
 
 # create jigg jar file
 cd ${home_dir}
-jigg_file="target/jigg-assembly-0.7.2.jar"
+jigg_file="target/jigg-assembly-0.8.0.jar"
 ./bin/sbt assembly
 cp ${jigg_file} ${jar_dir}
