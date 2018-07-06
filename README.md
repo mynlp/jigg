@@ -206,9 +206,11 @@ By default, Jigg tries to use as many threads as the machine can use. On my lapt
 
 For English, currently the main components in Jigg are Stanford CoreNLP. To run the full pipeline in Stanford CoreNLP, you need to download the model file of it first (if you don't have):
 ```bash
-$ wget http://nlp.stanford.edu/software/stanford-english-corenlp-2016-01-10-models.jar
+$ wget http://nlp.stanford.edu/software/stanford-corenlp-full-2018-02-27.zip
+$ unzip stanford-corenlp-full-2018-02-27.zip
 ```
 
+You move the model file `stanford-corenlp-3.9.1-models.jar` in the directory `stanford-corenlp-full-2018-02-27` to the current directory.
 Then, a pipeline to the coreference resolution, for example, can be constructed as follows:
 
 ```bash
