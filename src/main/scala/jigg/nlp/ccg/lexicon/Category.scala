@@ -30,6 +30,11 @@ case class AtomicCategory(override val id:Int, base:String, feature:CategoryFeat
   }
 
   override def toStringNoFeature = base
+
+  def hasFeatures = feature.toString match {
+    case "" => false
+    case _ => true
+  }
 }
 @SerialVersionUID(3754315949719248198L)
 case class ComplexCategory(override val id:Int,
