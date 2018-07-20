@@ -24,4 +24,7 @@ elif [ ${ANNOTATORS} == "knp" ];then
 elif [ ${ANNOTATORS} == "corenlp" ];then
     echo "Install CORENLP"
     ./.checker/scripts/install-jar.sh
+elif [ ${ANOTATORS} == "benepar" ];then
+    echo "Install BENEPAR"
+    ./.checker/scripts/install-benepar.sh
 fi

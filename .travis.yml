@@ -11,6 +11,7 @@ env:
   - ANNOTATORS=knp
   - ANNOTATORS=mecab
   - ANNOTATORS=cabocha
+  - ANNOTATORS=benepar  
 
 before_install:
   - ./.checker/scripts/before-install.sh
