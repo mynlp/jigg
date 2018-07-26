@@ -30,7 +30,7 @@ class OutputConverter(val properties: Properties = new Properties) extends Props
   @Prop(gloss="Input file; if omitted, read from stdin") var file = ""
   @Prop(gloss="Output file; if omitted, output to stdout.") var output = ""
   @Prop(gloss="Input format (xml|json). Default is xml.") var inputFormat = "xml"
-  @Prop(gloss="Ouput format (xml|json|conllu)") var outputFormat = "conllu"
+  @Prop(gloss="Ouput format (xml|json|conllu|stree)") var outputFormat = "conllu"
   @Prop(gloss="Unit of conllu dependencies (word|chunk)") var unit = "word"
   @Prop(gloss="Print this message") var help = ""
 
@@ -47,6 +47,7 @@ class OutputConverter(val properties: Properties = new Properties) extends Props
         case "xml" => writeInXML(xml)
         case "json" => writeInJson(xml)
         case "conllu" => writeInCoNLLU(xml)
+        case "stree" => writeInStree(xml)
       }
     }
   }
@@ -83,6 +84,18 @@ class OutputConverter(val properties: Properties = new Properties) extends Props
     IOUtil.writing(mkWriter _) { w =>
       val pw = new PrintWriter(w)
       for (line <- conllu) pw.println(line)
+    }
+  }
+
+  def writeInStree(xml: Node) = {
+    val strees = (xml \\ "sentence") map { s =>
+      val tokens = s \ "tokens" \ "token"
+      val parse = (s \ "parse").head
+      StanfordCoreNLPAnnotator.parseStr(tokens, parse)
+    }
+    IOUtil.writing(mkWriter _) { w =>
+      val pw = new PrintWriter(w)
+      for (line <- strees) pw.println(line)
     }
   }
 
