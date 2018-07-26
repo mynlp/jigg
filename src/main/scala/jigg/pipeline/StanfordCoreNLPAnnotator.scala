@@ -25,6 +25,7 @@ import jigg.util.PropertiesUtil
 import jigg.util.XMLUtil.RichNode
 import edu.stanford.nlp.coref
 import edu.stanford.nlp.dcoref
+import edu.stanford.nlp.io.IOUtils
 import edu.stanford.nlp.pipeline._
 import edu.stanford.nlp.ling.{CoreAnnotation, CoreLabel}
 import edu.stanford.nlp.trees.{GrammaticalRelation, Tree, Trees, TreeCoreAnnotations,
@@ -46,7 +47,12 @@ class StanfordCoreNLPAnnotator(
     val keys = props.keys.asScala.toSeq.map(_.toString) filter (_ startsWith (name + "."))
     val p = new Properties
     val offset = (name + ".").size
-    for (k <- keys) {
+
+    val propsKey = name + ".props"
+    if (keys.contains(propsKey)) {
+      p.load(IOUtils.readerFromString(props.getProperty(propsKey)))
+    }
+    for (k <- (keys); if k != propsKey) {
       val v = props.getProperty(k)
       p.put(k.substring(offset), v)
     }
