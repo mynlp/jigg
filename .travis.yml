@@ -5,6 +5,7 @@ scala:
 
 env:
   - ANNOTATORS=corenlp
+  - ANNOTATORS=corenlp_other_languages
   - ANNOTATORS=udpipe
   - ANNOTATORS=depccg
   - ANNOTATORS=juman
