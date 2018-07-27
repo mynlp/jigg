@@ -9,10 +9,10 @@ env:
   - ANNOTATORS=udpipe
   - ANNOTATORS=depccg
   - ANNOTATORS=juman
-  - ANNOTATORS=knp
+#  - ANNOTATORS=knp
   - ANNOTATORS=mecab
   - ANNOTATORS=cabocha
-  - ANNOTATORS=benepar  
+  - ANNOTATORS=benepar
 
 before_install:
   - ./.checker/scripts/before-install.sh
