@@ -286,7 +286,7 @@ class StanfordCoreNLPAnnotator(
       val coreSentences: java.util.List[CoreMap] = (0 until sentences.size).map { i =>
         val sentence = sentences(i)
 
-        val text = sentence.text
+        val text = sentence.textElem
         val begin = sentence \@ "characterOffsetBegin"
         val end = sentence \@ "characterOffsetEnd"
 
