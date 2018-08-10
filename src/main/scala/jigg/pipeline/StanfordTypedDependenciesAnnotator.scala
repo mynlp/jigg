@@ -39,8 +39,23 @@ class StanfordTypedDependenciesAnnotator(
   override val name: String,
   override val props: Properties) extends SentencesAnnotator {
 
-  @Prop(gloss = "Annotation style for the uncollapsed dependencies (SD|UD). See below in detail.") var style = "SD"
+  @Prop(gloss = "Annotation style for the uncollapsed dependencies (SD|UD). See below in detail.") var style = "UD"
   @Prop(gloss = "Language (currently, only supports 'en')") var lang = "en"
+
+  override def description = s"""${super.description}
+
+  This annotator addes several types of dependencies annotations; that is, Stanford-style
+  BasicDependencies, CollapsedDependencies, CollapsedCCProcessedDependencies,
+  EnhancedDependencies, and EnhancedPlusPlusDependencies.
+
+  Details of these dependency types can be found at https://nlp.stanford.edu/software/stanford-dependencies.html.
+
+  In default, the recovered dependencies follow the recent Universal Dependencies format,
+  since this is now the default in the CoreNLP pipeline. You can also recover the original,
+  Stanford Dependencies, by setting -${name}.style SD option. However, setting this option
+  may cause some undesirable behaviors if you want to use the parse result in a pipeline,
+  especially a CoreNLP pipeline.
+"""
 
   readProps()
 

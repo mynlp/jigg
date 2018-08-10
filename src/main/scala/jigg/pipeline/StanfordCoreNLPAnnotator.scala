@@ -156,11 +156,12 @@ class StanfordCoreNLPAnnotator(
   each annotator.
 
   Different CoreNLP instances can be combined in a pipeline as follows:
-    -annotators "corenlp[tokenize,ssplit],berkeleyparser,corenlp[lemma,ner,dcoref]"
+    -annotators "corenlp[tokenize,ssplit],berkeleyparser,stanfordtypeddep,corenlp[lemma,ner,dcoref]"
 
   This annotation proceeds as follows: (1) the first CoreNLP performs tokenize and ssplit;
-  (2) Berkeley parser performs POS tagging and parsing; and finally (3) the second
-  CoreNLP performs lemma, ner, dcoref given the annotations so far.
+  (2) Berkeley parser performs POS tagging and parsing; (3) stanfordtypeddep does a job of
+  converting a constituent tree from Berkeley parser to Stanford-style dependencies, and
+  finally (3) the second CoreNLP performs lemma, ner, dcoref given the annotations so far.
 
   Note that the model file for Stanford CoreNLP is not included in Jigg itself, unless you
   are in the official release directory. Please read README
@@ -286,7 +287,7 @@ class StanfordCoreNLPAnnotator(
       val coreSentences: java.util.List[CoreMap] = (0 until sentences.size).map { i =>
         val sentence = sentences(i)
 
-        val text = sentence.text
+        val text = sentence.textElem
         val begin = sentence \@ "characterOffsetBegin"
         val end = sentence \@ "characterOffsetEnd"
 
@@ -823,7 +824,15 @@ object StanfordCoreNLPAnnotator extends AnnotatorCompanion[StanfordCoreNLPAnnota
       classOf[LemmaAnnotation] -> Seq(R.Lemma),
       classOf[NamedEntityTagAnnotation] -> Seq(R.StanfordNER),
       classOf[RegexAnnotation] -> Seq(R.StanfordNER),
-      classOf[TreeCoreAnnotations.TreeAnnotation] -> Seq(R.Parse),
+      // Original mapping was just to Seq(R.Parse). Dependencies are added since 3.9.1,
+      // as we noticed by some updates of CoreNLP, the original mapping does not work.
+      // An error was caused when using "dcoref", which was originally only depends on
+      // "parse", not "dependencies", but now it depends also on "dependencies". Complicated
+      // is that "dependencies" is required only implicitly by a mention annotator called
+      // internally in "DeterministicCorefAnnotator".
+      classOf[TreeCoreAnnotations.TreeAnnotation] -> Seq(R.Parse,
+        R.BasicDependencies, R.CollapsedDependencies, R.CollapsedCCProcessedDependencies,
+        R.EnhancedDependencies, R.EnhancedPlusPlusDependencies),
       classOf[SemanticGraphCoreAnnotations.BasicDependenciesAnnotation] -> Seq(R.BasicDependencies),
       classOf[SemanticGraphCoreAnnotations.CollapsedDependenciesAnnotation] -> Seq(R.CollapsedDependencies),
       classOf[SemanticGraphCoreAnnotations.CollapsedCCProcessedDependenciesAnnotation] -> Seq(R.CollapsedCCProcessedDependencies),
