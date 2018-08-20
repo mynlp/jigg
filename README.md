@@ -328,7 +328,7 @@ Note that in this usage, the CoreNLP models should also be downloaded from the o
 
 ## Use docker
 
-To install docker, follow the [instruction](https://docs.docker.com/engine/installation/).
+To install docker, follow the [instruction](https://docs.docker.com/install/).
 
 To build and run PipelineServer container:
 
@@ -340,8 +340,7 @@ docker-compose up -d
 
 To download the model:
 ```bash
-mkdir -p models && cd models
-curl -SLO https://github.com/mynlp/jigg-models/raw/master/jigg-models.jar
+curl -SLO https://github.com/mynlp/jigg-models/raw/master/jigg-models.jar -o jar/jigg-models.jar
 ```
 
 An example of the call via `curl` is:

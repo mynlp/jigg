@@ -9,11 +9,10 @@ services:
       - -Xms1024M
       - -Xmx1024M
       - -cp
-      - "target/*:models/jigg-models.jar"
+      - "target/*:jar/*"
       - jigg.pipeline.PipelineServer
       - -host
       - 0.0.0.0
     volumes:
       - ./script:/jigg/script
-      - ./download:/jigg/download
-      - ./models:/jigg/models
+      - ./jar:/jigg/jar
