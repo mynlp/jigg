@@ -5,4 +5,4 @@
 !script
 !src
 !build.sbt
-!jar/easyccg.jar
+!jar

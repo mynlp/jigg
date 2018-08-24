@@ -10,7 +10,7 @@ RUN bin/sbt update
 
 # Build
 COPY src /jigg/src
-COPY jar/easyccg.jar /jigg/jar/easyccg.jar
+COPY jar /jigg/jar
 RUN bin/sbt assembly
 
 # Run a simple test
