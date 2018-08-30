@@ -31,4 +31,8 @@ elif [ ${ANNOTATORS} == "benepar" ];then
     echo "Install BENEPAR"
     ./.checker/scripts/install-jar.sh    
     ./.checker/scripts/install-benepar.sh
+elif [ ${ANNOTATORS} == "syntaxnet" ];then
+    echo "Install SYNTAXNET"
+    ./.checker/scripts/install-jar.sh
+    ./.checker/scripts/install-syntaxnet.sh
 fi
