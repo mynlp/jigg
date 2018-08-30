@@ -155,4 +155,3 @@ class TestSyntaxnet(BaseTest):
 
     def test_syntaxnet(self):
         self.check_equal_with_docker(self.exe, self.input_text, self.expected_text)
-

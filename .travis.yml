@@ -13,6 +13,7 @@ env:
   - ANNOTATORS=mecab
   - ANNOTATORS=cabocha
   - ANNOTATORS=benepar
+  - ANNOTATORS=syntaxnet
 
 before_install:
   - ./.checker/scripts/before-install.sh
