@@ -69,6 +69,37 @@ class BaseTest(TestCase):
 
         self.assertTrue(elements_equal(ET.fromstring(result_text), ET.fromstring(expected_text)))
 
+    def check_equal_with_docker(self,
+                                exe: str,
+                                input_text: str,
+                                expected_text: str):
+        '''
+        '''
+        self.input_file_name = 'input_.txt'
+        self.output_file_name = self.input_file_name + '.xml'
+
+        # Write to the input file `input_.txt`
+        with open(self.input_file_name, mode='w', encoding='utf-8') as f:
+            f.write(input_text)
+
+        # mount directory for the docker container.
+        # plase, set the mount path name '/mnt/'.
+        container_location = "/mnt/"
+
+        # Add the command option
+        exe = exe + ' -file ' + container_location + self.input_file_name
+        subprocess.Popen(exe, shell=True).wait()
+
+        # Read the output file
+        result_text = ''
+        with open(self.output_file_name, mode='r', encoding='utf-8') as f:
+            result_text = f.read()
+
+        # Remove the input file and the output file
+        subprocess.Popen(['rm', '-f', self.input_file_name, self.output_file_name]).wait()
+
+        self.assertTrue(elements_equal(ET.fromstring(result_text), ET.fromstring(expected_text)))
+            
     def check_any(self):
         '''you can add any function.
         '''

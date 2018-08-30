@@ -19,7 +19,6 @@ elif [ ${ANNOTATORS} == "juman" ];then
     ./.checker/scripts/install-juman.sh
 elif [ ${ANNOTATORS} == "knp" ];then
     echo "Install KNP"
-    ./.checker/scripts/install-juman.sh
     ./.checker/scripts/install-knp.sh
 elif [ ${ANNOTATORS} == "corenlp" ];then
     echo "Install CORENLP"

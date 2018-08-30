@@ -9,7 +9,7 @@ env:
   - ANNOTATORS=udpipe
   - ANNOTATORS=depccg
   - ANNOTATORS=juman
-#  - ANNOTATORS=knp
+  - ANNOTATORS=knp
   - ANNOTATORS=mecab
   - ANNOTATORS=cabocha
   - ANNOTATORS=benepar

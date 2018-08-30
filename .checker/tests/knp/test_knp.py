@@ -112,7 +112,11 @@ class TestKNP(BaseTest):
   </document>
 </root>"""
 
-        self.exe = 'runMain jigg.pipeline.Pipeline -annotators ssplit,juman,knp'
+        #
+        self.exe = 'docker run --rm -it ' \
+                   + '--mount type=bind,source="$(pwd)"/,target=/mnt/ ' \
+                   + 'jigg/jigg:knp ' \
+                   + 'java -cp "jar*/:target/*" jigg.pipeline.Pipeline -annotators ssplit,juman,knp '
 
     def test_knp(self):
-        self.check_equal(self.exe, self.input_text, self.expected_text)
+        self.check_equal_with_docker(self.exe, self.input_text, self.expected_text)
