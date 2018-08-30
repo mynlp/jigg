@@ -46,12 +46,12 @@ class SyntaxNetAnnotatorSpec extends BaseAnnotatorSpec {
       </document>
     </root>
 
-    val output = """1	a	_	A	A	_	0
+    val output = """1	a	_	A	A	_	0	A	_	_
 
-1	b	_	B	B	_	0
-2	c	_	C	C	_	0
+1	b	_	B	B	_	0	B	_	_
+2	c	_	C	C	_	0	C	_	_
 
-1	c	_	D	D	_	0
+1	c	_	D	D	_	0	D	_	_
 """
 
     val annotator = new POSAnnotatorStub(output)

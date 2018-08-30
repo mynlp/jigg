@@ -152,7 +152,7 @@ object SyntaxNetAnnotator {
     (sentence \ "tokens" \\ "token").zipWithIndex map { case (token, i) =>
       val idx = i + 1
       val form = token \@ "form"
-      s"$idx\t$form\t_\t_\t_\t_\t_\t_"
+      s"$idx\t$form\t_\t_\t_\t_\t_\t_\t_\t_"
     } mkString "\n"
 
   def taggedCoNLL(sentence: Node): String =
@@ -161,7 +161,7 @@ object SyntaxNetAnnotator {
       val form = token \@ "form"
       val pos = token \@ "pos"
       // val cpos = token \@ "cpos"
-      s"$idx\t$form\t_\t_\t$pos\t_\t_\t_"
+      s"$idx\t$form\t_\t_\t$pos\t_\t_\t_\t_\t_"
     } mkString "\n"
 
   def POSAnnotatedTokens(conll: Seq[Seq[String]], tokens: Node, name: String): Node = {
