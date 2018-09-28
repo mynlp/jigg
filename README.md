@@ -333,19 +333,15 @@ To install docker, follow the [instruction](https://docs.docker.com/install/).
 To build and run PipelineServer container:
 
 ```bash
-git clone --depth 1 git@github.com:mynlp/jigg.git && cd jigg
-time docker-compose build
-docker-compose up -d
-```
-
-To download the model:
-```bash
-curl -SLO https://github.com/mynlp/jigg-models/raw/master/jigg-models.jar -o jar/jigg-models.jar
+$ git clone --depth 1 https://github.com/mynlp/jigg.git && cd jigg
+$ curl -SL https://github.com/mynlp/jigg-models/raw/master/jigg-models.jar -o jar/jigg-models.jar
+$ time docker-compose build
+$ docker-compose up -d
 ```
 
 An example of the call via `curl` is:
 ```bash
-curl --data-urlencode 'annotators=ssplit,kuromoji,jaccg' \
+$ curl --data-urlencode 'annotators=ssplit,kuromoji,jaccg' \
          --data-urlencode 'q=テレビで自転車で走っている少女を見た!' \
          'http://localhost:8080/annotate?outputFormat=xml'
 ```
