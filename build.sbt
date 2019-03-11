@@ -37,6 +37,13 @@ assemblyExcludedJars in assembly := {
   cp filter { x => unmanaged contains x.data.getName }
 }
 
+assemblyMergeStrategy in assembly := {
+  case PathList(ps @ _*) if ps.last endsWith ".class" => MergeStrategy.first
+  case x =>
+    val oldStrategy = (assemblyMergeStrategy in assembly).value
+    oldStrategy(x)
+}
+
 libraryDependencies ++= Seq(
   "com.novocode" % "junit-interface" % "0.10-M4" % "test->default",
   "org.scalactic" %% "scalactic" % "2.2.6",
