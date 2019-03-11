@@ -7,11 +7,11 @@ jar_dir="jar/"
 
 
 # download stanford corenlp
-url=http://nlp.stanford.edu/software/stanford-corenlp-full-2018-02-27.zip
-zip=stanford-corenlp-full-2018-02-27.zip
-dir=stanford-corenlp-full-2018-02-27
-file=stanford-corenlp-3.9.1.jar
-file_model=stanford-corenlp-3.9.1-models.jar
+url=http://nlp.stanford.edu/software/stanford-corenlp-full-2018-10-05.zip
+zip=stanford-corenlp-full-2018-10-05.zip
+dir=stanford-corenlp-full-2018-10-05
+file=stanford-corenlp-3.9.2.jar
+file_model=stanford-corenlp-3.9.2-models.jar
 
 # download Stanford CoreNLP models
 wget ${url}
