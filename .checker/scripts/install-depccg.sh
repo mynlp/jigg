@@ -15,7 +15,7 @@ src_dir="depccg/src"
 # Install cython & chainer. Version of the chainer is 1.23.
 # `pip install --install-option="--cupy-no-cuda" chainer==1.23`
 pip install -U pip cython
-pip install chainer==1.23
+pip install chainer
 pip install scrapy
 
 # Git clone the depccg repository
