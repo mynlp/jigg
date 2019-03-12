@@ -66,7 +66,7 @@ libraryDependencies ++= (
 
 val stanfordCoreNLPDependencies = Seq(
   "org.slf4j" % "slf4j-api" % "1.7.20", // logger
-  "org.slf4j" % "slf4j-simple" % "1.7.6",
+  // "org.slf4j" % "slf4j-simple" % "1.7.6",
   "edu.stanford.nlp" % "stanford-corenlp" % "3.9.2"
 )
 
