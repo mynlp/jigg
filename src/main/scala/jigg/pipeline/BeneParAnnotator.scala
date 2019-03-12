@@ -32,7 +32,7 @@ class BeneParAnnotator(override val name: String, override val props: Properties
     extends AnnotatingSentencesInParallel {
 
   @Prop(gloss = "Path to 'activate' script of the virtual environment that you wish to run on depccg") var venv = ""
-  @Prop(gloss = "Model name (should be installed)") var model = "benepar_en"
+  @Prop(gloss = "Model name (should be installed)") var model = "benepar_en2"
   @Prop(gloss = "If true, launch multiple instances of the parsers for sentence-level parallel parsing") var parallel = false
   readProps()
 
@@ -52,7 +52,7 @@ class BeneParAnnotator(override val name: String, override val props: Properties
   You also need to download the model:
     $$ python
     >>> import benepar
-    >>> benepar.download('benepar_en')
+    >>> benepar.download('benepar_en2')
 
   Although not tested, this annotator should also work with the GPU-version of the parser,
   "benepar[gpu]". If you prefer to use a different model, specify "-${name}.model", after

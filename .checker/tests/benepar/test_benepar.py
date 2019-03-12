@@ -51,18 +51,17 @@ class TestBenepar(BaseTest):
           <token form="summer" id="t18" characterOffsetBegin="41" characterOffsetEnd="47" pos="NN"/>
           <token form="." id="t19" characterOffsetBegin="47" characterOffsetEnd="48" pos="."/>
         </tokens>
-        <parse annotators="benepar" root="sp16">
+        <parse annotators="benepar" root="sp15">
           <span children="t8" symbol="NP" id="sp6"/>
           <span children="t7 sp6" symbol="PP" id="sp7"/>
           <span children="t10" symbol="NP" id="sp8"/>
-          <span children="t13" symbol="NP" id="sp9"/>
-          <span children="t15" symbol="NP" id="sp10"/>
-          <span children="sp9 t14 sp10" symbol="NP" id="sp11"/>
-          <span children="t12 sp11" symbol="PP" id="sp12"/>
-          <span children="t17 t18" symbol="NP" id="sp13"/>
-          <span children="t16 sp13" symbol="PP" id="sp14"/>
-          <span children="t11 sp12 sp14" symbol="VP" id="sp15"/>
-          <span children="sp7 t9 sp8 sp15 t19" symbol="S" id="sp16"/>
+          <span children="t15" symbol="NP" id="sp9"/>
+          <span children="t13 t14 sp9" symbol="NP" id="sp10"/>
+          <span children="t12 sp10" symbol="PP" id="sp11"/>
+          <span children="t17 t18" symbol="NP" id="sp12"/>
+          <span children="t16 sp12" symbol="PP" id="sp13"/>
+          <span children="t11 sp11 sp13" symbol="VP" id="sp14"/>
+          <span children="sp7 t9 sp8 sp14 t19" symbol="S" id="sp15"/>
         </parse>
       </sentence>
       <sentence characterOffsetEnd="128" characterOffsetBegin="83" id="s2">
@@ -81,14 +80,14 @@ class TestBenepar(BaseTest):
           <token form="2017" id="t30" characterOffsetBegin="40" characterOffsetEnd="44" pos="CD"/>
           <token form="." id="t31" characterOffsetBegin="44" characterOffsetEnd="45" pos="."/>
         </tokens>
-        <parse annotators="benepar" root="sp23">
-          <span children="t20 t21" symbol="NP" id="sp17"/>
-          <span children="t24 t25" symbol="NP" id="sp18"/>
-          <span children="t23 sp18" symbol="PP" id="sp19"/>
-          <span children="t27 t28 t29 t30" symbol="NP" id="sp20"/>
-          <span children="t26 sp20" symbol="PP" id="sp21"/>
-          <span children="t22 sp19 sp21" symbol="VP" id="sp22"/>
-          <span children="sp17 sp22 t31" symbol="S" id="sp23"/>
+        <parse annotators="benepar" root="sp22">
+          <span children="t20 t21" symbol="NP" id="sp16"/>
+          <span children="t24 t25" symbol="NP" id="sp17"/>
+          <span children="t23 sp17" symbol="PP" id="sp18"/>
+          <span children="t27 t28 t29 t30" symbol="NP" id="sp19"/>
+          <span children="t26 sp19" symbol="PP" id="sp20"/>
+          <span children="t22 sp18 sp20" symbol="VP" id="sp21"/>
+          <span children="sp16 sp21 t31" symbol="S" id="sp22"/>
         </parse>
       </sentence>
       <sentence characterOffsetEnd="207" characterOffsetBegin="129" id="s3">
@@ -113,20 +112,20 @@ class TestBenepar(BaseTest):
           <token form="!" id="t48" characterOffsetBegin="76" characterOffsetEnd="77" pos="."/>
           <token form="''" id="t49" characterOffsetBegin="77" characterOffsetEnd="78" pos="''"/>
         </tokens>
-        <parse annotators="benepar" root="sp36">
-          <span children="t34 t35" symbol="NP" id="sp24"/>
-          <span children="t37 t38 t39" symbol="NP" id="sp25"/>
-          <span children="t36 sp25" symbol="PP" id="sp26"/>
-          <span children="t33 sp24 sp26" symbol="VP" id="sp27"/>
-          <span children="sp27" symbol="S" id="sp28"/>
-          <span children="t32 sp28" symbol="PP" id="sp29"/>
-          <span children="t41" symbol="NP" id="sp30"/>
-          <span children="t45" symbol="NP" id="sp31"/>
-          <span children="t47" symbol="ADJP" id="sp32"/>
-          <span children="t46 sp32" symbol="VP" id="sp33"/>
-          <span children="sp31 sp33" symbol="S" id="sp34"/>
-          <span children="t42 t43 t44 sp34" symbol="VP" id="sp35"/>
-          <span children="sp29 t40 sp30 sp35 t48 t49" symbol="S" id="sp36"/>
+        <parse annotators="benepar" root="sp35">
+          <span children="t34 t35" symbol="NP" id="sp23"/>
+          <span children="t37 t38 t39" symbol="NP" id="sp24"/>
+          <span children="t36 sp24" symbol="PP" id="sp25"/>
+          <span children="t33 sp23 sp25" symbol="VP" id="sp26"/>
+          <span children="sp26" symbol="S" id="sp27"/>
+          <span children="t32 sp27" symbol="PP" id="sp28"/>
+          <span children="t41" symbol="NP" id="sp29"/>
+          <span children="t45" symbol="NP" id="sp30"/>
+          <span children="t47" symbol="ADJP" id="sp31"/>
+          <span children="t46 sp31" symbol="VP" id="sp32"/>
+          <span children="sp30 sp32" symbol="S" id="sp33"/>
+          <span children="t42 t43 t44 sp33" symbol="VP" id="sp34"/>
+          <span children="sp28 t40 sp29 sp34 t48 t49" symbol="S" id="sp35"/>
         </parse>
       </sentence>
     </sentences>

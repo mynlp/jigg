@@ -21,8 +21,8 @@ parser = benepar.Parser(model)
 
 def parse(tokens, tags):
     sentence = list(zip(tokens, tags))
-    parse_raw, sentence = next(parser._batched_parsed_raw([(tokens, sentence)]))
-    tree = parser._make_nltk_tree(sentence, *parse_raw)
+    parse_raw, tags_raw, sentence = next(parser._batched_parsed_raw([(tokens, sentence)]))
+    tree = parser._make_nltk_tree(sentence, tags_raw, *parse_raw)
     return tree
 
 while True:
