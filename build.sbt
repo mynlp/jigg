@@ -37,6 +37,13 @@ assemblyExcludedJars in assembly := {
   cp filter { x => unmanaged contains x.data.getName }
 }
 
+assemblyMergeStrategy in assembly := {
+  case PathList(ps @ _*) if ps.last endsWith ".class" => MergeStrategy.first
+  case x =>
+    val oldStrategy = (assemblyMergeStrategy in assembly).value
+    oldStrategy(x)
+}
+
 libraryDependencies ++= Seq(
   "com.novocode" % "junit-interface" % "0.10-M4" % "test->default",
   "org.scalactic" %% "scalactic" % "2.2.6",
@@ -59,8 +66,8 @@ libraryDependencies ++= (
 
 val stanfordCoreNLPDependencies = Seq(
   "org.slf4j" % "slf4j-api" % "1.7.20", // logger
-  "org.slf4j" % "slf4j-simple" % "1.7.6",
-  "edu.stanford.nlp" % "stanford-corenlp" % "3.9.1"
+  // "org.slf4j" % "slf4j-simple" % "1.7.6",
+  "edu.stanford.nlp" % "stanford-corenlp" % "3.9.2"
 )
 
 val kuromojiDependencies = Seq(
