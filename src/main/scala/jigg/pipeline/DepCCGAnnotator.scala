@@ -151,7 +151,6 @@ class DepCCGAnnotator(override val name: String, override val props: Properties)
       val sentences = annotation.child
 
       val input = sentences.map(mkInput).mkString("\n") + "\n####EOD####"
-      println("input to depccg: " + input)
       val result = runDepccg(input)
 
       // result is given by candc-style xml

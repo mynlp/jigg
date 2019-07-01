@@ -5,9 +5,6 @@ scala:
 
 dist: trusty
 
-# jdk:
-#   - oraclejdk11
-
 env:
   - ANNOTATORS=corenlp
   - ANNOTATORS=corenlp_other_languages
@@ -24,10 +21,8 @@ before_install:
   - ./.checker/scripts/before-install.sh
   - sudo add-apt-repository ppa:jonathonf/python-3.6 -y
   - sudo apt update -y
-  # - sudo apt install python3-venv python3-dev
   - sudo apt install python3.6 python3.6-dev
   - sudo apt install python-virtualenv
-  # - python3.6 -m venv .venv
   - virtualenv --python=python3.6 .venv
   - source .venv/bin/activate
   - pip install --upgrade pip
