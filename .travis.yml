@@ -17,7 +17,7 @@ env:
 
 before_install:
   - ./.checker/scripts/before-install.sh
-  - sudo apt install python3.4-venv python3.4-dev
+  - sudo apt install python3-venv python3-dev
   - python3 -m venv .venv
   - source .venv/bin/activate
   - pip install --upgrade pip
