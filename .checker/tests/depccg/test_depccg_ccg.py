@@ -85,9 +85,7 @@ class TestDepccgCcg(BaseTest):
 </root>"""
 
         self.exe = 'runMain jigg.pipeline.Pipeline ' \
-                   + '-annotators corenlp[tokenize,ssplit],depccg ' \
-                   + '-depccg.model depccg/models/tri_headfirst/ ' \
-                   + '-depccg.srcdir depccg/src/ '
+                   + '-annotators corenlp[tokenize,ssplit],depccg '
 
     def test_depccg_ccg(self):
         self.check_equal(self.exe, self.input_text, self.expected_text)

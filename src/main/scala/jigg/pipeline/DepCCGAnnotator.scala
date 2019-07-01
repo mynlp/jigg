@@ -30,12 +30,12 @@ import jigg.util.XMLUtil.RichNode
 class DepCCGAnnotator(override val name: String, override val props: Properties)
     extends AnnotatingSentencesInParallel { self =>
 
-  // @Prop(gloss = "Path to run.py", required = true) var path = ""
-  @Prop(gloss = "Path to src/ dir of depccg, where depccg.so exists", required = true) var srcdir = ""
-  @Prop(gloss = "Path to the model (e.g., tri_headfirst directory)", required = true) var model = ""
+  @Prop(gloss = "Path to a model (e.g., lstm_parser_elmo_finetune.tar.gz)") var model = ""
+  @Prop(gloss = "Additional args sent to depccg (e.g., --gpu 0 --max-length 200)") var args = ""
   @Prop(gloss = "Language (en|ja)") var lang = "en"
   @Prop(gloss = "Outputs k-best derivations if this value > 1") var kBest = 1
   @Prop(gloss = "Path to 'activate' script of the virtual environment that you wish to run on depccg") var venv = ""
+  @Prop(gloss = "Name of conda enviroment that you wish to run on depccg (ignored when venv is non-empty.)") var conda = ""
   @Prop(gloss = "If true, launch multiple depccgs for parallel parsing. See -help depccg for more details.") var parallel = false
   readProps()
 
@@ -43,15 +43,48 @@ class DepCCGAnnotator(override val name: String, override val props: Properties)
 
   override def description = s"""${super.description}
 
-  A wrapper for depccg (https://github.com/masashi-y/depccg). -${name}.path (path to the
-  main script) and ${name}.model (path to the model directory) are two necessary
-  arguments.
+  A wrapper for depccg (https://github.com/masashi-y/depccg). Currently the supported
+  version is v.1. If you use prior versions, please update to the latest one, which
+  can be installed with `pip`:
 
-  If your depccg should be run in specific virtualenv, you can specify that in
+    > pip install cython numpy depccg
+
+  Then, download the models appropriately:
+
+    > depccg_en download  # for English parsing
+    > depccg_ja download  # for Japanese parsing
+
+  These models are loaded in default. If you want to use another model, such as a model
+  with ELMo, please specify it in -${name}.model option.
+
+  Or, this wrapper supports most arguments defined for `depccg_en` and `depccg_ja`
+  commands, such as `--gpu n` for gpu specification, `--root-cats`, etc. These
+  arguments can be provided with -${name}.args. For example, by giving
+  -${name}.args "--gpu 0 --root-cats S", depccg internally runs on GPU 0, and the model
+  only search for a tree rooted by S. The following depccg arguments are supported:
+
+    --config, --model, --weights, --gpu, --batchsize, --nbest, --root-cats
+    --unary-penalty, --beta, --pruning-size, --disable-beta,
+    --disable-category-dictionary, --disable-seen-rules, --max-length, --max-steps
+
+  See `depccg_en --help` for descrption of each. Note that --model and --nbest can also
+  be specified by -${name}.model and -${name}.kBest. If the latter options are provided
+  --model and --nbest arguments are ignored internally (-${name}.model and
+  -${name}.kBest are prioritized).
+
+  virtualenv or conda
+  --------------------
+  If your depccg is installed in a specific virtualenv, you can specify that in
   -${name}.venv. For example, if your depccg-specific virtualenv is in
   `~/venvs/depccg`, supply `-${name}.venv ~/venvs/depccg/bin/activate`. Note that
   you should point to the path to `activate` script found on `bin`.
 
+  Or if you use conda enviroment, please setup instead -${name}.conda option. For example,
+  if install depccg on `depccg` enviroment, add `-${name}.conda depccg` option. Note
+  that this option is ignored (overwitten) when you set ${name}.venv otpion.
+
+  Note on concurrency
+  --------------------
   One complication is that DepCCG originally supports parallel parsing in itself but it
   depends on how a user compiles the code. Speficially, DepCCG can be run in parallel
   only when it is compiled with OpenMP.
@@ -69,20 +102,9 @@ class DepCCGAnnotator(override val name: String, override val props: Properties)
 """
 
   override def init() = {
-    checkArgument()
     System.err.println(s"Loading depccg... (${nThreads} instances)")
     localAnnotators
     System.err.println("done.")
-  }
-
-  def checkArgument() = {
-    val src = new File(srcdir)
-    if (!src.isDirectory || !src.listFiles.exists(_.getPath.endsWith(".so")))
-      argumentError("srcdir",
-        s"Something wrong with -${name}.srcdir, which should contains a *.so file.")
-
-    if (!new File(model).isDirectory || !new File(model, "tagger_model").exists)
-      argumentError("model", s"-${name}.model seems incorrect. That should points to a directory containing tagger_model, cat_dict.txt, etc.")
   }
 
   def mkLocalAnnotator = new LocalDepCCGAnnotator
@@ -90,16 +112,24 @@ class DepCCGAnnotator(override val name: String, override val props: Properties)
   class LocalDepCCGAnnotator extends LocalAnnotator with IOCreator {
 
     // Avoid reading resource at test time.
-    lazy val script: File = ResourceUtil.readPython("depccg.py")
+    lazy val script: File = ResourceUtil.readPython("_depccg.py")
     def command = {
-      val venvcommand = if (venv == "") "" else s"source ${venv} && "
-      venvcommand + s"python ${script.getPath} ${srcdir} ${model} ${kBest} ${lang}"
+      val venvcommand = (conda, venv) match {
+        case (c, "") if c.size > 0 => s"conda activate ${c} && "
+        case (_, v) if v.size > 0 => s"source ${venv} && "
+        case _ => ""
+      }
+      val options = (s"--lang $lang "
+        + (if (model != "") s"--internal-model $model " else "")
+        + (if (kBest != 1) s"--internal-nbest $kBest " else ""))
+
+      venvcommand + s"python ${script.getPath} ${args} ${options}"
     }
 
     def mkScript(): File = {
-      val script = File.createTempFile("depccg", ".py")
+      val script = File.createTempFile("_depccg", ".py")
       script.deleteOnExit
-      val stream = getClass.getResourceAsStream("/python/depccg.py")
+      val stream = getClass.getResourceAsStream("/python/_depccg.py")
       IOUtil.writing(script.getPath) { o =>
         scala.io.Source.fromInputStream(stream).getLines foreach { line =>
           o.write(line + "\n")
@@ -124,7 +154,8 @@ class DepCCGAnnotator(override val name: String, override val props: Properties)
       val result = runDepccg(input)
 
       // result is given by candc-style xml
-      val resultNode = XML.loadString(result.mkString("\n"))
+      // First line is parser-internal error msg (1..), which should be ignored.
+      val resultNode = XML.loadString(result.drop(1).mkString("\n"))
 
       val outputs = resultNode \\ "ccgs"
       assert(outputs.size == sentences.size)
