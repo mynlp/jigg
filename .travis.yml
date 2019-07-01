@@ -26,7 +26,9 @@ before_install:
   - sudo apt update -y
   # - sudo apt install python3-venv python3-dev
   - sudo apt install python3.6
-  - python3.6 -m venv .venv
+  - sudo apt install python-virtualenv
+  # - python3.6 -m venv .venv
+  - virtualenv --python=python3.6 .venv
   - source .venv/bin/activate
   - pip install --upgrade pip
 
