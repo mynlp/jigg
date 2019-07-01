@@ -68,18 +68,22 @@ def build_parser(args):
 
 def input_and_parse(parser):
     annotate_fun = annotate_XX
-    while True:
-        doc = []
+    try:
         while True:
-            line = input()
-            if line == "####EOD####": break
-            doc.append(line)
+            doc = []
+            while True:
+                line = input()
+                if line == "####EOD####": break
+                doc.append(line)
 
-        tagged_doc = annotate_fun([[word for word in sent.split(' ')] for sent in doc],
-                                  tokenize=None)
-        parses = parser.parse_doc(doc)
-        print_xml(parses, tagged_doc)
-        print("END")
+            tagged_doc = annotate_fun([[word for word in sent.split(' ')]
+                                       for sent in doc],
+                                      tokenize=None)
+            parses = parser.parse_doc(doc)
+            print_xml(parses, tagged_doc)
+            print("END")
+    except EOFError:
+        pass
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('depccg python wrapper in Jigg')

@@ -30,8 +30,6 @@ class DepCCGAnnotatorSpec extends BaseAnnotatorSpec {
   class AnnotatorStub(output: String)
       extends DepCCGAnnotator("depccg", dummyP) {
 
-    override def checkArgument() = {} // do not check
-
     override def mkLocalAnnotator = new LocalDepCCGAnnotator {
       override def mkCommunicator = new StubExternalCommunicator(output)
       // override def runDepccg(input: String) = output.split("\n").toStream
@@ -58,7 +56,8 @@ class DepCCGAnnotatorSpec extends BaseAnnotatorSpec {
         </sentences>
       </document>
 
-    val output ="""<candc>
+    val output ="""1..
+<candc>
 <ccgs>
 <ccg>
 <rule cat="S[dcl]" type="rp">
@@ -117,7 +116,8 @@ END
         </sentences>
       </document>
 
-    val output ="""<candc>
+    val output ="""1..
+<candc>
 <ccgs><ccg>
 <lf start="0" span="1" word="A" lemma="XX" pos="x" chunk="XX" entity="x" cat="NP" />
 

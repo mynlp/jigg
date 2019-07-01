@@ -3,6 +3,8 @@ language: scala
 scala:
   -  2.11.8
 
+dist: trusty
+
 env:
   - ANNOTATORS=corenlp
   - ANNOTATORS=corenlp_other_languages
@@ -13,12 +15,12 @@ env:
   - ANNOTATORS=mecab
   - ANNOTATORS=cabocha
   - ANNOTATORS=benepar
-  - ANNOTATORS=syntaxnet
+  # - ANNOTATORS=syntaxnet
 
 before_install:
   - ./.checker/scripts/before-install.sh
-  - sudo apt install python3.4-venv python3.4-dev
-  - python3 -m venv .venv
+  - pyenv global system 3.6
+  - virtualenv --python=python3.6 .venv
   - source .venv/bin/activate
   - pip install --upgrade pip
 
