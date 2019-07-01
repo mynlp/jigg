@@ -19,12 +19,13 @@ env:
 
 before_install:
   - ./.checker/scripts/before-install.sh
-  - sudo add-apt-repository ppa:jonathonf/python-3.6 -y
-  - sudo apt update -y
-  - sudo apt install python3.6 python3.6-dev
-  - curl https://bootstrap.pypa.io/get-pip.py | sudo -H python3.6
-  - sudo pip install virtualenv
-  # - sudo apt install python-virtualenv
+  - pyenv global system 3.6
+  # - sudo add-apt-repository ppa:jonathonf/python-3.6 -y
+  # - sudo apt update -y
+  # - sudo apt install python3.6 python3.6-dev
+  # - curl https://bootstrap.pypa.io/get-pip.py | sudo -H python3.6
+  # - sudo pip install virtualenv
+  # # - sudo apt install python-virtualenv
   - virtualenv --python=python3.6 .venv
   - source .venv/bin/activate
   - pip install --upgrade pip
