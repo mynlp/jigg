@@ -6,7 +6,7 @@ scala:
 dist: xenial
 
 jdk:
-  - oraclejdk8
+  - oraclejdk9
 
 env:
   - ANNOTATORS=corenlp
