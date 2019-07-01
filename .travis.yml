@@ -3,10 +3,10 @@ language: scala
 scala:
   -  2.11.8
 
-dist: xenial
+dist: trusty
 
-jdk:
-  - oraclejdk11
+# jdk:
+#   - oraclejdk11
 
 env:
   - ANNOTATORS=corenlp
@@ -21,7 +21,7 @@ env:
   - ANNOTATORS=syntaxnet
 
 before_install:
-  # - ./.checker/scripts/before-install.sh
+  - ./.checker/scripts/before-install.sh
   - sudo add-apt-repository ppa:jonathonf/python-3.6 -y
   - sudo apt update -y
   # - sudo apt install python3-venv python3-dev
