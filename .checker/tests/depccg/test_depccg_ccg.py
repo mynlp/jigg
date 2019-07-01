@@ -88,4 +88,7 @@ class TestDepccgCcg(BaseTest):
                    + '-annotators corenlp[tokenize,ssplit],depccg '
 
     def test_depccg_ccg(self):
+        import subprocess
+        subprocess.check_call('echo "Stanford University is located in California .\nIt is a great university, founded in 1891 .\n####EOD####" > input.txt', shell=True)
+        subprocess.check_output('python src/main/resources/python/_depccg.py < input.txt', shell=True)
         self.check_equal(self.exe, self.input_text, self.expected_text)
