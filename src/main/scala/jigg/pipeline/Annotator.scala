@@ -215,7 +215,8 @@ trait EasyIO extends Annotator {
         case Right(results) => results
         case Left((partial, iter)) =>
           val remainingMsg =
-            partial.dropRight(1).mkString("\n") + readRemaining(iter)
+            partial.mkString("\n") + readRemaining(iter)
+            // partial.dropRight(1).mkString("\n") + readRemaining(iter)
           throw new ProcessError(remainingMsg)
       }
   }
