@@ -25,7 +25,7 @@ before_install:
   - sudo add-apt-repository ppa:jonathonf/python-3.6 -y
   - sudo apt update -y
   # - sudo apt install python3-venv python3-dev
-  - sudo apt install python3.6
+  - sudo apt install python3.6 python3.6-dev
   - sudo apt install python-virtualenv
   # - python3.6 -m venv .venv
   - virtualenv --python=python3.6 .venv
