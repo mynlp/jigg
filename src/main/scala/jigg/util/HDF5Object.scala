@@ -16,7 +16,7 @@ package jigg.util
  limitation under the License.
 */
 
-import ucar.nc2.{Attribute, Group, NetcdfFile}
+import ucar.nc2.{Attribute, Group, NetcdfFile, Variable}
 
 class HDF5Object(rootGroup: Group) {
 
@@ -28,6 +28,30 @@ class HDF5Object(rootGroup: Group) {
   def checkAndGetGroup(name: String): Group = Option(rootGroup.findGroup(name)) match {
     case Some(x) => x
     case None => throw new IllegalArgumentException("cannot get " + name + " group from input model file")
+  }
+
+
+  // sub group
+  def GetGroups_g(namex: String, groupx: Group): Group = Option(groupx.findGroup(namex)) match {
+    case Some(x) => x
+    case None => null
+  }
+
+  // sub attribute
+  def GetAttributes_g(namex: String, groupx: Group): Attribute = Option(groupx.findAttribute(namex)) match {
+    case Some(x) => x
+    case None => throw new IllegalArgumentException("cannot get " + namex + " group from input model file")
+  }
+
+  // Vriables
+  def GetVariable_g(name_v:String, group_v: Group): Variable = Option(group_v.findVariable(name_v)) match {
+    case Some(x) => x
+    case None => null
+  }
+
+  def GetAttributeFromVariable(name_a: String, variable: Variable): Attribute = Option(variable.findAttribute(name_a)) match {
+    case Some(x) => x
+    case None => null
   }
 
 }
